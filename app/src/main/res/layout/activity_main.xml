@@ -1,0 +1,158 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp"
+    android:paddingTop="0dp"
+    android:paddingBottom="0dp"
+    tools:context=".MainActivity"
+    android:id="@+id/parentLayout"
+    android:background="#000000">
+
+    <SurfaceView
+        android:id="@+id/surfaceView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/robotMessageConnector"
+        android:src="@drawable/robot_connector"
+        android:layout_alignTop="@+id/imageView5"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/serverMessageConnector"
+        android:src="@drawable/server_connector"
+        android:layout_alignBottom="@+id/imageView6"
+        android:layout_alignLeft="@+id/btnServerBackground" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/server_is_off"
+        android:id="@+id/serverMessage"
+        android:textColor="#000000"
+        android:background="@drawable/server_frame"
+        android:textAlignment="center"
+        android:layout_above="@+id/dummyView1"
+        android:layout_alignLeft="@+id/serverMessageConnector"
+        android:layout_alignRight="@+id/btnSettings" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/server_is_off"
+        android:id="@+id/robotMessage"
+        android:textColor="#000000"
+        android:background="@drawable/robot_frame"
+        android:textAlignment="center"
+        android:layout_below="@+id/dummyView2"
+        android:layout_alignLeft="@+id/btnServerBackground"
+        android:layout_alignRight="@+id/btnSettings" />
+
+    <ImageView
+        android:src="@drawable/empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView5"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@+id/btnRobotBackground" />
+
+    <ImageView
+        android:src="@drawable/empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView6"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/btnRobotBackground" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnRobotBackground"
+        android:background="@drawable/robot_connecting_bg"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnRobot"
+        android:background="@drawable/connect_robot_bg"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:onClick="onConnectToRobot" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnServerBackground"
+        android:background="@drawable/server_starting_bg"
+        android:layout_alignTop="@+id/btnRobotBackground"
+        android:layout_toLeftOf="@+id/imageView6"
+        android:focusable="false" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnServer"
+        android:background="@drawable/start_server_bg"
+        android:layout_alignTop="@+id/btnRobotBackground"
+        android:layout_toLeftOf="@+id/imageView6"
+        android:onClick="onStartButtonClick" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnSettings"
+        android:background="@drawable/settings_bg"
+        android:layout_alignTop="@+id/btnRobotBackground"
+        android:layout_toRightOf="@+id/imageView5"
+        android:onClick="onSettingsButtonClick" />
+
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/robotListView"
+        android:background="@drawable/robot_frame"
+        android:layout_alignLeft="@+id/robotMessage"
+        android:layout_alignRight="@+id/robotMessage"
+        android:layout_below="@+id/dummyView2" />
+
+    <ImageView
+        android:src="@drawable/empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/dummyView1"
+        android:layout_above="@+id/btnServerBackground"
+        android:layout_alignLeft="@+id/btnServerBackground" />
+
+    <ImageView
+        android:src="@drawable/empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/dummyView2"
+        android:layout_below="@+id/btnRobotBackground"
+        android:layout_toRightOf="@+id/imageView6" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Small Text"
+        android:id="@+id/testMessage"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textColor="#ffffff"
+        android:visibility="invisible" />
+
+</RelativeLayout>

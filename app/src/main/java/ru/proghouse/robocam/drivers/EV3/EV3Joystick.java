@@ -1,0 +1,127 @@
+package ru.proghouse.robocam.drivers.EV3;
+
+
+import android.bluetooth.BluetoothSocket;
+
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import ru.proghouse.robocam.drivers.RoboCamDriver;
+
+/**
+ * Created by Alexey Valuev on 13.02.2016.
+ */
+public class EV3Joystick {
+    private int x = 0;
+    private int y = 0;
+    private int oldX = 0;
+    private int oldY = 0;
+    private int behavior0 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
+    private int behavior1 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
+    private String shape = RoboCamDriver.JOYSTICK_SHAPE_CIRCULAR;
+    //Output ports either for a horizontal axis or for a left motor depending on the joystick type.
+    private List<EV3OutputPort> outputPorts0 = new ArrayList<EV3OutputPort>();
+    //Output ports either for a vertical axis or for a right motor depending on the joystick type.
+    private List<EV3OutputPort> outputPorts1 = new ArrayList<EV3OutputPort>();
+    private int type = RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS;
+    private boolean visible = false;
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public void setBehavior(int group, int behavior){
+        if (group == 0)
+            behavior0 = behavior;
+        else
+            behavior1 = behavior;
+    }
+
+    public String getBehaviors(){
+        return new Integer(behavior0).toString() + new Integer(behavior1).toString();
+    }
+
+    public void setShape(String shape){
+        this.shape = shape;
+    }
+
+    public String getShape() {
+        if (!visible)
+            return RoboCamDriver.JOYSTICK_SHAPE_INVISIBLE;
+        return shape;
+    }
+
+    public List<EV3OutputPort> getOutputPorts(int group) {
+        if (group == 0)
+            return outputPorts0;
+        else
+            return outputPorts1;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setCoordinates(Integer newX, Integer newY) {
+        if (newX != null || newY != null) {
+            if (newX != null)
+                x = newX;
+            if (newY != null)
+                y = newY;
+            if (x != oldX || y != oldY) {
+                if (shape == EV3Driver.JOYSTICK_SHAPE_INVISIBLE) {
+                    //Nothing to do
+                } else if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
+                        || type == EV3Driver.JOYSTICK_TYPE_MAILBOX
+                        || shape == RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL
+                        || shape == RoboCamDriver.JOYSTICK_SHAPE_VERTICAL
+                        || shape == RoboCamDriver.JOYSTICK_SHAPE_ARROWS) {
+                    if (shape == RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL)
+                        y = 0;
+                    if (shape == RoboCamDriver.JOYSTICK_SHAPE_VERTICAL)
+                        x = 0;
+                    for (EV3OutputPort outputPortX : outputPorts0)
+                        if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                            outputPortX.setPower(x);
+                        else
+                            outputPortX.setAngle(x);
+                    for (EV3OutputPort outputPortY : outputPorts1)
+                        if (outputPortY.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                            outputPortY.setPower(y);
+                        else
+                            outputPortY.setAngle(y);
+                } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING) {
+                    int powerL = y;
+                    int powerR = y;
+                    if (x < 0)
+                        powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
+                    else if (x > 0)
+                        powerR = Math.round(powerR * (100 - x) / 100);
+                    for (EV3OutputPort outputPortL : outputPorts0)
+                        outputPortL.setPower(powerL);
+                    for (EV3OutputPort outputPortR : outputPorts1)
+                        outputPortR.setPower(powerR);
+                }
+            }
+            oldX = x; oldY = y;
+        }
+    }
+
+}

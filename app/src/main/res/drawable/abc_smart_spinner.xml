@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/abc_spinner"></item>
+    <!-- <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <nine-patch android:src="@drawable/abc_spinner_mtrl_am_alpha" android:tint="#FF0000"></nine-patch>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item>
+                <nine-patch android:src="@drawable/abc_spinner_mtrl_am_alpha" android:tint="#737373"/>
+            </item>
+        </layer-list>
+    </item> -->
+</selector>

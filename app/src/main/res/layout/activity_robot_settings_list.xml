@@ -1,0 +1,91 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="ru.proghouse.robocam.RobotSettingsListActivity"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.ActionBar"
+        android:baselineAligned="false"
+        android:weightSum="1"
+        android:measureWithLargestChild="false">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.AppCompat.ActionBar"
+            android:baselineAligned="false">
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageButtonBack"
+                android:src="@drawable/back"
+                style="@style/Widget.AppCompat.ActionButton"
+                android:onClick="onCancelButtonClick" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            style="@style/Widget.AppCompat.ActionBar"
+            android:baselineAligned="false"
+            android:layout_weight="1"
+            android:gravity="right">
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/delete"
+                android:id="@+id/buttonDelete"
+                android:focusable="false" />
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/add"
+                android:id="@+id/buttonAdd"
+                android:focusable="false" />
+        </LinearLayout>
+    </LinearLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="6dp">
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/current_robot_settings"
+                android:id="@+id/textView3" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerCurrentRobotSettings"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/robot_settings_list"
+                android:id="@+id/textView" />
+
+            <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/settingsListView"
+            android:layout_gravity="center_horizontal" />
+        </LinearLayout>
+
+</LinearLayout>

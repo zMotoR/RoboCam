@@ -1,0 +1,255 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="ru.proghouse.robocam.GlobalSettingsActivity"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.ActionBar"
+        android:baselineAligned="false"
+        android:weightSum="1"
+        android:measureWithLargestChild="false">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.AppCompat.ActionBar"
+            android:baselineAligned="false">
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageButtonBack"
+                android:src="@drawable/back"
+                style="@style/Widget.AppCompat.ActionButton"
+                android:onClick="onCancelButtonClick" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            style="@style/Widget.AppCompat.ActionBar"
+            android:baselineAligned="false"
+            android:layout_weight="1"
+            android:gravity="right">
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel"
+                android:id="@+id/buttonCancel"
+                android:onClick="onCancelButtonClick"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView8"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:id="@+id/buttonSave"
+                android:onClick="onSaveButtonClick"
+                android:focusable="false" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/scrollView">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="6dp">
+
+            <TextView
+                android:text="@string/camera"
+                android:id="@+id/titleCamera"
+                style="@style/SettingsSectionTitle" />
+
+            <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerCamera"
+        android:visibility="visible"
+        android:spinnerMode="dialog"
+                android:focusable="false" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView1"
+        android:layout_gravity="center_horizontal"
+        android:src="@drawable/spacer_small" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerPreviewSize"
+        android:visibility="visible"
+        android:spinnerMode="dialog"
+        android:focusable="false" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView2"
+        android:layout_gravity="center_horizontal"
+        android:src="@drawable/spacer_small" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/jpeg_quality"
+        android:id="@+id/textViewJpegQuality1"
+        android:layout_gravity="center_horizontal"
+        android:paddingLeft="11dp"
+        android:paddingTop="6dp" />
+
+    <SeekBar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/seekBarJpegQuality"
+        android:progress="60"
+        android:paddingRight="11dp"
+        android:paddingLeft="11dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:id="@+id/textViewJpegQuality2"
+        android:paddingLeft="11dp"
+        android:paddingBottom="6dp" />
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/security"
+                android:id="@+id/titleSecurity" />
+
+            <TextView
+                android:text="@string/driver_name"
+                android:id="@+id/textViewDriverName"
+                style="@style/SettingsSectionEditTextTitle" />
+
+            <EditText android:id="@+id/editTextDriverName"
+                style="@style/SettingsEditText" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/driver_password"
+                android:id="@+id/textViewDriverPassword"
+                android:layout_gravity="center_horizontal"
+                android:paddingLeft="11dp"
+                android:paddingTop="6dp" />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="10"
+                android:id="@+id/editTextDriverPassword"
+                android:layout_gravity="center_horizontal"
+                android:paddingLeft="11dp"
+                android:paddingRight="11dp"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView3"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pref_item_height"
+                android:text="@string/allow_spectators"
+                android:id="@+id/checkBoxAllowSpectators"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                style="@style/SettingsCheckBox" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView4"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/spectator_name"
+                android:id="@+id/textViewSpectatorName"
+                android:layout_gravity="center_horizontal"
+                android:paddingLeft="11dp"
+                android:paddingTop="6dp" />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/editTextSpectatorName"
+                android:layout_gravity="center_horizontal"
+                android:inputType="none"
+                android:lines="1"
+                android:singleLine="true"
+                android:paddingLeft="11dp"
+                android:paddingRight="11dp"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView7"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/spectator_password"
+                android:id="@+id/textViewSpectatorPassword"
+                android:layout_gravity="center_horizontal"
+                android:paddingLeft="11dp"
+                android:paddingTop="6dp" />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="10"
+                android:id="@+id/editTextSpectatorPassword"
+                android:layout_gravity="center_horizontal"
+                android:paddingLeft="11dp"
+                android:paddingRight="11dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
