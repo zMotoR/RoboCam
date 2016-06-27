@@ -1802,15 +1802,17 @@ public class EV3Driver extends RoboCamDriver {
                     }
                     //Mailbox
                     for (int i = 0; i < joysticks.size(); i++) {
-                        if (joystickCoordinates[i * 2] != joysticks.get(i).getX()) {
-                            //Have to send coordinate
-                            SendJoystickCoordinateToMailbox(axisNames[i * 2], joysticks.get(i).getX());
-                            joystickCoordinates[i * 2] = joysticks.get(i).getX();
-                        }
-                        if (joystickCoordinates[i * 2 + 1] != joysticks.get(i).getY()) {
-                            //Have to send coordinate
-                            SendJoystickCoordinateToMailbox(axisNames[i * 2 + 1], joysticks.get(i).getY());
-                            joystickCoordinates[i * 2 + 1] = joysticks.get(i).getY();
+                        if (joysticks.get(i).getType() == RoboCamDriver.JOYSTICK_TYPE_MAILBOX) {
+                            if (joystickCoordinates[i * 2] != joysticks.get(i).getX()) {
+                                //Have to send coordinate
+                                SendJoystickCoordinateToMailbox(axisNames[i * 2], joysticks.get(i).getX());
+                                joystickCoordinates[i * 2] = joysticks.get(i).getX();
+                            }
+                            if (joystickCoordinates[i * 2 + 1] != joysticks.get(i).getY()) {
+                                //Have to send coordinate
+                                SendJoystickCoordinateToMailbox(axisNames[i * 2 + 1], joysticks.get(i).getY());
+                                joystickCoordinates[i * 2 + 1] = joysticks.get(i).getY();
+                            }
                         }
                     }
 

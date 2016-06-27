@@ -86,16 +86,19 @@ public class EV3Joystick {
             if (newY != null)
                 y = newY;
             if (x != oldX || y != oldY) {
-                if (shape == EV3Driver.JOYSTICK_SHAPE_INVISIBLE) {
+                if (EV3Driver.JOYSTICK_SHAPE_INVISIBLE.equals(shape)) {
                     //Nothing to do
                 } else if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                         || type == EV3Driver.JOYSTICK_TYPE_MAILBOX
-                        || shape == RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL
-                        || shape == RoboCamDriver.JOYSTICK_SHAPE_VERTICAL
-                        || shape == RoboCamDriver.JOYSTICK_SHAPE_ARROWS) {
-                    if (shape == RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL)
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape)) {
+                    if (RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
+                            || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape))
                         y = 0;
-                    if (shape == RoboCamDriver.JOYSTICK_SHAPE_VERTICAL)
+                    if (RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
+                            || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape))
                         x = 0;
                     for (EV3OutputPort outputPortX : outputPorts0)
                         if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
@@ -110,10 +113,17 @@ public class EV3Joystick {
                 } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING) {
                     int powerL = y;
                     int powerR = y;
-                    if (x < 0)
-                        powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
-                    else if (x > 0)
-                        powerR = Math.round(powerR * (100 - x) / 100);
+                    if (RoboCamDriver.JOYSTICK_SHAPE_ARROWS.equals(shape)) {
+                        if (y == 0) {
+                            powerL = x;
+                            powerR = -x;
+                        }
+                    } else {
+                        if (x < 0)
+                            powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
+                        else if (x > 0)
+                            powerR = Math.round(powerR * (100 - x) / 100);
+                    }
                     for (EV3OutputPort outputPortL : outputPorts0)
                         outputPortL.setPower(powerL);
                     for (EV3OutputPort outputPortR : outputPorts1)
