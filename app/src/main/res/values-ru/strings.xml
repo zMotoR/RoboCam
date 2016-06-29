@@ -17,14 +17,14 @@
     <string name="bluetooth_is_not_supported">Bluetooth не поддерживается.</string>
     <string name="unknown_driver_name">Неизвестный драйвер: "%s".</string>
     <string name="connect_to_robot">Подключиться к роботу</string>
-    <string name="ev3_is_disconnected">EV3 не подключен:</string>
-    <string name="robot_is_disconnected">Робот не подключен:</string>
+    <string name="ev3_is_disconnected">EV3 не подключен</string>
+    <string name="robot_is_disconnected">Робот не подключен</string>
     <string name="ev3_is_connecting">Подключение к EV3...</string>
     <string name="robot_is_connecting">Подключение к роботу...</string>
     <string name="robot_bonded_devices_not_found">Нет подключенных устройств. Сначала подключите робота через Bluetooth.</string>
     <string name="ev3_bonded_devices_not_found">Нет подключенных устройств. Сначала подключите EV3 через Bluetooth.</string>
     <string name="robot_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth на EV3.</string>
-    <string name="robot_is_connected_to">Подключено к %s:</string>
+    <string name="robot_is_connected_to">Подключено к %s</string>
     <string name="robot_is_connecting_to">Подключение к %s...</string>
     <string name="ev3_error_motor_not_connected">Мотор не подключен к порту %s.</string>
     <string name="ev3_error_cannot_read_input_port_list">Не удалось прочитать список портов EV3.</string>
@@ -122,4 +122,7 @@
     <string name="port_was_deleted">Порт был удалён</string>
     <string name="joystick_group_left">Левый</string>
     <string name="joystick_group_right">Правый</string>
+    <string name="using_of_the_settings_is_not_available_without_a_subscription">Использование настроек невозможно без оформленной подписки!</string>
+    <string name="view_subscriptions">Смотреть подписки</string>
+    <string name="hide">Скрыть</string>
 </resources>

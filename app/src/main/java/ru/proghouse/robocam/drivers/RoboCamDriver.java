@@ -22,6 +22,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import ru.proghouse.robocam.DefaultValue;
 import ru.proghouse.robocam.ExtraKey;
 import ru.proghouse.robocam.HttpServer;
+import ru.proghouse.robocam.MainActivity;
 import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 
@@ -77,7 +78,7 @@ public abstract class RoboCamDriver {
 
     public abstract void setJoystickValues(Hashtable<String, Integer> joystickValues);
 
-    public static void updateCurrentDriver(Context context) {
+    public static void updateCurrentDriver(Context context, boolean update) {
         SharedPreferences settings = context.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         String currentDriverSettings = settings.getString(ExtraKey.CURRENT_ROBOT_SETTINGS, "");
         File cacheDir = context.getCacheDir();
@@ -93,9 +94,9 @@ public abstract class RoboCamDriver {
             Document xml = db.parse(settingsFile);
             xml.getDocumentElement().normalize();
             String newDriverName = xml.getDocumentElement().getNodeName();
-            if ((!getCurrentDriver().getName().equals(newDriverName))
+            if (((!getCurrentDriver().getName().equals(newDriverName))
                     || (!getCurrentDriver().getSettingsFileName().equals(settingsFile.getName()))
-                    || (getCurrentDriver().getLastModified() != settingsFile.lastModified())) {
+                    || (getCurrentDriver().getLastModified() != settingsFile.lastModified())) && update) {
                 RoboCamDriver newDriver = createDriver(context, newDriverName);
                 newDriver.loadSettingsFromXml(context, settingsFile, xml);
                 setCurrentDriver(newDriver);

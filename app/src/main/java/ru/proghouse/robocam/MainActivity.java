@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceHolder;
@@ -42,6 +43,9 @@ import java.util.List;
 
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
+import ru.proghouse.robocam.util.IabHelper;
+import ru.proghouse.robocam.util.IabResult;
+import ru.proghouse.robocam.util.Inventory;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback,
         RoboCamBroker.RoboCamBrokerListener, RoboCamDriver.DriverListener {
@@ -54,6 +58,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static final int ROBOT_STATE_CONNECTING = 4;
     private static final int ROBOT_STATE_CONNECTED = 5;
     private static final int ROBOT_STATE_CONNECTION_ERROR = 6;
+
+    public static final int PURCHASE_STATE_UNKNOWN = 0;
+    public static final int PURCHASE_STATE_PREMIUM = 1;
+    public static final int PURCHASE_STATE_ERROR = 2;
+
+    public static final String SKU_PREMIUM = "Premium";
 
     private CameraManager cameraManager = CameraManager.getCameraManager();
     private SurfaceView surfaceView = null;
@@ -77,6 +87,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private volatile ControlsUpdater controlsUpdater = null;
     private TextView testMessage = null;
     private volatile String testMessageText = null;
+    private IabHelper mHelper;
+    private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
+    private int purchaseState = PURCHASE_STATE_UNKNOWN;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,9 +131,57 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Toast.makeText(this, R.string.error_while_creating_default_ev3_settings_file, Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
+
+            String base64EncodedPublicKey = "";
+            mHelper = new IabHelper(this, base64EncodedPublicKey);
+            mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
+                public void onQueryInventoryFinished(IabResult result,
+                                                     Inventory inventory) {
+                    if (result.isFailure()) {
+                        // handle error here
+                        purchaseState = PURCHASE_STATE_ERROR;
+                    }
+                    else {
+                        // does the user have the premium upgrade?
+                        if (inventory.hasPurchase(SKU_PREMIUM)) {
+                            // update UI accordingly
+                            purchaseState = PURCHASE_STATE_PREMIUM;
+                            RoboCamDriver.updateCurrentDriver(thisActivity, purchaseState == PURCHASE_STATE_PREMIUM);
+                        }
+                    }
+                }
+            };
+            mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+                public void onIabSetupFinished(IabResult result) {
+                    if (!result.isSuccess()) {
+                        // Oh noes, there was a problem.
+                        //Toast.makeText(thisActivity, "Problem setting up In-app Billing: " + result, Toast.LENGTH_LONG).show();
+                    }
+                    else {
+                        // Hooray, IAB is fully set up!
+                        try {
+                            mHelper.queryInventoryAsync(mGotInventoryListener);
+                        } catch (IabHelper.IabAsyncInProgressException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
         }catch(Throwable e){
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            if (mHelper != null)
+                mHelper.dispose();
+        } catch (IabHelper.IabAsyncInProgressException e) {
+            e.printStackTrace();
+        }
+        mHelper = null;
     }
 
     @Override
@@ -162,8 +223,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        //getMenuInflater().inflate(R.menu.menu_main, menu);
+        //return true;
+        return false;
     }
 
     @Override
@@ -171,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        /*int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
@@ -179,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
             return true;
-        }
+        }*/
 
         return super.onOptionsItemSelected(item);
     }
@@ -499,7 +561,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         updateControls();
         isScreenOn = true;
         super.onResume();
-        RoboCamDriver.updateCurrentDriver(this);
+        RoboCamDriver.updateCurrentDriver(this, purchaseState == PURCHASE_STATE_PREMIUM);
         postUpdateControls();
     }
 
@@ -716,7 +778,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 btnRobot.clearAnimation();
                 btnRobot.setBackgroundResource(R.drawable.connect_robot);
                 showRobotMessage(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_DISCONNECTED))
-                                + "\r\n" + driver.getSettingsName()
+                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
                 );
                 break;
             case ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH:
@@ -758,7 +820,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 showRobotMessage(
                         String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTING_TO)),
                                 driver.getRobotName())
-                                + "\r\n" + driver.getSettingsName()
+                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
                 );
                 break;
             case ROBOT_STATE_CONNECTED:
@@ -767,7 +829,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 showRobotMessage(
                         String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTED_TO)),
                                 driver.getRobotName())
-                                + "\r\n" + driver.getSettingsName()
+                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
                 );
                 break;
             case ROBOT_STATE_CONNECTION_ERROR:

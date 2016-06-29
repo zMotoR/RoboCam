@@ -3,7 +3,8 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     tools:context="ru.proghouse.robocam.GlobalSettingsActivity"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:id="@+id/ev3_settings_main_layout">
 
     <LinearLayout
         android:orientation="horizontal"

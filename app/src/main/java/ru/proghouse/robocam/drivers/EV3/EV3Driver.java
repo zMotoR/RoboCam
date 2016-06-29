@@ -718,7 +718,7 @@ public class EV3Driver extends RoboCamDriver {
             }
         }
         //A second file is created here for debugging purposes only.
-        ev3DefaultSettingsFile = new File(ev3Dir, DefaultValue.EV3_SETTINGS_FILE + ".xml");
+        /*ev3DefaultSettingsFile = new File(ev3Dir, DefaultValue.EV3_SETTINGS_FILE + ".xml");
         FileOutputStream fileOutputStream = new FileOutputStream(ev3DefaultSettingsFile);
         try {
             fileOutputStream.write(new String(
@@ -736,7 +736,7 @@ public class EV3Driver extends RoboCamDriver {
             ).getBytes("UTF-8"));
         } finally {
             fileOutputStream.close();
-        }
+        }*/
     }
 
     class EV3Runnable implements Runnable{

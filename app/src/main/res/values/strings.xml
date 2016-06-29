@@ -18,14 +18,14 @@
     <string name="bluetooth_is_not_supported">Bluetooth is not supported.</string>
     <string name="unknown_driver_name">Unknown driver name: "%s".</string>
     <string name="connect_to_robot">Connect to robot</string>
-    <string name="ev3_is_disconnected">EV3 is not connected:</string>
-    <string name="robot_is_disconnected">Robot is not connected:</string>
+    <string name="ev3_is_disconnected">EV3 is not connected</string>
+    <string name="robot_is_disconnected">Robot is not connected</string>
     <string name="robot_is_connecting">Connecting to a robot...</string>
     <string name="ev3_is_connecting">Connecting to EV3...</string>
     <string name="robot_bonded_devices_not_found">Bonded devices not found. Pair a robot via Bluetooth first.</string>
     <string name="ev3_bonded_devices_not_found">Bonded devices not found. Pair EV3 via Bluetooth first.</string>
     <string name="robot_connection_error">Connection failed. Check EV3 Bluetooth is turned on.</string>
-    <string name="robot_is_connected_to">Connected to %s:</string>
+    <string name="robot_is_connected_to">Connected to %s</string>
     <string name="robot_is_connecting_to">Connecting to %s...</string>
     <string name="ev3_error_cannot_read_input_port_list">Cannot read an input port list from EV3 brick.</string>
     <string name="ev3_error_motor_not_connected">Motor is not connected to the port %s.</string>
@@ -121,4 +121,7 @@
     <string name="port_was_deleted">The port was deleted</string>
     <string name="joystick_group_left">Left</string>
     <string name="joystick_group_right">Right</string>
+    <string name="using_of_the_settings_is_not_available_without_a_subscription">Using of the settings is not available without a subscription!</string>
+    <string name="hide">Hide</string>
+    <string name="subscriptions">View subscriptions</string>
 </resources>

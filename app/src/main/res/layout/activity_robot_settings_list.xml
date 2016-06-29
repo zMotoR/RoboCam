@@ -3,7 +3,8 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     tools:context="ru.proghouse.robocam.RobotSettingsListActivity"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:id="@+id/robot_settings_list_main_layout">
 
     <LinearLayout
         android:orientation="horizontal"
@@ -62,6 +63,52 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="6dp">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#e90000"
+                android:layout_marginBottom="7dp"
+                android:id="@+id/linearLayoutSubsWarning">
+
+                <TextView
+                    android:text="@string/using_of_the_settings_is_not_available_without_a_subscription"
+                    android:id="@+id/textViewSubsWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="19dp"
+                    android:background="#e90000"
+                    android:textColor="#ffffff"
+                    android:paddingLeft="11dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:paddingRight="11dp"
+                    android:gravity="center" />
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center">
+
+                    <Button
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/view_subscriptions"
+                        android:id="@+id/button3" />
+
+                    <Button
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/hide"
+                        android:id="@+id/button4"
+                        android:onClick="onHideSubsButtonClick" />
+                </LinearLayout>
+
+            </LinearLayout>
 
             <TextView
                 style="@style/SettingsSectionTitle"

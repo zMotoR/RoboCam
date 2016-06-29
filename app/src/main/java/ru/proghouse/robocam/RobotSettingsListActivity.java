@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.Spinner;
@@ -39,6 +40,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
+import ru.proghouse.robocam.util.IabHelper;
+import ru.proghouse.robocam.util.IabResult;
+import ru.proghouse.robocam.util.Inventory;
 
 public class RobotSettingsListActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int MI_ADD_EV3_SETTINGS = -1;
@@ -52,6 +56,13 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     private Context thisContext = null;
     private String currentRobotSettings = null;
     private Date lastSettingsModified = null;
+    private IabHelper mHelper;
+    private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
+    private boolean isPremium = false;
+    private LinearLayout robot_settings_list_main_layout = null;
+    private TextView textViewSubsWarning = null;
+    private LinearLayout linearLayoutSubsWarning = null;
+    private static final String WARNING_HIDED = "WarningHided";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +70,14 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         setContentView(R.layout.activity_robot_settings_list);
 
         thisContext = this;
+
+        robot_settings_list_main_layout = (LinearLayout)findViewById(R.id.robot_settings_list_main_layout);
+        robot_settings_list_main_layout.setEnabled(false);
+        textViewSubsWarning = (TextView)findViewById(R.id.textViewSubsWarning);
+        linearLayoutSubsWarning = (LinearLayout)findViewById(R.id.linearLayoutSubsWarning);
+
+        if (savedInstanceState != null && savedInstanceState.getBoolean(WARNING_HIDED))
+            linearLayoutSubsWarning.setVisibility(View.GONE);
 
         buttonAdd = (Button)findViewById(R.id.buttonAdd);
         buttonAdd.setOnClickListener(this);
@@ -125,7 +144,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 if (!currentRobotSettings.equals(fileName)) {
                     getPreferenceEditor().putString(ExtraKey.CURRENT_ROBOT_SETTINGS, fileName);
                     apply();
-                    RoboCamDriver.updateCurrentDriver(thisContext);
+                    RoboCamDriver.updateCurrentDriver(thisContext, isPremium);
                     Toast.makeText(thisContext, R.string.current_robot_settings_have_changed, Toast.LENGTH_LONG).show();
                     currentRobotSettings = fileName;
                 }
@@ -134,6 +153,65 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+
+        String base64EncodedPublicKey = "";
+        mHelper = new IabHelper(this, base64EncodedPublicKey);
+        mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
+            public void onQueryInventoryFinished(IabResult result,
+                                                 Inventory inventory) {
+                if (result.isFailure()) {
+                    // handle error here
+                }
+                else {
+                    // does the user have the premium upgrade?
+                    isPremium = inventory.hasPurchase(MainActivity.SKU_PREMIUM);
+                    if (isPremium)
+                        linearLayoutSubsWarning.setVisibility(View.GONE);
+                }
+                // update UI accordingly
+                robot_settings_list_main_layout.setEnabled(true);
+            }
+        };
+        mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+            public void onIabSetupFinished(IabResult result) {
+                if (!result.isSuccess()) {
+                    // Oh noes, there was a problem.
+                    Toast.makeText(thisContext, "Problem setting up In-app Billing: " + result, Toast.LENGTH_LONG).show();
+                } else {
+                    // Hooray, IAB is fully set up!
+                    try {
+                        mHelper.queryInventoryAsync(mGotInventoryListener);
+                    } catch (IabHelper.IabAsyncInProgressException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            if (mHelper != null)
+                mHelper.dispose();
+        } catch (IabHelper.IabAsyncInProgressException e) {
+            e.printStackTrace();
+        }
+        mHelper = null;
+    }
+
+    @Override
+    protected void onSaveInstanceState (Bundle outState) {
+        outState.putBoolean(WARNING_HIDED, linearLayoutSubsWarning.getVisibility() == View.GONE);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState (Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState.getBoolean(WARNING_HIDED))
+            linearLayoutSubsWarning.setVisibility(View.GONE);
     }
 
     private void fillSettinsList() {
@@ -325,6 +403,10 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         finish();
     }
 
+    public void onHideSubsButtonClick(View v){
+        linearLayoutSubsWarning.setVisibility(View.GONE);
+    }
+
     /*public void onAddButtonClick(View v){
         Intent intent = new Intent(thisContext, EV3SettingsActivity.class);
         intent.putExtra(EV3SettingsActivity.SETTINGS_FILE_NAME, "");
@@ -344,7 +426,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             lastSettingsModified = RoboCamBroker.getLastSettingsModified();
             fillSettinsList();
             fillCurSettings();
-            RoboCamDriver.updateCurrentDriver(thisContext);
+            RoboCamDriver.updateCurrentDriver(thisContext, isPremium);
         }
     }
 

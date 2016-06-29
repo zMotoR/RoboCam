@@ -13,7 +13,7 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
  * Created by Alexey Valuev on 03.02.2016.
  */
 public class RoboCamBroker {
-    public static boolean DEBUG_HTTP = false;//true;
+    public static boolean DEBUG_HTTP = true;
     private static List<RoboCamBrokerListener> listeners = new ArrayList<RoboCamBrokerListener>();
 
     public static void setJoystickValues(Hashtable<String, Integer> joystickValues) {
