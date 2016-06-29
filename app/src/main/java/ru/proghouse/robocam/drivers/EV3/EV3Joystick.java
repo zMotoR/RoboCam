@@ -119,10 +119,38 @@ public class EV3Joystick {
                             powerR = -x;
                         }
                     } else {
-                        if (x < 0)
+                        //c- and q-shaped joystick
+                        //Method: Attenuation to zero
+                        /*if (x < 0)
                             powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
                         else if (x > 0)
-                            powerR = Math.round(powerR * (100 - x) / 100);
+                            powerR = Math.round(powerR * (100 - x) / 100);*/
+                        //Method: Progressive (can spin on the spot)
+                        double angle = Math.atan2(y, x) * 180.0 / Math.PI;
+                        double d = Math.sqrt(x * x + y * y); //distance from center of circle to point
+                        if (d > 100)
+                            d = 100;
+                        double L = 0, R = 0;
+                        if (angle >= 0 && angle <= 90) {
+                            R = angle / 90 * 201 - 100;
+                            L = 100;
+                        }
+                        else if (angle < 0 && angle >= -90) {
+                            L = (angle / 90 * -201 - 100) * -1;
+                            R = -100;
+                        }
+                        else if (angle > 90 && angle <= 180) {
+                            L = ((angle - 90) / 90 * 201 - 100) * -1;
+                            R = 100;
+                        }
+                        else if (angle < -90 && angle >= -180) {
+                            R = (angle + 90) / 90 * -201 - 100;
+                            L = -100;
+                        }
+                        L = L / 100 * d;
+                        R = R / 100 * d;
+                        powerR = (int)Math.round(R);
+                        powerL = (int)Math.round(L);
                     }
                     for (EV3OutputPort outputPortL : outputPorts0)
                         outputPortL.setPower(powerL);
