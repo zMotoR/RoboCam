@@ -853,14 +853,14 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         settingsFileName = savedInstanceState.getString(SETTINGS_FILE_NAME);
     }
 
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_ev3_settings, menu);
         return true;
-    }
+    }*/
 
-    @Override
+    /*@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -873,7 +873,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         }
 
         return super.onOptionsItemSelected(item);
-    }
+    }*/
 
     public void onCancelButtonClick(View v){
         finish();

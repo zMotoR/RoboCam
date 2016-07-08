@@ -121,12 +121,12 @@ public class EV3Joystick {
                     } else {
                         //c- and q-shaped joystick
                         //Method: Attenuation to zero
-                        /*if (x < 0)
+                        if (x < 0)
                             powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
                         else if (x > 0)
-                            powerR = Math.round(powerR * (100 - x) / 100);*/
+                            powerR = Math.round(powerR * (100 - x) / 100);
                         //Method: Progressive (can spin on the spot)
-                        double angle = Math.atan2(y, x) * 180.0 / Math.PI;
+                        /*double angle = Math.atan2(y, x) * 180.0 / Math.PI;
                         double d = Math.sqrt(x * x + y * y); //distance from center of circle to point
                         if (d > 100)
                             d = 100;
@@ -150,7 +150,7 @@ public class EV3Joystick {
                         L = L / 100 * d;
                         R = R / 100 * d;
                         powerR = (int)Math.round(R);
-                        powerL = (int)Math.round(L);
+                        powerL = (int)Math.round(L);*/
                     }
                     for (EV3OutputPort outputPortL : outputPorts0)
                         outputPortL.setPower(powerL);

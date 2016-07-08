@@ -32,7 +32,6 @@
     <string name="ev3_error_joysticks_have_different_types_for_same_port">Джойстики разного типа для порта %s.</string>
     <string name="ev3_error_cannot_write_supporting_program">Не удаётся записать программу поддержки.</string>
     <string name="ev3_error_could_not_start_supporting_program">Не удалось запустить программу поддержки.</string>
-    <string name="title_activity_settings">Настройки</string>
     <string name="pref_title_server">Сервер</string>
     <string name="pref_totle_robot">Робот</string>
     <string name="title_activity_server_settings">Настройки сервера</string>

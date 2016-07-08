@@ -24,14 +24,14 @@ public class GlobalSettingsActivity extends AppCompatActivity {
         buttonRobot.setTransformationMethod(null);
     }
 
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_global_settings, menu);
+        //getMenuInflater().inflate(R.menu.menu_global_settings, menu);
         return true;
-    }
+    }*/
 
-    @Override
+    /*@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -44,7 +44,7 @@ public class GlobalSettingsActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
+    }*/
 
     public void onCameraButtonClick(View v){
         Intent intent = new Intent(this, ServerSettingsActivity.class);
