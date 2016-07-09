@@ -34,11 +34,15 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
@@ -62,6 +66,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public static final int PURCHASE_STATE_UNKNOWN = 0;
     public static final int PURCHASE_STATE_PREMIUM = 1;
     public static final int PURCHASE_STATE_ERROR = 2;
+
+    private static int AP_STATE_DISABLING = 10;
+    private static int AP_STATE_DISABLED = 11;
+    private static int AP_STATE_ENABLING = 12;
+    private static int AP_STATE_ENABLED = 13;
+    private static int AP_STATE_FAILED = 14;
 
     public static final String SKU_PREMIUM = "Premium";
 
@@ -636,19 +646,50 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         });*/
     }
 
-    private String getServerAddress(){
-        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int ipAddress = wifiInfo.getIpAddress();
+    private String getStringIpAddress(int ipAddress) {
+        String ipAddressString = null;
         if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN))
             ipAddress = Integer.reverseBytes(ipAddress);
         byte[] ipByteArray = BigInteger.valueOf(ipAddress).toByteArray();
-        String ipAddressString;
         try {
             ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress();
         } catch (UnknownHostException e) {
             e.printStackTrace();
             ipAddressString = null;
+        }
+        return ipAddressString;
+    }
+
+    private String getServerAddress() {
+        String ipAddressString = null;
+        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+        try {
+            Method method = wifiManager.getClass().getDeclaredMethod("getWifiApState");
+            method.setAccessible(true);
+            int actualState = (Integer) method.invoke(wifiManager, (Object[]) null);
+            if (actualState == AP_STATE_ENABLED) {
+                int ipAddress = wifiManager.getDhcpInfo().ipAddress;
+                ipAddressString = getStringIpAddress(ipAddress);
+                for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
+                    NetworkInterface intf = enumerator.nextElement();
+                    if (intf.getName().contains("wlan"))
+                        for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
+                            InetAddress address = enumInetAddress.nextElement();
+                            if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
+                                ipAddressString = address.getHostAddress();
+                                break;
+                            }
+                        }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            ipAddressString = null;
+        }
+        if (ipAddressString == null) {
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            int ipAddress = wifiInfo.getIpAddress();
+            ipAddressString = getStringIpAddress(ipAddress);
         }
         if (ipAddressString != null) {
             ipAddressString = "http://" + ipAddressString;
