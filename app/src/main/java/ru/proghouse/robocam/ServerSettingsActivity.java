@@ -35,7 +35,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private Spinner spinnerCamera = null;
     private int cameraId = 0;
     private Spinner spinnerPreviewSize = null;
-    private int previewSize = 0;
+    private int previewSize = -1;
     private CustomAdapter adapterPreviewSize = null;
     private TextView textViewJpegQuality2 = null;
     private SeekBar seekBarJpegQuality = null;
@@ -95,7 +95,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
         });
 
         //PREVIEW SIZE
-        previewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, 0);
+        previewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
         spinnerPreviewSize = (Spinner)findViewById(R.id.spinnerPreviewSize);
         setPreviewSizeAdapter(true);
 
@@ -233,7 +233,8 @@ public class ServerSettingsActivity extends AppCompatActivity {
     }
 
     private void setPreviewSizeAdapter(boolean first) {
-        List<String> previewSizes = getPreviewSizes();
+        List<Camera.Size> sizes = new ArrayList<Camera.Size>();
+        List<String> previewSizes = getPreviewSizes(sizes);
 
         adapterPreviewSize = new CustomAdapter(this, spinnerPreviewSize, R.layout.spinner_item,
                 previewSizes, R.string.previewSize);
@@ -242,8 +243,19 @@ public class ServerSettingsActivity extends AppCompatActivity {
         spinnerPreviewSize.setPromptId(R.string.previewSize);
 
         if (first) {
-            if (previewSize < 0 || previewSize >= previewSizes.size())
+            if (previewSize < 0) {
+                Camera.Size firstSize = sizes.get(0);
+                Camera.Size lastSize = sizes.get(sizes.size() - 1);
+                int third = Math.round((float) previewSizes.size() / (float) 3.0);
+                if (firstSize.width > lastSize.width || firstSize.height > lastSize.height)
+                    previewSize = previewSizes.size() - third;
+                else
+                    previewSize = third - 1;
+            }
+            if (previewSize < 0)
                 previewSize = 0;
+            if (previewSize >= previewSizes.size())
+                previewSize = previewSizes.size() - 1;
             spinnerPreviewSize.setSelection(previewSize, true);
         }
         else {
@@ -359,7 +371,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
         return cameras;
     }
 
-    public List<String> getPreviewSizes() {
+    public List<String> getPreviewSizes(List<Camera.Size> sizes) {
         List<String> previewSizes = new ArrayList<String>();
         Camera camera;
         if (Build.VERSION.SDK_INT >= 9)
@@ -368,8 +380,11 @@ public class ServerSettingsActivity extends AppCompatActivity {
             camera = Camera.open();
         try {
             Camera.Parameters parameters = camera.getParameters();
-            for (Camera.Size previewSize : parameters.getSupportedPreviewSizes())
+            for (Camera.Size previewSize : parameters.getSupportedPreviewSizes()) {
+                if (sizes != null)
+                    sizes.add(previewSize);
                 previewSizes.add("" + previewSize.width + "x" + previewSize.height);
+            }
         }
         finally {
             camera.release();

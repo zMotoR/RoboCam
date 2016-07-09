@@ -29,7 +29,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private HttpServer server = null;
     private Camera camera = null;
     private int cameraId = 0;
-    private int storedPreviewSize = 0;
+    private int storedPreviewSize = -1;
     private Camera.Size previewSize = null;
     private RgbData rgbWriter = new RgbData();
     private RgbData rgbReader = new RgbData();
@@ -110,7 +110,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 error = server.getString(R.string.error_only_back_facing_camera_supported);
                 return;
             }
-            storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, 0);
+            storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
             try {
                 camera.setPreviewDisplay(holder);
             } catch (IOException e) {
@@ -217,6 +217,16 @@ public class CameraManager implements Camera.PreviewCallback {
                 //if (formats.contains(ImageFormat.YV12))
                 //    parameters.setPreviewFormat(ImageFormat.YV12);
                 List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+                if (storedPreviewSize < 0) {
+                    //We have to get not so large image.
+                    Camera.Size first = previewSizes.get(0);
+                    Camera.Size last = previewSizes.get(previewSizes.size() - 1);
+                    int third = Math.round((float)previewSizes.size() / (float)3.0);
+                    if (first.width > last.width || first.height > last.height)
+                        storedPreviewSize = previewSizes.size() - third;
+                    else
+                        storedPreviewSize = third - 1;
+                }
                 if (storedPreviewSize < 0)
                     storedPreviewSize = 0;
                 if (storedPreviewSize >= previewSizes.size())

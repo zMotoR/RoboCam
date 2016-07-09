@@ -17,15 +17,18 @@
 #}
 
 -keep class com.android.vending.billing.**
-#Warning:org.jboss.netty.channel.socket.http.HttpTunnelingServlet: can't find superclass or interface javax.servlet.http.HttpServlet
-#Warning:org.jboss.netty.container.osgi.NettyBundleActivator: can't find superclass or interface org.osgi.framework.BundleActivator
-#Warning:org.jboss.netty.handler.codec.marshalling.ChannelBufferByteInput: can't find superclass or interface org.jboss.marshalling.ByteInput
-#Warning:org.jboss.marshalling.ModularClassResolver: can't find referenced class org.jboss.modules.Module
-#Warning:__redirected.__XMLEventFactory: can't find superclass or interface javax.xml.stream.XMLEventFactory
-#Warning:org.jboss.marshalling.reflect.SerializableClass: can't find referenced class sun.reflect.ReflectionFactory
-#Warning:org.jboss.marshalling.reflect.SerializableClass: can't find referenced class sun.reflect.ReflectionFactory
-#Warning:com.sun.javafx.property.adapter.PropertyDescriptor$Listener: can't find superclass or interface java.beans.VetoableChangeListener
-#Warning:com.sun.prism.j2d.J2DPrismGraphics$AdaptorPathIterator: can't find superclass or interface java.awt.geom.PathIterator
-#Warning:com.sun.webkit.dom.JSObject: can't find superclass or interface netscape.javascript.JSObject
+
+-dontwarn javax.servlet.**
+-dontwarn org.osgi.framework.**
+-dontwarn org.jboss.marshalling.**
+-dontwarn org.jboss.logging.**
+-dontwarn org.osgi.util.tracker.**
+-dontwarn java.nio.channels.**
+-dontwarn org.jboss.netty.channel.socket.http.**
+-dontwarn com.google.protobuf.**
+-dontwarn org.apache.log4j.**
+-dontwarn org.osgi.service.log.**
+-dontwarn org.slf4j.**
+-dontwarn sun.misc.**
 
 

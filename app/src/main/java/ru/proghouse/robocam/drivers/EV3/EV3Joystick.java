@@ -125,6 +125,7 @@ public class EV3Joystick {
                             powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
                         else if (x > 0)
                             powerR = Math.round(powerR * (100 - x) / 100);
+                        //TODO: Create 2 steering types.
                         //Method: Progressive (can spin on the spot)
                         /*double angle = Math.atan2(y, x) * 180.0 / Math.PI;
                         double d = Math.sqrt(x * x + y * y); //distance from center of circle to point

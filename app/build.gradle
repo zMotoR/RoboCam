@@ -31,4 +31,5 @@ dependencies {
     //compile 'javax.xml.stream:stax-api:1.0-2'
     //compile 'net.java.openjfx.backport:openjfx-78-backport:1.8.0-ea-b96.1'
     //compile 'net.java.openjfx.backport:openjfx-78-backport-compat:1.8.0.1'
+    //compile 'net.java.openjfx.backport:openjfx-78-backport-native:1.8.0-ea-b96.1'
 }
