@@ -267,13 +267,8 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         List<String> currentSettings = new ArrayList<String>();
         for (SettingsTitle settingsTitle : settingsList)
             currentSettings.add(settingsTitle.title);
-        ArrayAdapter<?> adapterCurrentRobotSettings = new CustomAdapter(this,
-                spinnerCurrentRobotSettings, R.layout.spinner_item,
-                currentSettings, R.string.current_robot_settings);
-        adapterCurrentRobotSettings.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCurrentRobotSettings.setAdapter(adapterCurrentRobotSettings);
-        spinnerCurrentRobotSettings.setPromptId(R.string.current_robot_settings);
-
+        SpinnerHelper.initSpinner(spinnerCurrentRobotSettings, this, currentSettings,
+                R.string.current_robot_settings);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         currentRobotSettings = settings.getString(ExtraKey.CURRENT_ROBOT_SETTINGS, "");
         int index = -1;
@@ -285,7 +280,6 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         }
         if (index > 0)
             spinnerCurrentRobotSettings.setSelection(index);
-
     }
 
     private SharedPreferences.Editor getPreferenceEditor() {

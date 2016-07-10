@@ -1,26 +1,16 @@
 package ru.proghouse.robocam;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -36,7 +26,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private int cameraId = 0;
     private Spinner spinnerPreviewSize = null;
     private int previewSize = -1;
-    private CustomAdapter adapterPreviewSize = null;
+    private int previewSizeSaved = -1;
     private TextView textViewJpegQuality2 = null;
     private SeekBar seekBarJpegQuality = null;
     private int jpegQuality = 60;
@@ -53,7 +43,6 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private boolean allowSpectators = true;
     private TextView textViewSpectatorName = null;
     private TextView textViewSpectatorPassword = null;
-    //private ScrollView scrollView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,40 +51,28 @@ public class ServerSettingsActivity extends AppCompatActivity {
 
         //CAMERA ID
         List<String> cameras = getCameras();
-
         spinnerCamera = (Spinner)findViewById(R.id.spinnerCamera);
-        ArrayAdapter<?> adapterCamera = new CustomAdapter(this, spinnerCamera,
-                R.layout.spinner_item, cameras, R.string.camera);
-        adapterCamera.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCamera.setAdapter(adapterCamera);
-        spinnerCamera.setPromptId(R.string.camera);
-
+        SpinnerHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         cameraId = settings.getInt(ExtraKey.CAMERA_ID, 0);
         if (cameraId < 0 || cameraId >= cameras.size())
             cameraId = 0;
         spinnerCamera.setSelection(cameraId, true);
-
         spinnerCamera.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent,
                                        View itemSelected, int selectedItemPosition, long selectedId) {
-                /*cameraId = selectedItemPosition;
-                List<String> previewSizes = getPreviewSizes();
-                getPreferenceEditor().putInt(ExtraKey.CAMERA_ID, cameraId);
-                if (previewSize >= previewSizes.size()) {
-                    previewSize = previewSizes.size() - 1;
-                    editor.putInt(ExtraKey.PREVIEW_SIZE, previewSize);
-                }
-                apply();*/
                 setPreviewSizeAdapter(false);
             }
-
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
 
         //PREVIEW SIZE
-        previewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
+        if (savedInstanceState != null)
+            previewSize = savedInstanceState.getInt(ExtraKey.PREVIEW_SIZE, -1);
+        if (savedInstanceState == null || previewSize < 0)
+            previewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
+        previewSizeSaved = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
         spinnerPreviewSize = (Spinner)findViewById(R.id.spinnerPreviewSize);
         setPreviewSizeAdapter(true);
 
@@ -107,22 +84,17 @@ public class ServerSettingsActivity extends AppCompatActivity {
         seekBarJpegQuality.setProgress(jpegQuality);
         textViewJpegQuality2.setText("" + jpegQuality + "%");
         seekBarJpegQuality.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 progress = progress / 5;
                 progress = progress * 5;
                 textViewJpegQuality2.setText("" + progress + "%");
             }
-
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
             }
-
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-
             }
         });
 
@@ -232,16 +204,22 @@ public class ServerSettingsActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onSaveInstanceState (Bundle outState) {
+        outState.putInt(ExtraKey.PREVIEW_SIZE, previewSize);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState (Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        previewSize = savedInstanceState.getInt(ExtraKey.PREVIEW_SIZE, -1);
+    }
+
     private void setPreviewSizeAdapter(boolean first) {
         List<Camera.Size> sizes = new ArrayList<Camera.Size>();
         List<String> previewSizes = getPreviewSizes(sizes);
-
-        adapterPreviewSize = new CustomAdapter(this, spinnerPreviewSize, R.layout.spinner_item,
-                previewSizes, R.string.previewSize);
-        adapterPreviewSize.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerPreviewSize.setAdapter(adapterPreviewSize);
-        spinnerPreviewSize.setPromptId(R.string.previewSize);
-
+        SpinnerHelper.initSpinner(spinnerPreviewSize, this, previewSizes, R.string.previewSize);
         if (first) {
             if (previewSize < 0) {
                 Camera.Size firstSize = sizes.get(0);
@@ -252,27 +230,17 @@ public class ServerSettingsActivity extends AppCompatActivity {
                 else
                     previewSize = third - 1;
             }
-            if (previewSize < 0)
-                previewSize = 0;
-            if (previewSize >= previewSizes.size())
-                previewSize = previewSizes.size() - 1;
-            spinnerPreviewSize.setSelection(previewSize, true);
         }
-        else {
-            int curPreviewSize = spinnerPreviewSize.getSelectedItemPosition();
-            if (curPreviewSize < 0 || curPreviewSize >= previewSizes.size())
-                curPreviewSize = 0;
-            spinnerPreviewSize.setSelection(curPreviewSize, true);
-        }
-
+        if (previewSize < 0)
+            previewSize = 0;
+        if (previewSize >= previewSizes.size())
+            previewSize = previewSizes.size() - 1;
+        spinnerPreviewSize.setSelection(previewSize, true);
         spinnerPreviewSize.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent,
                                        View itemSelected, int selectedItemPosition, long selectedId) {
-                /*previewSize = selectedItemPosition;
-                getPreferenceEditor().putInt(ExtraKey.PREVIEW_SIZE, previewSize);
-                apply();*/
+                previewSize = selectedItemPosition;
             }
-
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
@@ -418,7 +386,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
             getPreferenceEditor().putInt(ExtraKey.CAMERA_ID, spinnerCamera.getSelectedItemPosition());
             changed = true;
         }
-        if (previewSize != spinnerPreviewSize.getSelectedItemPosition()) {
+        if (previewSizeSaved != spinnerPreviewSize.getSelectedItemPosition()) {
             getPreferenceEditor().putInt(ExtraKey.PREVIEW_SIZE, spinnerPreviewSize.getSelectedItemPosition());
             changed = true;
         }
