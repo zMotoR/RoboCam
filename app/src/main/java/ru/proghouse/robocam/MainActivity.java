@@ -1,5 +1,15 @@
 package ru.proghouse.robocam;
 
+//TODO: Create embedded localized ads and ability to show my own online localized ads instead google ads.
+/*Ad formats for tablet PCs
+        728 x 90
+        300 x 250
+        468 x 60*/
+//TODO: Image to show QR-Code.
+//TODO: Smiles.
+//TODO: Button to focus and to take a picture.
+//TODO: Export and import settings.
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -8,14 +18,21 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Movie;
+import android.graphics.Point;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Environment;
+import android.os.LocaleList;
 import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceHolder;
@@ -25,6 +42,7 @@ import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
@@ -34,16 +52,36 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
@@ -73,8 +111,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static int AP_STATE_ENABLED = 13;
     private static int AP_STATE_FAILED = 14;
 
-    public static final String SKU_PREMIUM = "Premium";
-
     private CameraManager cameraManager = CameraManager.getCameraManager();
     private SurfaceView surfaceView = null;
     private RelativeLayout parentLayout = null;
@@ -97,9 +133,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private volatile ControlsUpdater controlsUpdater = null;
     private TextView testMessage = null;
     private volatile String testMessageText = null;
-    private IabHelper mHelper;
-    private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
-    private int purchaseState = PURCHASE_STATE_UNKNOWN;
+    //private IabHelper mHelper;
+    //private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
+    //private int purchaseState = PURCHASE_STATE_UNKNOWN;
+    //public static final String SKU_PREMIUM = "premium";
+    private static volatile boolean loadingAds = false;
+
+    private WebView banner_320x50 = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,11 +147,39 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         try {
             setContentView(R.layout.activity_main);
             getSupportActionBar().hide();
+            thisActivity = this;
+
+            banner_320x50 = (WebView)findViewById(R.id.banner_320x50);
+
+            DownloadAd();
+
+            MobileAds.initialize(getApplicationContext(), "ca-app-pub-7800876624909705~9648407673");
+            AdView mAdView = (AdView) findViewById(R.id.adView);
+            AdRequest adRequest = new AdRequest.Builder().build();
+            mAdView.setAdListener(new AdListener(){
+                @Override
+                public void onAdFailedToLoad(int var1) {
+                    Toast.makeText(thisActivity, "Ad error", Toast.LENGTH_LONG).show();
+                    banner_320x50.loadUrl("file:///android_asset/banner_320x50.gif");
+                    banner_320x50.setVisibility(View.VISIBLE);
+                }
+                @Override
+                public void onAdLoaded() {
+                    Toast.makeText(thisActivity, "Ad loaded", Toast.LENGTH_LONG).show();
+                    banner_320x50.setVisibility(View.GONE);
+                }
+                @Override
+                public void onAdOpened() {
+                    Toast.makeText(thisActivity, "Ad opened", Toast.LENGTH_LONG).show();
+                    banner_320x50.setVisibility(View.GONE);
+                }
+            });
+            mAdView.loadAd(adRequest);
+
             surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             surfaceView.getHolder().addCallback(this);
             surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
             parentLayout = (RelativeLayout) findViewById(R.id.parentLayout);
-            thisActivity = this;
             serverMessage = (TextView) findViewById(R.id.serverMessage);
             serverMessageConnector = (ImageView) findViewById(R.id.serverMessageConnector);
             robotMessage = (TextView) findViewById(R.id.robotMessage);
@@ -142,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 e.printStackTrace();
             }
 
-            String base64EncodedPublicKey = "";
+            /*String base64EncodedPublicKey = "";
             mHelper = new IabHelper(this, base64EncodedPublicKey);
             mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
                 public void onQueryInventoryFinished(IabResult result,
@@ -176,22 +244,167 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         }
                     }
                 }
-            });
+            });*/
         }catch(Throwable e){
             e.printStackTrace();
         }
     }
 
+    private void DownloadFile(String src, File dst) throws IOException {
+        URL url = new URL(src);
+        InputStream inputStream = url.openStream();
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+        byte[] buffer = new byte[1024];
+        int length;
+        FileOutputStream fileOutputStream = new FileOutputStream(dst);
+        while ((length = dataInputStream.read(buffer)) > 0)
+            fileOutputStream.write(buffer, 0, length);
+    }
+
+    private void DownloadAd() throws IOException {
+        try {
+            //File cacheDir = getCacheDir();
+            //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            //File adsLocalizedDir = new File(adsDir, getString(R.string.local_web_path));
+            /*Display display = getWindowManager().getDefaultDisplay();
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            double screenWidth = (double)displayMetrics.widthPixels / (double)displayMetrics.densityDpi;
+            double screenHeight = (double)displayMetrics.heightPixels / (double)displayMetrics.densityDpi;
+            double screenInches = Math.sqrt(Math.pow(screenWidth, 2) + Math.pow(screenHeight, 2));
+            Point size = new Point();
+            if (screenInches < 7) {//Less then 7 inches
+                size.x = 320;
+                size.y = 50;
+            }
+            else {
+                size.x = 728;
+                size.y = 90;
+            }*/
+            //adsLocalizedDir.mkdirs();
+
+            //File newVersion = new File(adsLocalizedDir, "nv.xml");
+            //DownloadFile("http://www.proghouse.ru/images/t/robocam/v.xml", newVersion);
+            //DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            //DocumentBuilder db = dbf.newDocumentBuilder();
+            //db.parse
+
+
+            /*URL url = new URL("http://www.proghouse.ru/images/t/robocam/"
+                    + getString(R.string.local_web_path) + "/v.txt");
+            InputStream inputStream = url.openStream();
+            DataInputStream dataInputStream = new DataInputStream(inputStream);
+            byte[] buffer = new byte[1024];
+            int length;
+            FileOutputStream fileOutputStream = new FileOutputStream(
+                    new File(Environment.getExternalStorageDirectory() + "/" + "data/test.kml"));
+            while ((length = dis.read(buffer))>0) {
+                fos.write(buffer, 0, length);
+            }*/
+
+            List<Locale> locales = new ArrayList<Locale>();
+            if (Build.VERSION.SDK_INT >= 24) {
+                LocaleList localeList = getResources().getConfiguration().getLocales();
+                for (int i = 0; i < localeList.size(); i++)
+                    locales.add(localeList.get(i));
+            }
+            else
+                locales.add(getResources().getConfiguration().locale);
+
+            new Thread(new AdsLoader(getString(R.string.local_web_path),
+                    locales)).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    class AdsLoader implements  Runnable {
+        String locale = "def";
+        List<Locale> locales;
+
+        AdsLoader(String locale, List<Locale> locales) {
+            this.locale = locale;
+            this.locales = locales;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (loadingAds)
+                    return;
+                loadingAds = true;
+                File cacheDir = getCacheDir();
+                File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                File adsLocalizedDir = new File(adsDir, locale);
+                adsLocalizedDir.mkdirs();
+                File newVersionFile = new File(adsLocalizedDir, "nv.xml");
+                DownloadFile("http://www.proghouse.ru/images/t/robocam/v.xml", newVersionFile);
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                DocumentBuilder db = dbf.newDocumentBuilder();
+                Document newVersion = db.parse(newVersionFile);
+                File versionFile = new File(adsLocalizedDir, "v.xml");
+                boolean haveToDownload = false;
+                if (!versionFile.exists())
+                    haveToDownload = true;
+                else {
+                    Document version = db.parse(versionFile);
+                    haveToDownload = !newVersion.getDocumentElement().getAttribute("number").equals(
+                            version.getDocumentElement().getAttribute("number"));
+                }
+                if (haveToDownload) {
+                    if (versionFile.exists())
+                        versionFile.delete();
+                    newVersionFile.renameTo(versionFile);
+                }
+            } catch (Exception e) {
+                String s = e.getMessage();
+                e.printStackTrace();
+            }
+            loadingAds = false;
+        }
+    }
+
+    //See http://androidosbeginning.blogspot.ru/2010/09/gif-animation-in-android.html
+    /*private class MYGIFView extends View{
+        Movie movie,movie1;
+        InputStream is=null,is1=null;
+        long moviestart;
+
+        public MYGIFView(Context context) {
+            super(context);
+            is=context.getResources().openRawResource(R.drawable.banner_320x50);
+            movie=Movie.decodeStream(is);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+
+            canvas.drawColor(Color.WHITE);
+            super.onDraw(canvas);
+            long now=android.os.SystemClock.uptimeMillis();
+            System.out.println("now="+now);
+            if (moviestart == 0) { // first time
+                moviestart = now;
+            }
+            System.out.println("\tmoviestart="+moviestart);
+            int relTime = (int)((now - moviestart) % movie.duration()) ;
+            System.out.println("time="+relTime+"\treltime="+movie.duration());
+            movie.setTime(relTime);
+            movie.draw(canvas,this.getWidth()/2-20,this.getHeight()/2-40);
+            this.invalidate();
+        }
+    }*/
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        try {
+        /*try {
             if (mHelper != null)
                 mHelper.dispose();
         } catch (IabHelper.IabAsyncInProgressException e) {
             e.printStackTrace();
         }
-        mHelper = null;
+        mHelper = null;*/
     }
 
     @Override
@@ -571,7 +784,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         updateControls();
         isScreenOn = true;
         super.onResume();
-        RoboCamDriver.updateCurrentDriver(this, purchaseState == PURCHASE_STATE_PREMIUM);
+        RoboCamDriver.updateCurrentDriver(this, true /*purchaseState == PURCHASE_STATE_PREMIUM*/);
         postUpdateControls();
     }
 
@@ -706,7 +919,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void onTestMessage(String msg) {
-        testMessageText = msg;
+        /*testMessageText = msg;
         parentLayout.post(new Runnable(){
             @Override
             public void run() {
@@ -714,17 +927,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     thisActivity.testMessage.setVisibility(View.VISIBLE);
                 thisActivity.testMessage.setText(testMessageText);
             }
-        });
+        });*/
     }
 
-    class TestMessageRunnable implements Runnable{
+    /*class TestMessageRunnable implements Runnable{
         public String msg;
 
         @Override
         public void run() {
             thisActivity.testMessage.setText(msg);
         }
-    }
+    }*/
 
     /*
     //http://ru.stackoverflow.com/questions/451288/android-%D0%9E%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0-%D0%BD%D0%B0%D0%B7%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9-%D0%BD%D0%B0%D0%B9%D0%B4%D0%B5%D0%BD%D0%BD%D1%8B%D1%85-bluetooth-%D1%83%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%81%D1%82%D0%B2-%D0%BD%D0%B0-%D1%81%D0%B5%D1%80%D0%B2%D0%B5%D1%80

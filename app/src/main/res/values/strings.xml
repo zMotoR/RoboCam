@@ -124,4 +124,5 @@
     <string name="using_of_the_settings_is_not_available_without_a_subscription">Using of the settings is not available without a subscription!</string>
     <string name="hide">Hide</string>
     <string name="view_subscriptions">View subscriptions</string>
+    <string name="banner_ad_unit_id" translatable="false">ca-app-pub-7800876624909705/2125140872</string>
 </resources>

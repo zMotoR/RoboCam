@@ -70,7 +70,8 @@
                 android:layout_height="wrap_content"
                 android:background="#e90000"
                 android:layout_marginBottom="7dp"
-                android:id="@+id/linearLayoutSubsWarning">
+                android:id="@+id/linearLayoutSubsWarning"
+                android:visibility="gone">
 
                 <TextView
                     android:text="@string/using_of_the_settings_is_not_available_without_a_subscription"

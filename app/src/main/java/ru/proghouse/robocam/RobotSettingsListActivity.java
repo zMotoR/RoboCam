@@ -56,13 +56,14 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     private Context thisContext = null;
     private String currentRobotSettings = null;
     private Date lastSettingsModified = null;
-    private IabHelper mHelper;
-    private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
-    private boolean isPremium = false;
     private LinearLayout robot_settings_list_main_layout = null;
     private TextView textViewSubsWarning = null;
     private LinearLayout linearLayoutSubsWarning = null;
     private static final String WARNING_HIDED = "WarningHided";
+
+    //private IabHelper mHelper;
+    //private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
+    //private boolean isPremium = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,7 +145,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 if (!currentRobotSettings.equals(fileName)) {
                     getPreferenceEditor().putString(ExtraKey.CURRENT_ROBOT_SETTINGS, fileName);
                     apply();
-                    RoboCamDriver.updateCurrentDriver(thisContext, isPremium);
+                    RoboCamDriver.updateCurrentDriver(thisContext, true /*isPremium*/);
                     Toast.makeText(thisContext, R.string.current_robot_settings_have_changed, Toast.LENGTH_LONG).show();
                     currentRobotSettings = fileName;
                 }
@@ -154,7 +155,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             }
         });
 
-        String base64EncodedPublicKey = "";
+        /*String base64EncodedPublicKey = "";
         mHelper = new IabHelper(this, base64EncodedPublicKey);
         mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
             public void onQueryInventoryFinished(IabResult result,
@@ -186,19 +187,19 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                     }
                 }
             }
-        });
+        });*/
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        try {
+        /*try {
             if (mHelper != null)
                 mHelper.dispose();
         } catch (IabHelper.IabAsyncInProgressException e) {
             e.printStackTrace();
         }
-        mHelper = null;
+        mHelper = null;*/
     }
 
     @Override
@@ -420,7 +421,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             lastSettingsModified = RoboCamBroker.getLastSettingsModified();
             fillSettinsList();
             fillCurSettings();
-            RoboCamDriver.updateCurrentDriver(thisContext, isPremium);
+            RoboCamDriver.updateCurrentDriver(thisContext, true /*isPremium*/);
         }
     }
 

@@ -3,19 +3,20 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.0"
-
     defaultConfig {
         applicationId "ru.proghouse.robocam"
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 24
         versionCode 1
-        versionName "1.0"
+        versionName '1.0.a1'
     }
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    productFlavors {
     }
 }
 
@@ -24,12 +25,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.0.0'
     compile 'org.webbitserver:webbit:0.4.15'
-    //compile 'javax.servlet:javax.servlet-api:3.1.0'
-    //compile 'org.osgi:org.osgi.core:6.0.0'
-    //compile 'org.jboss.marshalling:jboss-marshalling-osgi:1.4.11.Final'
-    //compile 'org.jboss.modules:jboss-modules:1.5.2.Final'
-    //compile 'javax.xml.stream:stax-api:1.0-2'
-    //compile 'net.java.openjfx.backport:openjfx-78-backport:1.8.0-ea-b96.1'
-    //compile 'net.java.openjfx.backport:openjfx-78-backport-compat:1.8.0.1'
-    //compile 'net.java.openjfx.backport:openjfx-78-backport-native:1.8.0-ea-b96.1'
+    compile 'com.google.android.gms:play-services-ads:9.2.0'
 }

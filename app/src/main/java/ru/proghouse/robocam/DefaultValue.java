@@ -11,5 +11,6 @@ public class DefaultValue {
     public static final boolean ALLOW_SPECTATORS = true;
     public static final String EV3_SETTINGS_FILE = "researcher.xml";
     public static final String ROBOT_SETTINGS_DIRECTORY = "robot";
+    public static final String ADS_DIRECTORY = "ads";
     public static final String EV3 = "EV3";
 }
