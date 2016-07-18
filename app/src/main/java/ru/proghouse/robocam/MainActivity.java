@@ -22,12 +22,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Movie;
 import android.graphics.Point;
+import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.LocaleList;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -35,6 +37,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -43,6 +46,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.webkit.WebView;
+import android.widget.AbsoluteLayout;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
@@ -59,9 +63,11 @@ import com.google.android.gms.ads.MobileAds;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,6 +121,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private SurfaceView surfaceView = null;
     private RelativeLayout parentLayout = null;
     private MainActivity thisActivity = null;
+    private volatile static MainActivity mainActivity = null;
     private boolean isScreenOn = true;
     private TextView serverMessage = null;
     private ImageView serverMessageConnector = null;
@@ -138,8 +145,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     //private int purchaseState = PURCHASE_STATE_UNKNOWN;
     //public static final String SKU_PREMIUM = "premium";
     private static volatile boolean loadingAds = false;
+    private static final String AD_DOWNLOAD_ROOT_PATH = "http://www.proghouse.ru/images/t/robocam/";
 
-    private WebView banner_320x50 = null;
+    private WebView banner = null;
+    private String bannerUrl = null;
+    private AdView adView = null;
+    private volatile boolean loadedAds = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,16 +158,30 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         try {
             setContentView(R.layout.activity_main);
             getSupportActionBar().hide();
+            mainActivity = this;
             thisActivity = this;
 
-            banner_320x50 = (WebView)findViewById(R.id.banner_320x50);
-
-            DownloadAd();
+            banner = (WebView)findViewById(R.id.banner);
+            banner.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View view, MotionEvent motionEvent) {
+                    switch (motionEvent.getAction()) {
+                        case MotionEvent.ACTION_UP:
+                            if (bannerUrl != null && !bannerUrl.isEmpty()) {
+                                Uri address = Uri.parse(bannerUrl);
+                                Intent intent = new Intent(Intent.ACTION_VIEW, address);
+                                startActivity(intent);
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
 
             MobileAds.initialize(getApplicationContext(), "ca-app-pub-7800876624909705~9648407673");
-            AdView mAdView = (AdView) findViewById(R.id.adView);
-            AdRequest adRequest = new AdRequest.Builder().build();
-            mAdView.setAdListener(new AdListener(){
+            adView = (AdView) findViewById(R.id.adView);
+            //AdRequest adRequest = new AdRequest.Builder().build();
+            /*mAdView.setAdListener(new AdListener(){
                 @Override
                 public void onAdFailedToLoad(int var1) {
                     Toast.makeText(thisActivity, "Ad error", Toast.LENGTH_LONG).show();
@@ -173,8 +198,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     Toast.makeText(thisActivity, "Ad opened", Toast.LENGTH_LONG).show();
                     banner_320x50.setVisibility(View.GONE);
                 }
-            });
-            mAdView.loadAd(adRequest);
+            });*/
+            //adView.loadAd(adRequest);
 
             surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             surfaceView.getHolder().addCallback(this);
@@ -245,6 +270,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
             });*/
+            //loadAds();
+            banner.setVisibility(View.GONE);
+            adView.setVisibility(View.GONE);
+            DownloadAd();
         }catch(Throwable e){
             e.printStackTrace();
         }
@@ -261,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             fileOutputStream.write(buffer, 0, length);
     }
 
-    private void DownloadAd() throws IOException {
+    private void DownloadAd() {
         try {
             //File cacheDir = getCacheDir();
             //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
@@ -302,65 +331,259 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 fos.write(buffer, 0, length);
             }*/
 
-            List<Locale> locales = new ArrayList<Locale>();
-            if (Build.VERSION.SDK_INT >= 24) {
-                LocaleList localeList = getResources().getConfiguration().getLocales();
-                for (int i = 0; i < localeList.size(); i++)
-                    locales.add(localeList.get(i));
-            }
-            else
-                locales.add(getResources().getConfiguration().locale);
-
-            new Thread(new AdsLoader(getString(R.string.local_web_path),
-                    locales)).start();
+            new Thread(new AdsLoader(getLocales())).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    List<Locale> getLocales() {
+        List<Locale> locales = new ArrayList<Locale>();
+        if (Build.VERSION.SDK_INT >= 24) {
+            LocaleList localeList = getResources().getConfiguration().getLocales();
+            for (int i = 0; i < localeList.size(); i++)
+                locales.add(localeList.get(i));
+        }
+        else
+            locales.add(getResources().getConfiguration().locale);
+        return locales;
+    }
+
     class AdsLoader implements  Runnable {
-        String locale = "def";
         List<Locale> locales;
 
-        AdsLoader(String locale, List<Locale> locales) {
-            this.locale = locale;
+        AdsLoader(List<Locale> locales) {
             this.locales = locales;
+        }
+
+        public void copy(File source, File dest) throws IOException {
+            FileInputStream is = new FileInputStream(source);
+            try {
+                FileOutputStream os = new FileOutputStream(dest);
+                try {
+                    byte[] buffer = new byte[4096];
+                    int length;
+                    while ((length = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, length);
+                    }
+                } finally {
+                    os.close();
+                }
+            } finally {
+                is.close();
+            }
         }
 
         @Override
         public void run() {
+            if (!loadingAds) {
+                try {
+                    loadingAds = true;
+                    File cacheDir = getCacheDir();
+                    File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                    adsDir.mkdirs();
+                    File newVersionFile = new File(adsDir, "nv.xml");
+                    DownloadFile(AD_DOWNLOAD_ROOT_PATH + "v.xml", newVersionFile);
+                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder db = dbf.newDocumentBuilder();
+                    Document newVersion = db.parse(newVersionFile);
+                    File versionFile = new File(adsDir, "v.xml");
+                    boolean haveToDownload = false;
+                    Document version = null;
+                    Element[] condition = {null};
+                    String[] country = {null};
+                    String[] language = {null};
+                    File newVersionDir = null;
+                    if (!versionFile.exists())
+                        haveToDownload = true;
+                    else {
+                        version = db.parse(versionFile);
+                        haveToDownload = !newVersion.getDocumentElement().getAttribute("number").equals(
+                                version.getDocumentElement().getAttribute("number"));
+                    }
+                    if (!haveToDownload) {
+                        if (findCondition(version, locales, condition, country, language)) {
+                            File localizedVersionFile = new File(adsDir, "v" + country[0] + "-" + language[0] + ".xml");
+                            haveToDownload = !localizedVersionFile.exists();
+                        }
+                    }
+                    if (haveToDownload) {
+                        newVersionDir = new File(adsDir,
+                                newVersion.getDocumentElement().getAttribute("number"));
+                        newVersionDir.mkdirs();
+                        if (findCondition(newVersion, locales, condition, country, language)) {
+                            //deleteDir(newVersionDir);
+                            String conditionPath = condition[0].getAttribute("path");
+                            NodeList nodeItems = condition[0].getChildNodes();
+                            for (int i = 0; i < nodeItems.getLength(); i++) {
+                                if (nodeItems.item(i).getNodeName().equals("file")) {
+                                    String path = ((Element) nodeItems.item(i)).getAttribute("path");
+                                    if (path != null && !path.isEmpty()) {
+                                        File dst = new File(newVersionDir, path);
+                                        File parent = dst.getParentFile();
+                                        parent.mkdirs();
+                                        DownloadFile(AD_DOWNLOAD_ROOT_PATH
+                                                + (conditionPath != null ? conditionPath : "")
+                                                + path, dst);
+                                    }
+                                }
+                            }
+                        }
+                        for (File file : adsDir.listFiles())
+                            if (file.isFile() && !file.getName().equals(newVersionFile.getName()))
+                                file.delete();
+                            else if (file.isDirectory() && !file.getName().equals(newVersionDir.getName()))
+                                deleteDir(file);
+                        File localizedVersionFile = new File(adsDir, "v" + country[0] + "-" + language[0] + ".xml");
+                        copy(newVersionFile, localizedVersionFile);
+                        newVersionFile.renameTo(versionFile);
+                    }
+                } catch (Exception e) {
+                    String s = e.getMessage();
+                    e.printStackTrace();
+                }
+                loadingAds = false;
+            }
             try {
-                if (loadingAds)
-                    return;
-                loadingAds = true;
-                File cacheDir = getCacheDir();
-                File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
-                File adsLocalizedDir = new File(adsDir, locale);
-                adsLocalizedDir.mkdirs();
-                File newVersionFile = new File(adsLocalizedDir, "nv.xml");
-                DownloadFile("http://www.proghouse.ru/images/t/robocam/v.xml", newVersionFile);
-                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                DocumentBuilder db = dbf.newDocumentBuilder();
-                Document newVersion = db.parse(newVersionFile);
-                File versionFile = new File(adsLocalizedDir, "v.xml");
-                boolean haveToDownload = false;
-                if (!versionFile.exists())
-                    haveToDownload = true;
-                else {
-                    Document version = db.parse(versionFile);
-                    haveToDownload = !newVersion.getDocumentElement().getAttribute("number").equals(
-                            version.getDocumentElement().getAttribute("number"));
+                if (mainActivity != null) {
+                    for (int i = 0; i < 7; i++) {
+                        if (mainActivity.loadedAds)
+                            break;
+                        mainActivity.parentLayout.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.loadAds();
+                            }
+                        });
+                        Thread.sleep(1000);
+                    }
                 }
-                if (haveToDownload) {
-                    if (versionFile.exists())
-                        versionFile.delete();
-                    newVersionFile.renameTo(versionFile);
-                }
-            } catch (Exception e) {
-                String s = e.getMessage();
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
-            loadingAds = false;
+        }
+
+        private void deleteDir(File dir) {
+            if (dir.isDirectory())
+                for (File subDir : dir.listFiles())
+                    if (subDir.isDirectory())
+                        deleteDir(subDir);
+            dir.delete();
+        }
+    }
+
+    public boolean findCondition(Document version, List<Locale> locales,
+                                 Element[] conditionOut, String[] countryOut,
+                                 String[] languageOut) {
+        conditionOut[0] = null;
+        languageOut[0] = "";
+        countryOut[0] = "";
+        NodeList conditions = version.getDocumentElement().getChildNodes();
+        for (int i = 0; i < conditions.getLength(); i++) {
+            if (conditions.item(i).getNodeName().equals("condition")) {
+                String languageValue = ((Element)conditions.item(i)).getAttribute("language");
+                String countryValue = ((Element)conditions.item(i)).getAttribute("country");
+                if (languageValue == null)
+                    languageValue = "";
+                if (countryValue == null)
+                    countryValue = "";
+                String[] languages = languageValue.split(",");
+                String[] countries = countryValue.split(",");
+                for (Locale locale : locales) {
+                    if (locale.getCountry() != null && !locale.getCountry().isEmpty())
+                        for (String country : countries) {
+                            if (country.equals(locale.getCountry())) {
+                                conditionOut[0] = (Element)conditions.item(i);
+                                countryOut[0] = country;
+                                break;
+                            }
+                        }
+                    if (conditionOut[0] != null)
+                        break;
+                    if (locale.getLanguage() != null && !locale.getLanguage().isEmpty())
+                        for (String language : languages) {
+                            if (language.equals(locale.getLanguage())) {
+                                conditionOut[0] = (Element)conditions.item(i);
+                                languageOut[0] = language;
+                                break;
+                            }
+                        }
+                    if (conditionOut[0] != null)
+                        break;
+                }
+            }
+            if (conditionOut[0] != null)
+                break;
+        }
+        return conditionOut[0] != null;
+    }
+
+    private void loadAds() {
+        if (loadedAds)
+            return;
+        loadedAds = true;
+        boolean showAdView = true;
+        try {
+            File cacheDir = getCacheDir();
+            File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            File versionFile = new File(adsDir, "v.xml");
+            if (!versionFile.exists())
+                return;
+            Element[] condition = {null};
+            String[] country = {null};
+            String[] language = {null};
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document version = db.parse(versionFile);
+            if (findCondition(version, getLocales(), condition, country, language)) {
+                File versionDir = new File(adsDir,
+                        version.getDocumentElement().getAttribute("number"));
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                double screenWidth = (double)displayMetrics.widthPixels / (double)displayMetrics.densityDpi;
+                double screenHeight = (double)displayMetrics.heightPixels / (double)displayMetrics.densityDpi;
+                double screenInches = Math.sqrt(Math.pow(screenWidth, 2) + Math.pow(screenHeight, 2));
+                String path = null, href = null;
+                int width = 0, height = 0;
+                for (int i = 0; i < condition[0].getChildNodes().getLength(); i++) {
+                    if (condition[0].getChildNodes().item(i).getNodeName().equals("device")) {
+                        Element device = (Element)condition[0].getChildNodes().item(i);
+                        if ((device.getAttribute("screenMin") == null
+                                || device.getAttribute("screenMin").isEmpty()
+                                || screenInches >= Double.parseDouble(device.getAttribute("screenMin")))
+                                &&
+                                (device.getAttribute("sdkMin") == null
+                                        || device.getAttribute("sdkMin").isEmpty()
+                                        || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
+                            path = device.getAttribute("path");
+                            bannerUrl = device.getAttribute("url");
+                            width = Integer.parseInt(device.getAttribute("width"));
+                            height = Integer.parseInt(device.getAttribute("height"));
+                            break;
+                        }
+                    }
+                }
+                if (path != null && width > 0 && height > 0) {
+                    File index = new File(versionDir, path);
+                    String url = index.toURI().toString();
+                    banner.loadUrl(url);
+                    RelativeLayout.LayoutParams lpView = new RelativeLayout.LayoutParams(width, height);
+                    banner.setLayoutParams(lpView);
+                    showAdView = false;
+                    banner.setVisibility(View.VISIBLE);
+                    adView.setVisibility(View.GONE);
+                }
+            }
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        if (showAdView) {
+            banner.setVisibility(View.GONE);
+            adView.setVisibility(View.VISIBLE);
+            AdRequest adRequest = new AdRequest.Builder().build();
+            adView.loadAd(adRequest);
         }
     }
 
@@ -786,6 +1009,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onResume();
         RoboCamDriver.updateCurrentDriver(this, true /*purchaseState == PURCHASE_STATE_PREMIUM*/);
         postUpdateControls();
+        //DownloadAd();
     }
 
     @Override

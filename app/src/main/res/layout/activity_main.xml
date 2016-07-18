@@ -31,7 +31,7 @@
     <WebView
         android:layout_width="320dp"
         android:layout_height="50dp"
-        android:id="@+id/banner_320x50"
+        android:id="@+id/banner"
         android:background="@drawable/banner_320x50"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true" />
