@@ -6,7 +6,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
+import android.os.Build;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.webbitserver.BaseWebSocketHandler;
 import org.webbitserver.WebServer;
 import org.webbitserver.WebServers;
@@ -22,6 +25,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +41,9 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import ru.proghouse.robocam.drivers.RoboCamDriver;
 
@@ -66,6 +74,7 @@ public class HttpServer extends IntentService {
     private static int webSocketPort = 8089;
     private volatile WebServer webServer = null;
     private volatile RoboCamWebSocketHandler webSocketHandler = null;
+    private static volatile File cacheDir = null;
     private static HttpServer server = null;
     private static Hashtable<WebSocketConnection, String> currentConnections = new Hashtable<WebSocketConnection, String>();
     private static Hashtable<WebSocketConnection, String> currentConnectionTests = new Hashtable<WebSocketConnection, String>();
@@ -401,6 +410,8 @@ public class HttpServer extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         try {
+            cacheDir = getCacheDir();
+            //intent.getStringExtra()
             webSocketHandler = new RoboCamWebSocketHandler();
             webServer = WebServers.createWebServer(webSocketPort)
                     .add("/channel", webSocketHandler);
@@ -667,10 +678,62 @@ public class HttpServer extends IntentService {
             }
         }
 
-        private void sendSettings(String adminSessionId, String guestSessionId) throws IOException {
+        private void sendSettings(String adminSessionId, String guestSessionId, URI uri) throws IOException {
             boolean isAdmin = adminSessionId != null;
             CameraManager cameraManager = CameraManager.getCameraManager();
             String sessionKey = UUID.randomUUID().toString();
+            int screenMin = 0;
+            String bannerPath = "", bannerUrl = "", bannerType = "";
+            int bannerWidth = 0, bannerHeight = 0;
+            File versionDir = null;
+            String bannerVersion = "";
+            try {
+                String[] params = uri.getQuery().split("&");
+                for (String param : params) {
+                    String[] parts = param.split("=", 2);
+                    if (parts[0].equals("sm")) {
+                        screenMin = (int) Integer.parseInt(parts[1]);
+                        break;
+                    }
+                }
+                if (screenMin > 0) {
+                    File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                    File versionFile = new File(adsDir, "v.xml");
+                    if (versionFile.exists()) {
+                        Element[] condition = {null};
+                        String[] country = {null};
+                        String[] language = {null};
+                        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                        DocumentBuilder db = dbf.newDocumentBuilder();
+                        Document version = db.parse(versionFile);
+                        if (MainActivity.findCondition(version, MainActivity.getLocales(server), condition, country, language)) {
+                            bannerVersion = version.getDocumentElement().getAttribute("number");
+                            versionDir = new File(adsDir, bannerVersion);
+                            for (int i = 0; i < condition[0].getChildNodes().getLength(); i++) {
+                                if (condition[0].getChildNodes().item(i).getNodeName().equals("device")) {
+                                    Element device = (Element) condition[0].getChildNodes().item(i);
+                                    if ((device.getAttribute("screenMin") == null
+                                            || device.getAttribute("screenMin").isEmpty()
+                                            || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
+                                            &&
+                                            (device.getAttribute("sdkMin") == null
+                                                    || device.getAttribute("sdkMin").isEmpty()
+                                                    || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
+                                        bannerPath = device.getAttribute("path");
+                                        bannerUrl = device.getAttribute("url");
+                                        bannerWidth = Integer.parseInt(device.getAttribute("width"));
+                                        bannerHeight = Integer.parseInt(device.getAttribute("height"));
+                                        bannerType = device.getAttribute("type");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             String settings;
             synchronized (HttpServer.sync) {
                 sessionKeys.put(sessionKey, adminSessionId != null ? adminSessionId : guestSessionId);
@@ -681,8 +744,18 @@ public class HttpServer extends IntentService {
                         + "<jb>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000") + "</jb>"
                         + "<js>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----") + "</js>"
                         + "<lng>" + server.getString(R.string.local_web_path) + "</lng>"
-                        + "<sk>" + sessionKey + "</sk>"
-                        + "</settings>";
+                        + "<sk>" + sessionKey + "</sk>";
+                if ((!bannerPath.equals("")) && bannerWidth > 0 && bannerHeight > 0
+                        && (bannerType.equals("replace") || (bannerType.equals("offline")))) {
+                    File index = new File(versionDir, bannerPath);
+                    if (index.exists()) {
+                        settings += "<bnp>/bv" + bannerVersion + "/" + bannerPath + "</bnp>"
+                                + "<bnw>" + Integer.toString(bannerWidth) + "</bnw>"
+                                + "<bnh>" + Integer.toString(bannerHeight) + "</bnh>";
+                    }
+                }
+                settings +=
+                        "</settings>";
             }
             byte[] bytes = settings.getBytes("UTF-8");
             writeResponse(HttpURLConnection.HTTP_OK, "OK", new String[]{
@@ -812,6 +885,7 @@ public class HttpServer extends IntentService {
                     writeResponse(HttpURLConnection.HTTP_NOT_FOUND, "path not found", null, true, true);
                     return;
                 }
+                URI uri = new URI(method[1]);
                 if (method[1].compareTo(separatorChar) == 0) {
                     String[] files = assetManager.list(rootPath + separatorChar + localWebPath);
                     if (fileContains(files, "index.html"))
@@ -840,8 +914,8 @@ public class HttpServer extends IntentService {
                     if (method[1].compareTo("/cam") == 0) {
                         showMovie(adminSessionId != null ? adminSessionId : guestSessionId);
                         return;
-                    } else if (method[1].compareTo("/settings") == 0) {
-                        sendSettings(adminSessionId, guestSessionId);
+                    } else if (uri.getPath().equals("/settings")) {
+                        sendSettings(adminSessionId, guestSessionId, uri);
                         return;
                     }
                 } catch(IOException e) {

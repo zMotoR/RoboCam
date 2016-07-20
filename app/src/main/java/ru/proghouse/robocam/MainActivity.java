@@ -34,6 +34,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -42,6 +43,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
@@ -149,8 +152,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private WebView banner = null;
     private String bannerUrl = null;
+    private String bannerType = "";
+    private boolean bannerShowOffline = false;
     private AdView adView = null;
     private volatile boolean loadedAds = false;
+
+    public static double screenMin = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -160,6 +167,34 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             getSupportActionBar().hide();
             mainActivity = this;
             thisActivity = this;
+
+            Display display = getWindowManager().getDefaultDisplay();
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            display.getMetrics(displayMetrics);
+            // since SDK_INT = 1;
+            int width = displayMetrics.widthPixels;
+            int height = displayMetrics.heightPixels;
+            // includes window decorations (statusbar bar/menu bar)
+            if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 17)
+                try {
+                    width = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
+                    height = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            // includes window decorations (statusbar bar/menu bar)
+            if (Build.VERSION.SDK_INT >= 17)
+                try {
+                    Point realSize = new Point();
+                    Display.class.getMethod("getRealSize", Point.class).invoke(display, realSize);
+                    width = realSize.x;
+                    height = realSize.y;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            screenMin = Math.min(
+                    (double)width / (double)displayMetrics.density,
+                    (double)height / (double)displayMetrics.density);
 
             banner = (WebView)findViewById(R.id.banner);
             banner.setOnTouchListener(new View.OnTouchListener() {
@@ -279,6 +314,34 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
+    private Point getScreenSize() {
+        Point screenSize = new Point();
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics metrics = new DisplayMetrics();
+        display.getMetrics(metrics);
+        // since SDK_INT = 1;
+        screenSize.x = metrics.widthPixels;
+        screenSize.y = metrics.heightPixels;
+        // includes window decorations (statusbar bar/menu bar)
+        if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 17)
+            try {
+                screenSize.x = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
+                screenSize.y = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        // includes window decorations (statusbar bar/menu bar)
+        if (Build.VERSION.SDK_INT >= 17)
+            try {
+                Point realSize = new Point();
+                Display.class.getMethod("getRealSize", Point.class).invoke(display, realSize);
+                return realSize;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        return screenSize;
+    }
+
     private void DownloadFile(String src, File dst) throws IOException {
         URL url = new URL(src);
         InputStream inputStream = url.openStream();
@@ -331,21 +394,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 fos.write(buffer, 0, length);
             }*/
 
-            new Thread(new AdsLoader(getLocales())).start();
+            new Thread(new AdsLoader(getLocales(this))).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    List<Locale> getLocales() {
+    public static List<Locale> getLocales(Context context) {
         List<Locale> locales = new ArrayList<Locale>();
         if (Build.VERSION.SDK_INT >= 24) {
-            LocaleList localeList = getResources().getConfiguration().getLocales();
+            LocaleList localeList = context.getResources().getConfiguration().getLocales();
             for (int i = 0; i < localeList.size(); i++)
                 locales.add(localeList.get(i));
         }
         else
-            locales.add(getResources().getConfiguration().locale);
+            locales.add(context.getResources().getConfiguration().locale);
         return locales;
     }
 
@@ -429,12 +492,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                 }
                             }
                         }
-                        for (File file : adsDir.listFiles())
-                            if (file.isFile() && !file.getName().equals(newVersionFile.getName()))
-                                file.delete();
-                            else if (file.isDirectory() && !file.getName().equals(newVersionDir.getName()))
-                                deleteDir(file);
+                        //Deletes old files only when server is off!
+                        if (HttpServer.getServerState() == HttpServer.SERVER_IS_OFF) {
+                            for (File file : adsDir.listFiles())
+                                if (file.isFile() && !file.getName().equals(newVersionFile.getName()))
+                                    file.delete();
+                                else if (file.isDirectory() && !file.getName().equals(newVersionDir.getName()))
+                                    deleteDir(file);
+                        }
                         File localizedVersionFile = new File(adsDir, "v" + country[0] + "-" + language[0] + ".xml");
+                        localizedVersionFile.delete();
+                        versionFile.delete();
                         copy(newVersionFile, localizedVersionFile);
                         newVersionFile.renameTo(versionFile);
                     }
@@ -467,13 +535,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         private void deleteDir(File dir) {
             if (dir.isDirectory())
                 for (File subDir : dir.listFiles())
-                    if (subDir.isDirectory())
-                        deleteDir(subDir);
+                    deleteDir(subDir);
             dir.delete();
         }
     }
 
-    public boolean findCondition(Document version, List<Locale> locales,
+    public static boolean findCondition(Document version, List<Locale> locales,
                                  Element[] conditionOut, String[] countryOut,
                                  String[] languageOut) {
         conditionOut[0] = null;
@@ -536,43 +603,54 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document version = db.parse(versionFile);
-            if (findCondition(version, getLocales(), condition, country, language)) {
+            if (findCondition(version, getLocales(this), condition, country, language)) {
                 File versionDir = new File(adsDir,
                         version.getDocumentElement().getAttribute("number"));
-                DisplayMetrics displayMetrics = new DisplayMetrics();
+                /*DisplayMetrics displayMetrics = new DisplayMetrics();
                 getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-                double screenWidth = (double)displayMetrics.widthPixels / (double)displayMetrics.densityDpi;
-                double screenHeight = (double)displayMetrics.heightPixels / (double)displayMetrics.densityDpi;
-                double screenInches = Math.sqrt(Math.pow(screenWidth, 2) + Math.pow(screenHeight, 2));
+                double screenMin = Math.min(
+                        (double)displayMetrics.widthPixels / (double)displayMetrics.density,
+                        (double)displayMetrics.heightPixels / (double)displayMetrics.density);*/
+                //double screenWidth = (double)displayMetrics.widthPixels / (double)displayMetrics.densityDpi;
+                //double screenHeight = (double)displayMetrics.heightPixels / (double)displayMetrics.densityDpi;
+                //double screenInches = Math.sqrt(Math.pow(screenWidth, 2) + Math.pow(screenHeight, 2));
                 String path = null, href = null;
-                int width = 0, height = 0;
+                float width = 0, height = 0;
                 for (int i = 0; i < condition[0].getChildNodes().getLength(); i++) {
                     if (condition[0].getChildNodes().item(i).getNodeName().equals("device")) {
                         Element device = (Element)condition[0].getChildNodes().item(i);
                         if ((device.getAttribute("screenMin") == null
                                 || device.getAttribute("screenMin").isEmpty()
-                                || screenInches >= Double.parseDouble(device.getAttribute("screenMin")))
+                                || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
                                 &&
                                 (device.getAttribute("sdkMin") == null
                                         || device.getAttribute("sdkMin").isEmpty()
                                         || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
                             path = device.getAttribute("path");
                             bannerUrl = device.getAttribute("url");
-                            width = Integer.parseInt(device.getAttribute("width"));
-                            height = Integer.parseInt(device.getAttribute("height"));
+                            width = Float.parseFloat(device.getAttribute("width"));
+                            height = Float.parseFloat(device.getAttribute("height"));
+                            width = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, width, getResources().getDisplayMetrics());
+                            height = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, height, getResources().getDisplayMetrics());
+                            bannerType = device.getAttribute("type");
                             break;
                         }
                     }
                 }
-                if (path != null && width > 0 && height > 0) {
+                if (path != null && width > 0 && height > 0
+                        && (bannerType.equals("replace") || (bannerType.equals("offline") && bannerShowOffline))) {
                     File index = new File(versionDir, path);
-                    String url = index.toURI().toString();
-                    banner.loadUrl(url);
-                    RelativeLayout.LayoutParams lpView = new RelativeLayout.LayoutParams(width, height);
-                    banner.setLayoutParams(lpView);
-                    showAdView = false;
-                    banner.setVisibility(View.VISIBLE);
-                    adView.setVisibility(View.GONE);
+                    if (index.exists()) {
+                        String url = index.toURI().toString();
+                        banner.loadUrl(url);
+                        RelativeLayout.LayoutParams lpView = new RelativeLayout.LayoutParams(
+                                Math.round(width), Math.round(height));
+                        lpView.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                        banner.setLayoutParams(lpView);
+                        showAdView = false;
+                        banner.setVisibility(View.VISIBLE);
+                        adView.setVisibility(View.GONE);
+                    }
                 }
             }
         }
@@ -583,6 +661,29 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             banner.setVisibility(View.GONE);
             adView.setVisibility(View.VISIBLE);
             AdRequest adRequest = new AdRequest.Builder().build();
+            adView.setAdListener(new AdListener(){
+                @Override
+                public void onAdFailedToLoad(int var1) {
+                    if (bannerType.equals("offline")) {
+                        bannerShowOffline = true;
+                        loadedAds = false;
+                        loadAds();
+                    }
+                    //Toast.makeText(thisActivity, "Ad error", Toast.LENGTH_LONG).show();
+                }
+                @Override
+                public void onAdLoaded() {
+                    banner.setVisibility(View.GONE);
+                    adView.setVisibility(View.VISIBLE);
+                    //Toast.makeText(thisActivity, "Ad loaded", Toast.LENGTH_LONG).show();
+                }
+                @Override
+                public void onAdOpened() {
+                    banner.setVisibility(View.GONE);
+                    adView.setVisibility(View.VISIBLE);
+                    //Toast.makeText(thisActivity, "Ad opened", Toast.LENGTH_LONG).show();
+                }
+            });
             adView.loadAd(adRequest);
         }
     }
