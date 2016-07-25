@@ -16,6 +16,7 @@ import org.webbitserver.WebServers;
 import org.webbitserver.WebSocketConnection;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -712,13 +713,17 @@ public class HttpServer extends IntentService {
                             for (int i = 0; i < condition[0].getChildNodes().getLength(); i++) {
                                 if (condition[0].getChildNodes().item(i).getNodeName().equals("device")) {
                                     Element device = (Element) condition[0].getChildNodes().item(i);
-                                    if ((device.getAttribute("screenMin") == null
-                                            || device.getAttribute("screenMin").isEmpty()
-                                            || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
-                                            &&
+                                    if (    (device.getAttribute("target") == null
+                                                || device.getAttribute("target").isEmpty()
+                                                || device.getAttribute("target").equals("client"))
+                                        &&
+                                            (device.getAttribute("screenMin") == null
+                                                || device.getAttribute("screenMin").isEmpty()
+                                                || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
+                                        &&
                                             (device.getAttribute("sdkMin") == null
-                                                    || device.getAttribute("sdkMin").isEmpty()
-                                                    || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
+                                                || device.getAttribute("sdkMin").isEmpty()
+                                                || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
                                         bannerPath = device.getAttribute("path");
                                         bannerUrl = device.getAttribute("url");
                                         bannerWidth = Integer.parseInt(device.getAttribute("width"));
@@ -749,9 +754,10 @@ public class HttpServer extends IntentService {
                         && (bannerType.equals("replace") || (bannerType.equals("offline")))) {
                     File index = new File(versionDir, bannerPath);
                     if (index.exists()) {
-                        settings += "<bnp>/bv" + bannerVersion + "/" + bannerPath + "</bnp>"
+                        settings += "<bnp>/" + bannerVersion + "/" + bannerPath + "</bnp>"
                                 + "<bnw>" + Integer.toString(bannerWidth) + "</bnw>"
-                                + "<bnh>" + Integer.toString(bannerHeight) + "</bnh>";
+                                + "<bnh>" + Integer.toString(bannerHeight) + "</bnh>"
+                                + "<bnu>" + bannerUrl + "</bnu>";
                     }
                 }
                 settings +=
@@ -934,8 +940,17 @@ public class HttpServer extends IntentService {
                         method[1] = rootPath + separatorChar + "def" + method[1];
                     }
                     catch(FileNotFoundException e1) {
-                        writeResponse(HttpURLConnection.HTTP_NOT_FOUND, "file not found", null, true, true);
-                        return;
+                        try {
+                            File cacheDir = server.getCacheDir();
+                            File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                            File file = new File(adsDir, method[1]);
+                            assetStream = new FileInputStream(file);
+                            method[1] = file.getName();
+                        }
+                        catch(FileNotFoundException e2) {
+                                writeResponse(HttpURLConnection.HTTP_NOT_FOUND, "file not found", null, true, true);
+                                return;
+                        }
                     }
                 }
                 catch(IOException e) {

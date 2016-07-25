@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     //private int purchaseState = PURCHASE_STATE_UNKNOWN;
     //public static final String SKU_PREMIUM = "premium";
     private static volatile boolean loadingAds = false;
-    private static final String AD_DOWNLOAD_ROOT_PATH = "http://www.proghouse.ru/images/t/robocam/";
+    private static final String AD_DOWNLOAD_ROOT_PATH = "http://www.proghouse.ru/robocam/";
 
     private WebView banner = null;
     private String bannerUrl = null;
@@ -619,13 +619,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 for (int i = 0; i < condition[0].getChildNodes().getLength(); i++) {
                     if (condition[0].getChildNodes().item(i).getNodeName().equals("device")) {
                         Element device = (Element)condition[0].getChildNodes().item(i);
-                        if ((device.getAttribute("screenMin") == null
-                                || device.getAttribute("screenMin").isEmpty()
-                                || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
-                                &&
+                        if (    (device.getAttribute("target") == null
+                                    || device.getAttribute("target").isEmpty()
+                                    || device.getAttribute("target").equals("server"))
+                            &&  (device.getAttribute("screenMin") == null
+                                    || device.getAttribute("screenMin").isEmpty()
+                                    || screenMin >= Double.parseDouble(device.getAttribute("screenMin")))
+                            &&
                                 (device.getAttribute("sdkMin") == null
-                                        || device.getAttribute("sdkMin").isEmpty()
-                                        || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
+                                    || device.getAttribute("sdkMin").isEmpty()
+                                    || Build.VERSION.SDK_INT >= Integer.parseInt(device.getAttribute("sdkMin")))) {
                             path = device.getAttribute("path");
                             bannerUrl = device.getAttribute("url");
                             width = Float.parseFloat(device.getAttribute("width"));
@@ -642,6 +645,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     File index = new File(versionDir, path);
                     if (index.exists()) {
                         String url = index.toURI().toString();
+                        banner.getSettings().setJavaScriptEnabled(true);
                         banner.loadUrl(url);
                         RelativeLayout.LayoutParams lpView = new RelativeLayout.LayoutParams(
                                 Math.round(width), Math.round(height));
