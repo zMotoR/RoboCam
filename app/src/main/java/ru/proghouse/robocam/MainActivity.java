@@ -737,10 +737,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     protected void onStop (){
-        if (robotThreadRunnable != null)
-            robotThreadRunnable.mainActivity = null;
-        if (controlsUpdater != null)
-            controlsUpdater.mainActivity = null;
+        //if (robotThreadRunnable != null)
+        //    robotThreadRunnable.mainActivity = null;
+        //if (controlsUpdater != null)
+        //    controlsUpdater.mainActivity = null;
         if (robotState == ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH)
             robotState = ROBOT_STATE_DISCONNECTED;
         super.onStop();
@@ -1114,6 +1114,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onResume();
         RoboCamDriver.updateCurrentDriver(this, true /*purchaseState == PURCHASE_STATE_PREMIUM*/);
         postUpdateControls();
+        updateCamera();
         //DownloadAd();
     }
 
@@ -1144,9 +1145,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private void updateCamera() {
         //android:configChanges="orientation|screenSize"
-        /*parentLayout.post(new Runnable() {
+        parentLayout.post(new Runnable() {
             @Override
-            public void run() {*/
+            public void run() {
                 try {
                     boolean orientationIsUpdated = false;
                     boolean parametersIsUpdated = false;
@@ -1184,8 +1185,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 {
                     e.printStackTrace();
                 }
-            /*}
-        });*/
+            }
+        });
     }
 
     private String getStringIpAddress(int ipAddress) {
@@ -1209,6 +1210,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Method method = wifiManager.getClass().getDeclaredMethod("getWifiApState");
             method.setAccessible(true);
             int actualState = (Integer) method.invoke(wifiManager, (Object[]) null);
+            if (actualState < 10)
+                actualState += 10;
             if (actualState == AP_STATE_ENABLED) {
                 int ipAddress = wifiManager.getDhcpInfo().ipAddress;
                 ipAddressString = getStringIpAddress(ipAddress);

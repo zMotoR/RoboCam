@@ -69,7 +69,7 @@ public class HttpServer extends IntentService {
     private static Hashtable<String, Date> adminSessions = new Hashtable<String, Date>();
     private static Hashtable<String, Date> guestSessions = new Hashtable<String, Date>();
     private static int sessionLifetime = 30; //minutes
-    private static int connectionLifetime = 3; //seconds
+    private static int connectionLifetime = 4; //seconds
     public static Object sync = new Object();
     private static int httpPort = 8088;
     private static int webSocketPort = 8089;
@@ -234,8 +234,10 @@ public class HttpServer extends IntentService {
             }
             //Closing WebSocket connections
             if (lostConnections.size() > 0)
-                for (WebSocketConnection connection : lostConnections)
+                for (WebSocketConnection connection : lostConnections) {
+                    sendLostConnection(connection, context.getString(R.string.error_security_settings_have_been_changed));
                     connection.close();
+                }
             //Closing movie socket connections
             if (guestSockets.size() > 0)
                 for (Socket socket : guestSockets)
@@ -284,6 +286,13 @@ public class HttpServer extends IntentService {
         }
     }
 
+    private static void sendLostConnection(WebSocketConnection connection,
+                                           String reason) {
+        connection.send("<msg><name>connectionWasBroken</name>"
+                + "<reason>" + reason + "</reason>"
+                + "</msg>");
+    }
+
     class WebSocketTester implements Runnable {
 
         @Override
@@ -306,8 +315,10 @@ public class HttpServer extends IntentService {
                         }
                     }
                     if (lostConnections.size() > 0)
-                        for (WebSocketConnection connection : lostConnections)
+                        for (WebSocketConnection connection : lostConnections) {
+                            sendLostConnection(connection, getString(R.string.error_poor_connection_quality));
                             connection.close();
+                        }
                 }
                 try {
                     Thread.sleep(1000);
@@ -400,7 +411,7 @@ public class HttpServer extends IntentService {
                         }
                         if (parameters.size() > 0) {
                             RoboCamBroker.setJoystickValues(parameters);
-                            //Log.d("RoboCam", "Mesage from joystick");
+                            //Log.d("RoboCam", "Message from joystick");
                         }
                     }
                 }

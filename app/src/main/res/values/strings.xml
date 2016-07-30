@@ -125,4 +125,6 @@
     <string name="hide">Hide</string>
     <string name="view_subscriptions">View subscriptions</string>
     <string name="banner_ad_unit_id" translatable="false">ca-app-pub-7800876624909705/2125140872</string>
+    <string name="error_poor_connection_quality">Poor connection quality.</string>
+    <string name="error_security_settings_have_been_changed">Security settings have been changed.</string>
 </resources>
