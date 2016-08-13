@@ -22,6 +22,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Movie;
 import android.graphics.Point;
+import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -30,6 +31,7 @@ import android.os.Environment;
 import android.os.LocaleList;
 import android.os.PowerManager;
 import android.provider.MediaStore;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -41,6 +43,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -120,12 +123,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static int AP_STATE_ENABLED = 13;
     private static int AP_STATE_FAILED = 14;
 
+    public static final int REQUEST_CAMERA_PERMISSION = 1;
+
     private CameraManager cameraManager = CameraManager.getCameraManager();
     private SurfaceView surfaceView = null;
+    private TextureView textureView = null;
+    private TextureView.SurfaceTextureListener surfaceTextureListener = null;
     private RelativeLayout parentLayout = null;
     private MainActivity thisActivity = null;
     private volatile static MainActivity mainActivity = null;
-    private boolean isScreenOn = true;
+    private static boolean isScreenOn = true;
     private TextView serverMessage = null;
     private ImageView serverMessageConnector = null;
     private TextView robotMessage = null;
@@ -236,10 +243,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             });*/
             //adView.loadAd(adRequest);
 
-            surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-            surfaceView.getHolder().addCallback(this);
-            surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
             parentLayout = (RelativeLayout) findViewById(R.id.parentLayout);
+
+            surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+            if (Build.VERSION.SDK_INT >= 21) {
+                textureView = new TextureView(this);
+                ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT);
+                parentLayout.addView(textureView, 0, params);
+                surfaceView.setVisibility(View.GONE);
+                createSurfaceTextureListener();
+            } else {
+                surfaceView.getHolder().addCallback(this);
+                surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+                //if (isScreenOn && cameraManager.getPreviewSize() != null)
+                //    updateCamera();
+            }
             serverMessage = (TextView) findViewById(R.id.serverMessage);
             serverMessageConnector = (ImageView) findViewById(R.id.serverMessageConnector);
             robotMessage = (TextView) findViewById(R.id.robotMessage);
@@ -311,6 +331,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             DownloadAd();
         }catch(Throwable e){
             e.printStackTrace();
+        }
+    }
+
+    private void createSurfaceTextureListener() {
+        if (Build.VERSION.SDK_INT >= 21) {
+            surfaceTextureListener = new TextureView.SurfaceTextureListener() {
+
+                @Override
+                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+
+                }
+
+                @Override
+                public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
+                }
+
+                @Override
+                public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                    return false;
+                }
+
+                @Override
+                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                }
+            };
         }
     }
 
@@ -1114,14 +1161,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onResume();
         RoboCamDriver.updateCurrentDriver(this, true /*purchaseState == PURCHASE_STATE_PREMIUM*/);
         postUpdateControls();
-        updateCamera();
+        postUpdateCamera();
         //DownloadAd();
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         try {
-            updateCamera();
+            postUpdateCamera();
         }
         catch(Exception e){
             e.printStackTrace();
@@ -1143,50 +1190,62 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onConfigurationChanged(newConfig);
     }*/
 
-    private void updateCamera() {
-        //android:configChanges="orientation|screenSize"
+    private void postUpdateCamera() {
         parentLayout.post(new Runnable() {
             @Override
             public void run() {
+                updateCamera();
+            }
+        });
+    }
+
+    private void updateCamera() {
+        //android:configChanges="orientation|screenSize"
+        /*parentLayout.post(new Runnable() {
+            @Override
+            public void run() {*/
                 try {
-                    boolean orientationIsUpdated = false;
-                    boolean parametersIsUpdated = false;
-                    cameraManager.stopPreview();
-                    if (isScreenOn)
-                        orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
-                    parametersIsUpdated = cameraManager.updateParameters();
-                    ViewGroup.LayoutParams layoutParams = surfaceView.getLayoutParams();
-                    float previewWidth, previewHeight;
-                    if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
-                        previewWidth = cameraManager.getPreviewSize().height;
-                        previewHeight = cameraManager.getPreviewSize().width;
-                    } else {
-                        previewWidth = cameraManager.getPreviewSize().width;
-                        previewHeight = cameraManager.getPreviewSize().height;
-                    }
-                    float ratioX = (float) parentLayout.getWidth() / previewWidth;
-                    float ratioY = (float) parentLayout.getHeight() / previewHeight;
-                    if (ratioX < ratioY) {
-                        layoutParams.width = parentLayout.getWidth();
-                        layoutParams.height = (int) ((float) previewHeight * ratioX);
-                    } else {
-                        layoutParams.width = (int) ((float) previewWidth * ratioY);
-                        layoutParams.height = parentLayout.getHeight();
-                    }
-                    surfaceView.setLayoutParams(layoutParams);
-                    cameraManager.startPreview();
-                    if (orientationIsUpdated || parametersIsUpdated)
-                        HttpServer.broadcastMessage("<msg><name>updatePictureSize</name>"
-                                + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"
-                                + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
-                                + "</msg>");
+                    //if (cameraManager.checkIfParametersIsChanged() ||
+                    //        (isScreenOn && cameraManager.checkIfDisplayRotationIsChanged(thisActivity))) {
+                        boolean orientationIsUpdated = false;
+                        boolean parametersIsUpdated = false;
+                        cameraManager.stopPreview();
+                        if (isScreenOn)
+                            orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
+                        parametersIsUpdated = cameraManager.updateParameters();
+                        ViewGroup.LayoutParams layoutParams = surfaceView.getLayoutParams();
+                        float previewWidth, previewHeight;
+                        if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                            previewWidth = cameraManager.getPreviewSize().height;
+                            previewHeight = cameraManager.getPreviewSize().width;
+                        } else {
+                            previewWidth = cameraManager.getPreviewSize().width;
+                            previewHeight = cameraManager.getPreviewSize().height;
+                        }
+                        float ratioX = (float) parentLayout.getWidth() / previewWidth;
+                        float ratioY = (float) parentLayout.getHeight() / previewHeight;
+                        if (ratioX < ratioY) {
+                            layoutParams.width = parentLayout.getWidth();
+                            layoutParams.height = (int) ((float) previewHeight * ratioX);
+                        } else {
+                            layoutParams.width = (int) ((float) previewWidth * ratioY);
+                            layoutParams.height = parentLayout.getHeight();
+                        }
+                        surfaceView.setLayoutParams(layoutParams);
+                        cameraManager.startPreview();
+                        if (orientationIsUpdated || parametersIsUpdated)
+                            HttpServer.broadcastMessage("<msg><name>updatePictureSize</name>"
+                                    + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"
+                                    + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
+                                    + "</msg>");
+                    //}
                 }
                 catch(Exception e)
                 {
                     e.printStackTrace();
                 }
-            }
-        });
+            //}
+        //});
     }
 
     private String getStringIpAddress(int ipAddress) {

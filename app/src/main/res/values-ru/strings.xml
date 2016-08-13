@@ -126,4 +126,7 @@
     <string name="hide">Скрыть</string>
     <string name="error_poor_connection_quality">Плохое качество соединения.</string>
     <string name="error_security_settings_have_been_changed">Изменены настройки безопасности.</string>
+    <string name="request_permission">Программе RoboCam требуется право на использование камеры.</string>
+    <string name="cannot_init_camera">Не удаётся включить камеру.</string>
+    <string name="camera_facing_external">Внешняя</string>
 </resources>

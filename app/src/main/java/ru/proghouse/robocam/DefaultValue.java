@@ -13,4 +13,5 @@ public class DefaultValue {
     public static final String ROBOT_SETTINGS_DIRECTORY = "robot";
     public static final String ADS_DIRECTORY = "ads";
     public static final String EV3 = "EV3";
+    public static final String FRAGMENT_DIALOG = "dialog";
 }

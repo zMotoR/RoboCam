@@ -10,9 +10,11 @@ public class RgbData {
     public int width = 0;
     public int height = 0;
     public volatile boolean ready = false;
+    public volatile int id = 0;
 
     public void Restore(){
         initialized = false;
         ready = false;
+        id = 0;
     }
 }

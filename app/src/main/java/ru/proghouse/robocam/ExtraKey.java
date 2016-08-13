@@ -6,6 +6,7 @@ package ru.proghouse.robocam;
 public class ExtraKey {
     public static final String APP_PREFERENCE = "RoboCamSettings";
     public static final String CAMERA_ID = "camera_id";
+    public static final String CAMERA2_ID = "camera2_id";
     public static final String PREVIEW_SIZE = "preview_size";
     public static final String JPEG_QUALITY = "jpeg_quality";
     public static final String DRIVER_NAME = "driver_name";

@@ -667,8 +667,24 @@ public class HttpServer extends IntentService {
                 try {
                     cameraManager.addClient();
                     try {
+                        int id = 0;
                         while (true) {
-                            boolean result = cameraManager.writeJpg(outputStream, boundary);
+                            int newId = cameraManager.writeJpg(outputStream, boundary, id);
+                            try {
+                                if (server.terminated || socket.isClosed()) {
+                                    if (newId != id && newId != 0)
+                                        outputStream.write(("--" + boundary + "--\r\n").getBytes());
+                                    break;
+                                } else if (newId != id && newId != 0)
+                                    outputStream.write(("--" + boundary + "\r\n").getBytes());
+                                else if (!cameraManager.isPreviewing())
+                                    Thread.sleep(100);
+                            } finally {
+                                id = newId;
+                            }
+
+
+                            /*boolean result = cameraManager.writeJpg(outputStream, boundary);
                             if (server.terminated || socket.isClosed()) {
                                 if (result)
                                     outputStream.write(("--" + boundary + "--\r\n").getBytes());
@@ -676,7 +692,7 @@ public class HttpServer extends IntentService {
                             } else if (result)
                                 outputStream.write(("--" + boundary + "\r\n").getBytes());
                             else if (!cameraManager.isPreviewing())
-                                 Thread.sleep(100);
+                                 Thread.sleep(100);*/
                         }
                     } finally {
                         cameraManager.removeClient();

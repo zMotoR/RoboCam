@@ -2,10 +2,14 @@ package ru.proghouse.robocam;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Size;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
@@ -23,7 +27,9 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
 
 public class ServerSettingsActivity extends AppCompatActivity {
     private Spinner spinnerCamera = null;
+    android.hardware.camera2.CameraManager cameraManager = null;
     private int cameraId = 0;
+    private String camera2Id = null;
     private Spinner spinnerPreviewSize = null;
     private int previewSize = -1;
     private int previewSizeSaved = -1;
@@ -43,6 +49,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private boolean allowSpectators = true;
     private TextView textViewSpectatorName = null;
     private TextView textViewSpectatorPassword = null;
+    private List<String> cameraIds = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,10 +61,18 @@ public class ServerSettingsActivity extends AppCompatActivity {
         spinnerCamera = (Spinner)findViewById(R.id.spinnerCamera);
         SpinnerHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
-        cameraId = settings.getInt(ExtraKey.CAMERA_ID, 0);
-        if (cameraId < 0 || cameraId >= cameras.size())
-            cameraId = 0;
-        spinnerCamera.setSelection(cameraId, true);
+        if (Build.VERSION.SDK_INT >= 21) {
+            camera2Id = settings.getString(ExtraKey.CAMERA2_ID, null);
+            if (camera2Id == null || !cameraIds.contains(camera2Id))
+                camera2Id = cameraIds.get(0);
+            spinnerCamera.setSelection(cameraIds.indexOf(camera2Id), true);
+        }
+        else {
+            cameraId = settings.getInt(ExtraKey.CAMERA_ID, 0);
+            if (cameraId < 0 || cameraId >= cameras.size())
+                cameraId = 0;
+            spinnerCamera.setSelection(cameraId, true);
+        }
         spinnerCamera.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent,
                                        View itemSelected, int selectedItemPosition, long selectedId) {
@@ -217,13 +232,13 @@ public class ServerSettingsActivity extends AppCompatActivity {
     }
 
     private void setPreviewSizeAdapter(boolean first) {
-        List<Camera.Size> sizes = new ArrayList<Camera.Size>();
+        List<PreviewSize> sizes = new ArrayList<PreviewSize>();
         List<String> previewSizes = getPreviewSizes(sizes);
         SpinnerHelper.initSpinner(spinnerPreviewSize, this, previewSizes, R.string.previewSize);
         if (first) {
             if (previewSize < 0) {
-                Camera.Size firstSize = sizes.get(0);
-                Camera.Size lastSize = sizes.get(sizes.size() - 1);
+                PreviewSize firstSize = sizes.get(0);
+                PreviewSize lastSize = sizes.get(sizes.size() - 1);
                 int third = Math.round((float) previewSizes.size() / (float) 3.0);
                 if (firstSize.width > lastSize.width || firstSize.height > lastSize.height)
                     previewSize = previewSizes.size() - third;
@@ -322,7 +337,29 @@ public class ServerSettingsActivity extends AppCompatActivity {
 
     public List<String> getCameras() {
         List<String> cameras = new ArrayList<String>();
-        if (Build.VERSION.SDK_INT >= 9) {
+        cameraIds.clear();
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                cameraManager = (android.hardware.camera2.CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                for (String cameraId : cameraManager.getCameraIdList()) {
+                    cameraIds.add(cameraId);
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    switch (characteristics.get(CameraCharacteristics.LENS_FACING)) {
+                        case CameraCharacteristics.LENS_FACING_FRONT:
+                            cameras.add(getString(R.string.camera_facing_front));
+                            break;
+                        case CameraCharacteristics.LENS_FACING_BACK:
+                            cameras.add(getString(R.string.camera_facing_back));
+                            break;
+                        default: //CameraCharacteristics.LENS_FACING_EXTERNAL and other
+                            cameras.add(getString(R.string.camera_facing_external));
+                    }
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+            }
+        }
+        else if (Build.VERSION.SDK_INT >= 9) {
             int cameraCount = Camera.getNumberOfCameras();
             for (int i = 0; i < cameraCount; i++) {
                 Camera.CameraInfo info = new Camera.CameraInfo();
@@ -331,6 +368,8 @@ public class ServerSettingsActivity extends AppCompatActivity {
                     cameras.add(getString(R.string.camera_facing_front));
                 else if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK)
                     cameras.add(getString(R.string.camera_facing_back));
+                else
+                    cameras.add(getString(R.string.camera_facing_external));
             }
         }
         else
@@ -339,23 +378,35 @@ public class ServerSettingsActivity extends AppCompatActivity {
         return cameras;
     }
 
-    public List<String> getPreviewSizes(List<Camera.Size> sizes) {
+    public List<String> getPreviewSizes(List<PreviewSize> sizes) {
         List<String> previewSizes = new ArrayList<String>();
-        Camera camera;
-        if (Build.VERSION.SDK_INT >= 9)
-            camera = Camera.open(cameraId);
-        else
-            camera = Camera.open();
-        try {
-            Camera.Parameters parameters = camera.getParameters();
-            for (Camera.Size previewSize : parameters.getSupportedPreviewSizes()) {
-                if (sizes != null)
-                    sizes.add(previewSize);
-                previewSizes.add("" + previewSize.width + "x" + previewSize.height);
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(camera2Id);
+                StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                for (Size size : map.getOutputSizes(ImageFormat.JPEG)) {
+                    sizes.add(new PreviewSize(size));
+                    previewSizes.add("" + size.getWidth() + "x" + size.getHeight());
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
             }
-        }
-        finally {
-            camera.release();
+        } else {
+            Camera camera;
+            if (Build.VERSION.SDK_INT >= 9)
+                camera = Camera.open(cameraId);
+            else
+                camera = Camera.open();
+            try {
+                Camera.Parameters parameters = camera.getParameters();
+                for (Camera.Size previewSize : parameters.getSupportedPreviewSizes()) {
+                    if (sizes != null)
+                        sizes.add(new PreviewSize(previewSize));
+                    previewSizes.add("" + previewSize.width + "x" + previewSize.height);
+                }
+            } finally {
+                camera.release();
+            }
         }
         return previewSizes;
     }
@@ -382,9 +433,16 @@ public class ServerSettingsActivity extends AppCompatActivity {
             getPreferenceEditor().putString(ExtraKey.SPECTATOR_PASSWORD, editTextSpectatorPassword.getText().toString());
             changed = true;
         }
-        if (cameraId != spinnerCamera.getSelectedItemPosition()){
-            getPreferenceEditor().putInt(ExtraKey.CAMERA_ID, spinnerCamera.getSelectedItemPosition());
-            changed = true;
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (!cameraIds.get(spinnerCamera.getSelectedItemPosition()).equals(camera2Id)){
+                getPreferenceEditor().putString(ExtraKey.CAMERA2_ID, cameraIds.get(spinnerCamera.getSelectedItemPosition()));
+                changed = true;
+            }
+        } else {
+            if (cameraId != spinnerCamera.getSelectedItemPosition()){
+                getPreferenceEditor().putInt(ExtraKey.CAMERA_ID, spinnerCamera.getSelectedItemPosition());
+                changed = true;
+            }
         }
         if (previewSizeSaved != spinnerPreviewSize.getSelectedItemPosition()) {
             getPreferenceEditor().putInt(ExtraKey.PREVIEW_SIZE, spinnerPreviewSize.getSelectedItemPosition());
