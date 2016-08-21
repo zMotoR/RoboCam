@@ -195,9 +195,10 @@ public class CameraManager implements Camera.PreviewCallback {
                     && captureSession == null && !previewing) {
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                previewRequestBuilder.addTarget(holder.getSurface());
+                Surface surface = new Surface(texture);
+                previewRequestBuilder.addTarget(surface);
                 cameraDevice.createCaptureSession(
-                        Arrays.asList(holder.getSurface()),
+                        Arrays.asList(surface),
                         new CameraCaptureSession.StateCallback() {
 
                             @Override

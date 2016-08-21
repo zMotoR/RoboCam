@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -31,6 +32,7 @@ import android.os.Environment;
 import android.os.LocaleList;
 import android.os.PowerManager;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -340,7 +342,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-
+                    if (cameraManager.isInitialized())
+                        cameraManager.changeSurfaceTexture(thisActivity, surfaceTexture);
+                    else
+                        cameraManager.initCamera(thisActivity, surfaceTexture);
                 }
 
                 @Override
@@ -358,6 +363,25 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 }
             };
+            textureView.setSurfaceTextureListener(surfaceTextureListener);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED)
+                Utils.showError(this, R.string.request_permission, true);
+            else
+            if (!cameraManager.isInitialized()) {
+                if (cameraManager.getAfterGrandPermission())
+                    Utils.showError(this, R.string.cannot_init_camera, false);
+                else
+                    cameraManager.initCamera(this, true);
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -1207,6 +1231,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 try {
                     //if (cameraManager.checkIfParametersIsChanged() ||
                     //        (isScreenOn && cameraManager.checkIfDisplayRotationIsChanged(thisActivity))) {
+                    if (Build.VERSION.SDK_INT >= 21) {
+
+                    } else {
                         boolean orientationIsUpdated = false;
                         boolean parametersIsUpdated = false;
                         cameraManager.stopPreview();
@@ -1238,6 +1265,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                     + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"
                                     + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
                                     + "</msg>");
+                    }
                     //}
                 }
                 catch(Exception e)
