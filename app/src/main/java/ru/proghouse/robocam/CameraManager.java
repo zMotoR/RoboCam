@@ -24,7 +24,9 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
@@ -32,7 +34,10 @@ import android.view.TextureView;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -74,6 +79,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private Handler backgroundHandler = null;
     private HandlerThread backgroundThread = null;
     private SurfaceTexture texture = null;
+    private DisplayMetrics displayMetrics = null;
 
     CameraManager(){
     }
@@ -191,11 +197,35 @@ public class CameraManager implements Camera.PreviewCallback {
 
     }
 
+    private PreviewSize chooseOptimalSize() {
+        List<PreviewSize> bigEnough = new ArrayList<>();
+        List<PreviewSize> notBigEnough = new ArrayList<>();
+        int w = previewSize.width;
+        int h = previewSize.height;
+        int screenWidth = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        int screenHeight = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        for (PreviewSize option : previewSizes) {
+            if (option.height == option.width * h / w) {
+                if (option.width >= screenWidth && option.height >= screenHeight)
+                    bigEnough.add(option);
+                else
+                    notBigEnough.add(option);
+            }
+        }
+        if (bigEnough.size() > 0)
+            return Collections.min(bigEnough, new CompareSizesByArea());
+        else if (notBigEnough.size() > 0)
+            return Collections.max(notBigEnough, new CompareSizesByArea());
+        else
+            return previewSize;
+    }
+
     private void createCameraPreviewSession() {
         try {
             if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
                     && captureSession == null && !previewing) {
-                texture.setDefaultBufferSize(previewSize.width, previewSize.height);
+                PreviewSize optimalSize = chooseOptimalSize();
+                texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
                 Surface surface = new Surface(texture);
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -267,6 +297,9 @@ public class CameraManager implements Camera.PreviewCallback {
         synchronized(HttpServer.sync) {
             if (Build.VERSION.SDK_INT >= 21) {
                 this.texture = texture;
+                Display display = activity.getWindowManager().getDefaultDisplay();
+                displayMetrics = new DisplayMetrics();
+                display.getMetrics(displayMetrics);
                 SharedPreferences settings = activity.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
                 storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
                 jpegQuality = settings.getInt(ExtraKey.JPEG_QUALITY, 60);
