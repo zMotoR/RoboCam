@@ -250,9 +250,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             if (Build.VERSION.SDK_INT >= 21) {
                 textureView = new TextureView(this);
-                ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
+                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT);
+                params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                params.addRule(RelativeLayout.CENTER_VERTICAL);
                 parentLayout.addView(textureView, 0, params);
                 surfaceView.setVisibility(View.GONE);
                 createSurfaceTextureListener();
@@ -341,21 +343,25 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             surfaceTextureListener = new TextureView.SurfaceTextureListener() {
 
                 @Override
-                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
                     if (cameraManager.isInitialized())
                         cameraManager.changeSurfaceTexture(thisActivity, surfaceTexture);
                     else
                         cameraManager.initCamera(thisActivity, surfaceTexture);
+                    cameraManager.configureTransform(thisActivity, textureView, width, height);
+                    updateCamera();
                 }
 
                 @Override
-                public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-
+                public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
+                    cameraManager.configureTransform(thisActivity, textureView, width, height);
+                    updateCamera();
                 }
 
                 @Override
                 public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
+                    cameraManager.releaseCamera(surfaceTexture);
+                    return true;
                 }
 
                 @Override
@@ -377,8 +383,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (!cameraManager.isInitialized()) {
                 if (cameraManager.getAfterGrandPermission())
                     Utils.showError(this, R.string.cannot_init_camera, false);
-                else
+                else {
                     cameraManager.initCamera(this, true);
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        cameraManager.configureTransform(thisActivity, textureView,
+                                textureView.getWidth(), textureView.getHeight());
+                    }
+                }
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -1231,41 +1242,46 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 try {
                     //if (cameraManager.checkIfParametersIsChanged() ||
                     //        (isScreenOn && cameraManager.checkIfDisplayRotationIsChanged(thisActivity))) {
-                    if (Build.VERSION.SDK_INT >= 21) {
-
-                    } else {
-                        boolean orientationIsUpdated = false;
-                        boolean parametersIsUpdated = false;
+                    boolean orientationIsUpdated = false;
+                    boolean parametersIsUpdated = false;
+                    if (Build.VERSION.SDK_INT < 21)
                         cameraManager.stopPreview();
-                        if (isScreenOn)
-                            orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
-                        parametersIsUpdated = cameraManager.updateParameters();
-                        ViewGroup.LayoutParams layoutParams = surfaceView.getLayoutParams();
-                        float previewWidth, previewHeight;
-                        if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
-                            previewWidth = cameraManager.getPreviewSize().height;
-                            previewHeight = cameraManager.getPreviewSize().width;
-                        } else {
-                            previewWidth = cameraManager.getPreviewSize().width;
-                            previewHeight = cameraManager.getPreviewSize().height;
-                        }
-                        float ratioX = (float) parentLayout.getWidth() / previewWidth;
-                        float ratioY = (float) parentLayout.getHeight() / previewHeight;
-                        if (ratioX < ratioY) {
-                            layoutParams.width = parentLayout.getWidth();
-                            layoutParams.height = (int) ((float) previewHeight * ratioX);
-                        } else {
-                            layoutParams.width = (int) ((float) previewWidth * ratioY);
-                            layoutParams.height = parentLayout.getHeight();
-                        }
+                    if (isScreenOn)
+                        orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
+                    parametersIsUpdated = cameraManager.updateParameters();
+                    ViewGroup.LayoutParams layoutParams;
+                    if (Build.VERSION.SDK_INT >= 21)
+                        layoutParams = textureView.getLayoutParams();
+                    else
+                        layoutParams = surfaceView.getLayoutParams();
+                    float previewWidth, previewHeight;
+                    if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                        previewWidth = cameraManager.getPreviewSize().height;
+                        previewHeight = cameraManager.getPreviewSize().width;
+                    } else {
+                        previewWidth = cameraManager.getPreviewSize().width;
+                        previewHeight = cameraManager.getPreviewSize().height;
+                    }
+                    float ratioX = (float) parentLayout.getWidth() / previewWidth;
+                    float ratioY = (float) parentLayout.getHeight() / previewHeight;
+                    if (ratioX < ratioY) {
+                        layoutParams.width = parentLayout.getWidth();
+                        layoutParams.height = (int) ((float) previewHeight * ratioX);
+                    } else {
+                        layoutParams.width = (int) ((float) previewWidth * ratioY);
+                        layoutParams.height = parentLayout.getHeight();
+                    }
+                    if (Build.VERSION.SDK_INT >= 21)
+                        textureView.setLayoutParams(layoutParams);
+                    else {
                         surfaceView.setLayoutParams(layoutParams);
                         cameraManager.startPreview();
-                        if (orientationIsUpdated || parametersIsUpdated)
-                            HttpServer.broadcastMessage("<msg><name>updatePictureSize</name>"
-                                    + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"
-                                    + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
-                                    + "</msg>");
                     }
+                    if (orientationIsUpdated || parametersIsUpdated)
+                        HttpServer.broadcastMessage("<msg><name>updatePictureSize</name>"
+                                + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"
+                                + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
+                                + "</msg>");
                     //}
                 }
                 catch(Exception e)

@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
@@ -62,6 +63,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private android.hardware.camera2.CameraManager manager = null;
     private String camera2Id = "";
     private int sensorOrientation = 0;
+    private int facing = 0;
     private PreviewSize[] previewSizes = null;
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
@@ -193,9 +195,10 @@ public class CameraManager implements Camera.PreviewCallback {
         try {
             if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
                     && captureSession == null && !previewing) {
+                texture.setDefaultBufferSize(previewSize.width, previewSize.height);
+                Surface surface = new Surface(texture);
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                Surface surface = new Surface(texture);
                 previewRequestBuilder.addTarget(surface);
                 cameraDevice.createCaptureSession(
                         Arrays.asList(surface),
@@ -284,11 +287,13 @@ public class CameraManager implements Camera.PreviewCallback {
                         CameraCharacteristics characteristics
                                 = manager.getCameraCharacteristics(camera2Id);
                         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                        facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                         Size[] outputSizes = map.getOutputSizes(ImageFormat.JPEG);
                         previewSizes = new PreviewSize[outputSizes.length];
                         for (int i = 0; i < outputSizes.length; i++)
                             previewSizes[i] = new PreviewSize(outputSizes[i]);
+                        previewSize = calculateNewPreviewSize();
                         createCameraCallback();
                         createCaptureCallback();
                         startBackgroundThread();
@@ -424,8 +429,15 @@ public class CameraManager implements Camera.PreviewCallback {
                         degrees = 270;
                         break;
                 }
-                int result;
-                if (Build.VERSION.SDK_INT >= 9) {
+                int result = 0;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                        result = (360 - degrees) % 360;
+                    }
+                    else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                        result = degrees;
+                    }
+                } else if (Build.VERSION.SDK_INT >= 9) {
                     android.hardware.Camera.CameraInfo info =
                             new android.hardware.Camera.CameraInfo();
                     android.hardware.Camera.getCameraInfo(cameraId, info);
@@ -475,6 +487,44 @@ public class CameraManager implements Camera.PreviewCallback {
         int newWidth = newPreviewSize == null ? 0 : newPreviewSize.width;
         int newHeight = newPreviewSize == null ? 0 : newPreviewSize.height;
         return oldWidth != newWidth || oldHeight != newHeight;
+    }
+
+    public void configureTransform(Activity activity, TextureView textureView,
+                                   int viewWidth, int viewHeight) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            updateOrientation(activity);
+            Matrix matrix = new Matrix();
+            RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+            float centerX = viewRect.centerX();
+            float centerY = viewRect.centerY();
+
+            if (displayOrientation == 90 || displayOrientation == 270) {
+                RectF bufferRect = new RectF(0, 0, previewSize.height, previewSize.width);
+                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                float scale = Math.max(
+                        (float) viewHeight / previewSize.height,
+                        (float) viewWidth / previewSize.width);
+                matrix.postScale(scale, scale, centerX, centerY);
+                matrix.postRotate(displayOrientation, centerX, centerY);
+            }
+            else
+                matrix.postRotate(displayOrientation, centerX, centerY);
+
+            /*
+            if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.CENTER);
+                float scale = Math.max(
+                        (float) viewHeight / previewSize.height,
+                        (float) viewWidth / previewSize.width);
+                matrix.postScale(scale, scale, centerX, centerY);
+                matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+            } else if (Surface.ROTATION_180 == rotation) {
+                matrix.postRotate(180, centerX, centerY);
+            }*/
+            textureView.setTransform(matrix);
+        }
     }
 
     public boolean updateParameters(){
