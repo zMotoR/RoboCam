@@ -20,6 +20,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -70,7 +72,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private int sensorOrientation = 0;
     private int facing = 0;
     private PreviewSize[] surfacePreviewSizes = null;
-    private PreviewSize[] previewSizes = null;
+    private List<PreviewSize> previewSizes = new ArrayList<PreviewSize>();
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
     private CameraCaptureSession captureSession = null;
@@ -80,7 +82,9 @@ public class CameraManager implements Camera.PreviewCallback {
     private Handler backgroundHandler = null;
     private HandlerThread backgroundThread = null;
     private SurfaceTexture texture = null;
-    private DisplayMetrics displayMetrics = null;
+    //private DisplayMetrics displayMetrics = null;
+    private ImageReader imageReader = null;
+    private ImageReader.OnImageAvailableListener imageAvailableListener = null;
 
     CameraManager(){
     }
@@ -203,11 +207,9 @@ public class CameraManager implements Camera.PreviewCallback {
         List<PreviewSize> notBigEnough = new ArrayList<>();
         int w = previewSize.width;
         int h = previewSize.height;
-        int screenWidth = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
-        int screenHeight = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels);
         for (PreviewSize option : surfacePreviewSizes) {
             if (option.height == option.width * h / w) {
-                if (option.width >= screenWidth && option.height >= screenHeight)
+                if (option.width >= w && option.height >= h)
                     bigEnough.add(option);
                 else
                     notBigEnough.add(option);
@@ -231,8 +233,9 @@ public class CameraManager implements Camera.PreviewCallback {
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewRequestBuilder.addTarget(surface);
+                //previewRequestBuilder.addTarget(imageReader.getSurface());
                 cameraDevice.createCaptureSession(
-                        Arrays.asList(surface),
+                        Arrays.asList(surface, imageReader.getSurface()),
                         new CameraCaptureSession.StateCallback() {
 
                             @Override
@@ -298,9 +301,9 @@ public class CameraManager implements Camera.PreviewCallback {
         synchronized(HttpServer.sync) {
             if (Build.VERSION.SDK_INT >= 21) {
                 this.texture = texture;
-                Display display = activity.getWindowManager().getDefaultDisplay();
-                displayMetrics = new DisplayMetrics();
-                display.getMetrics(displayMetrics);
+                //Display display = activity.getWindowManager().getDefaultDisplay();
+                //displayMetrics = new DisplayMetrics();
+                //display.getMetrics(displayMetrics);
                 SharedPreferences settings = activity.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
                 storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
                 jpegQuality = settings.getInt(ExtraKey.JPEG_QUALITY, 60);
@@ -323,19 +326,28 @@ public class CameraManager implements Camera.PreviewCallback {
                         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                         facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                        Size[] outputSizes = map.getOutputSizes(ImageFormat.JPEG);
-                        previewSizes = new PreviewSize[outputSizes.length];
-                        for (int i = 0; i < outputSizes.length; i++)
-                            previewSizes[i] = new PreviewSize(outputSizes[i]);
-                        Arrays.sort(previewSizes, new CompareSizesByArea());
-                        previewSize = calculateNewPreviewSize();
-                        outputSizes = map.getOutputSizes(SurfaceTexture.class);
+                        Size[] outputSizes = map.getOutputSizes(SurfaceTexture.class);
                         surfacePreviewSizes = new PreviewSize[outputSizes.length];
-                        for (int i = 0; i < outputSizes.length; i++)
+                        HashSet<Float> ratio = new HashSet<Float>();
+                        for (int i = 0; i < outputSizes.length; i++) {
                             surfacePreviewSizes[i] = new PreviewSize(outputSizes[i]);
+                            ratio.add((float) outputSizes[i].getHeight() / (float) outputSizes[i].getWidth());
+                        }
+                        outputSizes = map.getOutputSizes(ImageFormat.JPEG);
+                        previewSizes.clear();
+                        for (int i = 0; i < outputSizes.length; i++)
+                            if (ratio.contains((float) outputSizes[i].getHeight() / (float) outputSizes[i].getWidth()))
+                                previewSizes.add(new PreviewSize(outputSizes[i]));
+                        Collections.sort(previewSizes, new CompareSizesByArea());
+                        previewSize = calculateNewPreviewSize();
                         createCameraCallback();
                         createCaptureCallback();
                         startBackgroundThread();
+                        createImageAvailableListener();
+                        imageReader = ImageReader.newInstance(previewSize.width, previewSize.height,
+                                ImageFormat.JPEG, /*maxImages*/2);
+                        imageReader.setOnImageAvailableListener(
+                                imageAvailableListener, backgroundHandler);
                         manager.openCamera(camera2Id, stateCallback, backgroundHandler);
                     } catch (Exception e) {
                         error = e.getMessage();
@@ -366,9 +378,8 @@ public class CameraManager implements Camera.PreviewCallback {
                 if (camera != null) {
                     Camera.Parameters parameters = camera.getParameters();
                     List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
-                    this.previewSizes = new PreviewSize[previewSizes.size()];
                     for (int i = 0; i < previewSizes.size(); i++)
-                        this.previewSizes[i] = new PreviewSize(previewSizes.get(i));
+                        this.previewSizes.add(new PreviewSize(previewSizes.get(i)));
                     try {
                         camera.setPreviewDisplay(holder);
                     } catch (IOException e) {
@@ -395,6 +406,10 @@ public class CameraManager implements Camera.PreviewCallback {
                     if (cameraDevice != null) {
                         cameraDevice.close();
                         cameraDevice = null;
+                    }
+                    if (imageReader != null) {
+                        imageReader.close();
+                        imageReader = null;
                     }
                     stopBackgroundThread();
                     this.texture = null;
@@ -502,22 +517,22 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     private PreviewSize calculateNewPreviewSize() {
-        if (previewSizes == null || previewSizes.length == 0)
+        if (previewSizes == null || previewSizes.size() == 0)
             return null;
         if (storedPreviewSize < 0) {
-            PreviewSize first = previewSizes[0];
-            PreviewSize last = previewSizes[previewSizes.length - 1];
-            int third = Math.round((float) previewSizes.length / (float) 3.0);
+            PreviewSize first = previewSizes.get(0);
+            PreviewSize last = previewSizes.get(previewSizes.size() - 1);
+            int third = Math.round((float) previewSizes.size() / (float) 3.0);
             if (first.width > last.width || first.height > last.height)
-                storedPreviewSize = previewSizes.length - third;
+                storedPreviewSize = previewSizes.size() - third;
             else
                 storedPreviewSize = third - 1;
         }
         if (storedPreviewSize < 0)
             storedPreviewSize = 0;
-        if (storedPreviewSize >= previewSizes.length)
-            storedPreviewSize = previewSizes.length - 1;
-        return previewSizes[storedPreviewSize];
+        if (storedPreviewSize >= previewSizes.size())
+            storedPreviewSize = previewSizes.size() - 1;
+        return previewSizes.get(storedPreviewSize);
     }
 
     public boolean checkIfParametersIsChanged() {
@@ -623,6 +638,20 @@ public class CameraManager implements Camera.PreviewCallback {
             }*/
         }
         return result; //true if updated
+    }
+
+    private void createImageAvailableListener() {
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (imageAvailableListener == null)
+                imageAvailableListener = new ImageReader.OnImageAvailableListener() {
+                    @Override
+                    public void onImageAvailable(ImageReader imageReader) {
+                        if (Build.VERSION.SDK_INT >= 21) {
+                            imageReader.acquireLatestImage();
+                        }
+                    }
+                };
+        }
     }
 
     /*private void tryToChangeRgb(){
