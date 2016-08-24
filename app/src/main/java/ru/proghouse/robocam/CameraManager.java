@@ -69,6 +69,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private String camera2Id = "";
     private int sensorOrientation = 0;
     private int facing = 0;
+    private PreviewSize[] surfacePreviewSizes = null;
     private PreviewSize[] previewSizes = null;
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
@@ -204,7 +205,7 @@ public class CameraManager implements Camera.PreviewCallback {
         int h = previewSize.height;
         int screenWidth = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
         int screenHeight = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels);
-        for (PreviewSize option : previewSizes) {
+        for (PreviewSize option : surfacePreviewSizes) {
             if (option.height == option.width * h / w) {
                 if (option.width >= screenWidth && option.height >= screenHeight)
                     bigEnough.add(option);
@@ -326,7 +327,12 @@ public class CameraManager implements Camera.PreviewCallback {
                         previewSizes = new PreviewSize[outputSizes.length];
                         for (int i = 0; i < outputSizes.length; i++)
                             previewSizes[i] = new PreviewSize(outputSizes[i]);
+                        Arrays.sort(previewSizes, new CompareSizesByArea());
                         previewSize = calculateNewPreviewSize();
+                        outputSizes = map.getOutputSizes(SurfaceTexture.class);
+                        surfacePreviewSizes = new PreviewSize[outputSizes.length];
+                        for (int i = 0; i < outputSizes.length; i++)
+                            surfacePreviewSizes[i] = new PreviewSize(outputSizes[i]);
                         createCameraCallback();
                         createCaptureCallback();
                         startBackgroundThread();
@@ -464,12 +470,13 @@ public class CameraManager implements Camera.PreviewCallback {
                 }
                 int result = 0;
                 if (Build.VERSION.SDK_INT >= 21) {
-                    if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    if (facing == CameraCharacteristics.LENS_FACING_FRONT
+                            || facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = (360 - degrees) % 360;
                     }
-                    else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                    /*else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = degrees;
-                    }
+                    }*/
                 } else if (Build.VERSION.SDK_INT >= 9) {
                     android.hardware.Camera.CameraInfo info =
                             new android.hardware.Camera.CameraInfo();

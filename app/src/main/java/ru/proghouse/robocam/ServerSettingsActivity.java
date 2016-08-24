@@ -21,6 +21,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import ru.proghouse.robocam.drivers.RoboCamDriver;
@@ -384,10 +386,11 @@ public class ServerSettingsActivity extends AppCompatActivity {
             try {
                 CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(camera2Id);
                 StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                for (Size size : map.getOutputSizes(ImageFormat.JPEG)) {
+                for (Size size : map.getOutputSizes(ImageFormat.JPEG))
                     sizes.add(new PreviewSize(size));
-                    previewSizes.add("" + size.getWidth() + "x" + size.getHeight());
-                }
+                Collections.sort(sizes, new CompareSizesByArea());
+                for (PreviewSize size : sizes)
+                    previewSizes.add("" + size.width + "x" + size.height);
             } catch (Exception e) {
                 Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
             }

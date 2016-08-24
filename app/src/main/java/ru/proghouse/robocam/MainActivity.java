@@ -1220,10 +1220,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-    /*@Override
+    @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-    }*/
+        postUpdateCamera();
+    }
 
     private void postUpdateCamera() {
         parentLayout.post(new Runnable() {
