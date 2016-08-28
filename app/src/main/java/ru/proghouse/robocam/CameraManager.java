@@ -77,7 +77,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
     private CameraCaptureSession previewSession = null;
-    private CameraCaptureSession streamSession = null;
+    //private CameraCaptureSession streamSession = null;
     private CaptureRequest.Builder previewRequestBuilder = null;
     private CaptureRequest.Builder streamRequestBuilder = null;
     private CaptureRequest previewRequest = null;
@@ -187,7 +187,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 public void onOpened(CameraDevice _cameraDevice) {
                     cameraDevice = _cameraDevice;
                     createCameraPreviewSession();
-                    createCameraStreamSession();
+                    //createCameraStreamSession();
                 }
 
                 @Override
@@ -231,7 +231,7 @@ public class CameraManager implements Camera.PreviewCallback {
             return previewSize;
     }
 
-    private void createCameraStreamSession() {
+    /*private void createCameraStreamSession() {
         try {
             if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
                     && streamSession == null && !previewing) {
@@ -268,7 +268,7 @@ public class CameraManager implements Camera.PreviewCallback {
         } catch(Exception e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     private void createCameraPreviewSession() {
         try {
@@ -277,9 +277,13 @@ public class CameraManager implements Camera.PreviewCallback {
                 PreviewSize optimalSize = chooseOptimalSize();
                 texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
                 Surface surface = new Surface(texture);
+                Surface streamSurface = imageReader.getSurface();
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewRequestBuilder.addTarget(surface);
+                streamRequestBuilder
+                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                streamRequestBuilder.addTarget(streamSurface);
                 cameraDevice.createCaptureSession(
                         Arrays.asList(surface),
                         new CameraCaptureSession.StateCallback() {
@@ -292,7 +296,12 @@ public class CameraManager implements Camera.PreviewCallback {
                                         previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                         previewRequest = previewRequestBuilder.build();
-                                        previewSession.setRepeatingRequest(previewRequest,
+
+                                        streamRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                        streamRequest = streamRequestBuilder.build();
+                                        previewSession.setRepeatingBurst(
+                                                Arrays.asList(previewRequest, streamRequest),
                                                 previewCallback, previewBackgroundHandler);
                                     }
                                 } catch (Exception e) {
@@ -483,10 +492,10 @@ public class CameraManager implements Camera.PreviewCallback {
                         previewSession.close();
                         previewSession = null;
                     }
-                    if (streamSession != null) {
+                    /*if (streamSession != null) {
                         streamSession.close();
                         streamSession = null;
-                    }
+                    }*/
                     if (cameraDevice != null) {
                         cameraDevice.close();
                         cameraDevice = null;
