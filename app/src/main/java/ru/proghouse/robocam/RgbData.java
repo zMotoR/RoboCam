@@ -7,6 +7,7 @@ public class RgbData {
     public volatile boolean initialized = false;
     //public int[] buf = null;
     public byte[] yuv420 = null;
+    public byte[] jpeg = null;
     public int width = 0;
     public int height = 0;
     public volatile boolean ready = false;

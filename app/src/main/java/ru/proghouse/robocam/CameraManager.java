@@ -36,6 +36,7 @@ import android.view.TextureView;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,8 +66,11 @@ public class CameraManager implements Camera.PreviewCallback {
     private volatile int displayRotation = -1;
     private volatile SurfaceHolder holder = null;
     private volatile boolean portrait_n_facing = false;
+    private volatile boolean landscape_n_facing = false;
 
     //Camera2
+    int oldWidth = -1;
+    int oldHeight = -1;
     private volatile boolean afterGrandPermission = false;
     private android.hardware.camera2.CameraManager manager = null;
     private String camera2Id = "";
@@ -129,21 +133,31 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public int getActualPreviewWidth() {
         synchronized (HttpServer.sync) {
-            return isPreviewing() && getDisplayOrientation() != -1
-                    ? (getDisplayOrientation() % 180 == 0
-                    ? getPreviewWidth()
-                    : getPreviewHeight())
-                    : -1;
+            if (Build.VERSION.SDK_INT >= 21)
+                return displayRotation == Surface.ROTATION_0
+                        || displayRotation == Surface.ROTATION_180
+                        ? getPreviewHeight() : getPreviewWidth();
+            else
+                return isPreviewing() && getDisplayOrientation() != -1
+                        ? (getDisplayOrientation() % 180 == 0
+                        ? getPreviewWidth()
+                        : getPreviewHeight())
+                        : -1;
         }
     }
 
     public int getActualPreviewHeight() {
         synchronized (HttpServer.sync) {
-            return isPreviewing() && getDisplayOrientation() != -1
-                    ? (getDisplayOrientation() % 180 == 0
-                    ? getPreviewHeight()
-                    : getPreviewWidth())
-                    : -1;
+            if (Build.VERSION.SDK_INT >= 21)
+                return displayRotation == Surface.ROTATION_0
+                        || displayRotation == Surface.ROTATION_180
+                        ? getPreviewWidth() : getPreviewHeight();
+            else
+                return isPreviewing() && getDisplayOrientation() != -1
+                        ? (getDisplayOrientation() % 180 == 0
+                        ? getPreviewHeight()
+                        : getPreviewWidth())
+                        : -1;
         }
     }
 
@@ -285,7 +299,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                 streamRequestBuilder.addTarget(streamSurface);
                 cameraDevice.createCaptureSession(
-                        Arrays.asList(surface),
+                        Arrays.asList(surface, streamSurface),
                         new CameraCaptureSession.StateCallback() {
 
                             @Override
@@ -551,15 +565,15 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    public boolean checkIfDisplayRotationIsChanged(Activity activity) {
+    /*public boolean checkIfDisplayRotationIsChanged(Activity activity) {
         int curRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
         return displayRotation != curRotation;
-    }
+    }*/
 
-    public boolean updateOrientation(Activity activity){
+    private int calculateOrientation(Activity activity) {
         synchronized(HttpServer.sync) {
             portrait_n_facing = false;
-            int oldDisplayOrientation = displayOrientation;
+            landscape_n_facing = false;
             if ((camera != null && !previewing) || cameraDevice != null) {
                 int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 int degrees = 0;
@@ -582,6 +596,9 @@ public class CameraManager implements Camera.PreviewCallback {
                     if (facing == CameraCharacteristics.LENS_FACING_FRONT
                             || facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = (360 - degrees) % 360;
+                        landscape_n_facing =
+                                (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270)
+                                && facing == CameraCharacteristics.LENS_FACING_FRONT;
                     }
                     /*else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = degrees;
@@ -601,11 +618,67 @@ public class CameraManager implements Camera.PreviewCallback {
                     result = 90;
                 else
                     result = degrees - 90;
+                displayRotation = rotation;
+                return result;
+            }
+        }
+        return displayOrientation;
+    }
+
+    public boolean updateOrientation(Activity activity){
+        synchronized(HttpServer.sync) {
+            portrait_n_facing = false;
+            int oldDisplayOrientation = displayOrientation;
+            displayOrientation = calculateOrientation(activity);
+            if (camera != null)
+                camera.setDisplayOrientation(displayOrientation);
+
+            /*if ((camera != null && !previewing) || cameraDevice != null) {
+                int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+                int degrees = 0;
+                switch (rotation) {
+                    case Surface.ROTATION_0:
+                        degrees = 0;
+                        break;
+                    case Surface.ROTATION_90:
+                        degrees = 90;
+                        break;
+                    case Surface.ROTATION_180:
+                        degrees = 180;
+                        break;
+                    case Surface.ROTATION_270:
+                        degrees = 270;
+                        break;
+                }
+                int result = 0;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    if (facing == CameraCharacteristics.LENS_FACING_FRONT
+                            || facing == CameraCharacteristics.LENS_FACING_BACK) {
+                        result = (360 - degrees) % 360;
+                    }
+                    //else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                    //    result = degrees;
+                    //}
+                } else if (Build.VERSION.SDK_INT >= 9) {
+                    android.hardware.Camera.CameraInfo info =
+                            new android.hardware.Camera.CameraInfo();
+                    android.hardware.Camera.getCameraInfo(cameraId, info);
+                    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                        result = (info.orientation + degrees) % 360;
+                        result = (360 - result) % 360;  // compensate the mirror
+                        portrait_n_facing = rotation == Surface.ROTATION_0;
+                    } else {  // back-facing
+                        result = (info.orientation - degrees + 360) % 360;
+                    }
+                } else if (activity.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE)
+                    result = 90;
+                else
+                    result = degrees - 90;
                 if (camera != null)
                     camera.setDisplayOrientation(result);
                 displayOrientation = result;
-                displayRotation = rotation;
-            }
+                //displayRotation = rotation;
+            })*/
             return oldDisplayOrientation != displayOrientation;
         }
     }
@@ -641,13 +714,13 @@ public class CameraManager implements Camera.PreviewCallback {
     public void configureTransform(Activity activity, TextureView textureView,
                                    int viewWidth, int viewHeight) {
         if (Build.VERSION.SDK_INT >= 21) {
-            updateOrientation(activity);
+            int orientation = calculateOrientation(activity);
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
             float centerX = viewRect.centerX();
             float centerY = viewRect.centerY();
 
-            if (displayOrientation == 90 || displayOrientation == 270) {
+            if (orientation == 90 || orientation == 270) {
                 RectF bufferRect = new RectF(0, 0, previewSize.height, previewSize.width);
                 bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
                 matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
@@ -655,10 +728,10 @@ public class CameraManager implements Camera.PreviewCallback {
                         (float) viewHeight / previewSize.height,
                         (float) viewWidth / previewSize.width);
                 matrix.postScale(scale, scale, centerX, centerY);
-                matrix.postRotate(displayOrientation, centerX, centerY);
+                matrix.postRotate(orientation, centerX, centerY);
             }
             else
-                matrix.postRotate(displayOrientation, centerX, centerY);
+                matrix.postRotate(orientation, centerX, centerY);
 
             /*
             if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
@@ -686,8 +759,8 @@ public class CameraManager implements Camera.PreviewCallback {
                 if (camera == null || previewing)
                     return result;
             }
-            int oldWidth = previewSize == null ? 0 : previewSize.width;
-            int oldHeight = previewSize == null ? 0 : previewSize.height;
+            //int oldWidth = previewSize == null ? 0 : previewSize.width;
+            //int oldHeight = previewSize == null ? 0 : previewSize.height;
             previewSize = calculateNewPreviewSize();
             //int newWidth = previewSize == null ? 0 : previewSize.width;
             //int newHeight = previewSize == null ? 0 : previewSize.height;
@@ -702,6 +775,8 @@ public class CameraManager implements Camera.PreviewCallback {
                 camera.setParameters(parameters);
             }
             result = oldWidth != previewSize.width || oldHeight != previewSize.height;
+            oldWidth = previewSize == null ? -1 : previewSize.width;
+            oldHeight = previewSize == null ? -1 : previewSize.height;
             /*if (camera != null && !previewing) {
                 rgbReader.Restore();
                 rgbWriter.Restore();
@@ -744,7 +819,7 @@ public class CameraManager implements Camera.PreviewCallback {
                             try {
                                 Image image = imageReader.acquireLatestImage();
                                 if (image != null) {
-                                    //processImage(img);
+                                    processJpeg(image);
                                     image.close();
                                 }
                             } catch (Exception e) {
@@ -876,6 +951,42 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
+    private void processJpeg(Object image) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            try {
+                if (image == null || ((Image) image).getFormat() != ImageFormat.JPEG)
+                    return;
+                id++;
+                if (id == Integer.MAX_VALUE)
+                    id = Integer.MIN_VALUE;
+                if (id == 0)
+                    id++;
+                if (!rgb[writeIndex].initialized) {
+                    rgb[writeIndex].width = ((Image) image).getWidth();
+                    rgb[writeIndex].height = ((Image) image).getHeight();
+                    rgb[writeIndex].initialized = true;
+                }
+                ByteBuffer buffer = ((Image) image).getPlanes()[0].getBuffer();
+                rgb[writeIndex].jpeg = new byte[buffer.remaining()];
+                buffer.get(rgb[writeIndex].jpeg);
+                rgb[writeIndex].id = id;
+                synchronized (lock) {
+                    oldWriteIndex = writeIndex;
+                    writeIndex++;
+                    if (writeIndex >= rgb.length)
+                        writeIndex = 0;
+                    if (writeIndex == readIndex) {
+                        writeIndex++;
+                        if (writeIndex >= rgb.length)
+                            writeIndex = 0;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public int writeJpg(OutputStream outputStream, String boundary, int excludedId) throws IOException {
         int readId = 0;
         synchronized (lock) {
@@ -890,30 +1001,39 @@ public class CameraManager implements Camera.PreviewCallback {
             readerCount++;
         }
         try {
-            YuvImage yuvImage = new YuvImage(rgb[readIndex].yuv420, ImageFormat.NV21,
-                    rgb[readIndex].width, rgb[readIndex].height, null);
+            byte[] imageBytes = null;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            yuvImage.compressToJpeg(new Rect(0, 0, rgb[readIndex].width, rgb[readIndex].height),
-                    displayOrientation == 0 ? jpegQuality : 100, baos);
-            byte[] imageBytes = baos.toByteArray();
-            if (displayOrientation != 0) {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                Matrix matrix = new Matrix();
-                if (portrait_n_facing)
-                    matrix.postRotate(displayOrientation + 180);
-                else
-                    matrix.postRotate(displayOrientation);
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0,
-                        rgb[readIndex].width, rgb[readIndex].height, matrix, true);
-                baos.reset();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
+            if (rgb[readIndex].yuv420 != null) {
+                YuvImage yuvImage = new YuvImage(rgb[readIndex].yuv420, ImageFormat.NV21,
+                        rgb[readIndex].width, rgb[readIndex].height, null);
+                yuvImage.compressToJpeg(new Rect(0, 0, rgb[readIndex].width, rgb[readIndex].height),
+                        displayOrientation == 0 ? jpegQuality : 100, baos);
                 imageBytes = baos.toByteArray();
             }
-            outputStream.write(("Content-type: image/jpeg\r\n"
-                    + "Content-Length: " + imageBytes.length + "\r\n\r\n").getBytes());
-            outputStream.write(imageBytes);
-            outputStream.write(("\r\n").getBytes());
-            outputStream.flush();
+            else if (rgb[readIndex].jpeg != null)
+                imageBytes = rgb[readIndex].jpeg;
+            if (imageBytes != null) {
+                if (displayOrientation != 0 || Build.VERSION.SDK_INT >= 21) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    Matrix matrix = new Matrix();
+                    if (portrait_n_facing)
+                        matrix.postRotate(displayOrientation + 180);
+                    else if (landscape_n_facing)
+                        matrix.postRotate((displayOrientation + sensorOrientation + 180) % 360);
+                    else
+                        matrix.postRotate((displayOrientation + sensorOrientation) % 360);
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                            rgb[readIndex].width, rgb[readIndex].height, matrix, true);
+                    baos.reset();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
+                    imageBytes = baos.toByteArray();
+                }
+                outputStream.write(("Content-type: image/jpeg\r\n"
+                        + "Content-Length: " + imageBytes.length + "\r\n\r\n").getBytes());
+                outputStream.write(imageBytes);
+                outputStream.write(("\r\n").getBytes());
+                outputStream.flush();
+            }
         } finally {
             synchronized (lock) {
                 readId = rgb[readIndex].id;
