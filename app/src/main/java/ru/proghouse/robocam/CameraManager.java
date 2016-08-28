@@ -20,6 +20,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
@@ -75,12 +76,18 @@ public class CameraManager implements Camera.PreviewCallback {
     private List<PreviewSize> previewSizes = new ArrayList<PreviewSize>();
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
-    private CameraCaptureSession captureSession = null;
+    private CameraCaptureSession previewSession = null;
+    private CameraCaptureSession streamSession = null;
     private CaptureRequest.Builder previewRequestBuilder = null;
+    private CaptureRequest.Builder streamRequestBuilder = null;
     private CaptureRequest previewRequest = null;
-    private CameraCaptureSession.CaptureCallback captureCallback = null;
-    private Handler backgroundHandler = null;
-    private HandlerThread backgroundThread = null;
+    private CaptureRequest streamRequest = null;
+    private CameraCaptureSession.CaptureCallback previewCallback = null;
+    private CameraCaptureSession.CaptureCallback streamCallback = null;
+    private Handler previewBackgroundHandler = null;
+    private Handler streamBackgroundHandler = null;
+    private HandlerThread previewBackgroundThread = null;
+    private HandlerThread streamBackgroundThread = null;
     private SurfaceTexture texture = null;
     //private DisplayMetrics displayMetrics = null;
     private ImageReader imageReader = null;
@@ -180,6 +187,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 public void onOpened(CameraDevice _cameraDevice) {
                     cameraDevice = _cameraDevice;
                     createCameraPreviewSession();
+                    createCameraStreamSession();
                 }
 
                 @Override
@@ -223,31 +231,28 @@ public class CameraManager implements Camera.PreviewCallback {
             return previewSize;
     }
 
-    private void createCameraPreviewSession() {
+    private void createCameraStreamSession() {
         try {
             if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
-                    && captureSession == null && !previewing) {
-                PreviewSize optimalSize = chooseOptimalSize();
-                texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
-                Surface surface = new Surface(texture);
-                previewRequestBuilder
-                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                previewRequestBuilder.addTarget(surface);
-                //previewRequestBuilder.addTarget(imageReader.getSurface());
+                    && streamSession == null && !previewing) {
+                Surface surface = imageReader.getSurface();
+                streamRequestBuilder
+                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                streamRequestBuilder.addTarget(surface);
                 cameraDevice.createCaptureSession(
-                        Arrays.asList(surface, imageReader.getSurface()),
+                        Arrays.asList(surface),
                         new CameraCaptureSession.StateCallback() {
 
                             @Override
                             public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                                 try {
                                     if (Build.VERSION.SDK_INT >= 21) {
-                                        captureSession = cameraCaptureSession;
-                                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                        streamSession = cameraCaptureSession;
+                                        streamRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                        previewRequest = previewRequestBuilder.build();
-                                        captureSession.setRepeatingRequest(previewRequest,
-                                                captureCallback, backgroundHandler);
+                                        streamRequest = streamRequestBuilder.build();
+                                        streamSession.setRepeatingRequest(streamRequest,
+                                                streamCallback, streamBackgroundHandler);
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -256,7 +261,48 @@ public class CameraManager implements Camera.PreviewCallback {
 
                             @Override
                             public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+                                error = "Stream configure failed.";
+                            }
+                        }, null);
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    private void createCameraPreviewSession() {
+        try {
+            if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
+                    && previewSession == null && !previewing) {
+                PreviewSize optimalSize = chooseOptimalSize();
+                texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
+                Surface surface = new Surface(texture);
+                previewRequestBuilder
+                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                previewRequestBuilder.addTarget(surface);
+                cameraDevice.createCaptureSession(
+                        Arrays.asList(surface),
+                        new CameraCaptureSession.StateCallback() {
+
+                            @Override
+                            public void onConfigured(CameraCaptureSession cameraCaptureSession) {
+                                try {
+                                    if (Build.VERSION.SDK_INT >= 21) {
+                                        previewSession = cameraCaptureSession;
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                        previewRequest = previewRequestBuilder.build();
+                                        previewSession.setRepeatingRequest(previewRequest,
+                                                previewCallback, previewBackgroundHandler);
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            @Override
+                            public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+                                error = "Preview configure failed.";
                             }
                         }, null);
             }
@@ -265,32 +311,64 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    private void createCaptureCallback() {
-        if (Build.VERSION.SDK_INT >= 21 && captureCallback == null) {
-            captureCallback = new CameraCaptureSession.CaptureCallback() {
+    private void createPreviewCallback() {
+        if (Build.VERSION.SDK_INT >= 21 && previewCallback == null) {
+            previewCallback = new CameraCaptureSession.CaptureCallback() {
 
             };
         }
     }
 
-    private void startBackgroundThread() {
-        if (backgroundThread == null) {
-            backgroundThread = new HandlerThread("CameraBackground");
-            backgroundThread.start();
-            backgroundHandler = new Handler(backgroundThread.getLooper());
+    private void createStreamCallback() {
+        if (Build.VERSION.SDK_INT >= 21 && streamCallback == null) {
+            streamCallback = new CameraCaptureSession.CaptureCallback() {
+
+            };
         }
     }
 
-    private void stopBackgroundThread() {
-        if (backgroundThread != null) {
+    private void startStreamBackgroundThread() {
+        if (streamBackgroundThread == null) {
+            streamBackgroundThread = new HandlerThread("StreamBackground");
+            streamBackgroundThread.start();
+            streamBackgroundHandler = new Handler(streamBackgroundThread.getLooper());
+        }
+    }
+
+    private void startPreviewBackgroundThread() {
+        if (previewBackgroundThread == null) {
+            previewBackgroundThread = new HandlerThread("PreviewBackground");
+            previewBackgroundThread.start();
+            previewBackgroundHandler = new Handler(previewBackgroundThread.getLooper());
+        }
+    }
+
+    private void stopPreviewBackgroundThread() {
+        if (previewBackgroundThread != null) {
             if (Build.VERSION.SDK_INT >= 18)
-                backgroundThread.quitSafely();
+                previewBackgroundThread.quitSafely();
             else
-                backgroundThread.quit();
+                previewBackgroundThread.quit();
             try {
-                backgroundThread.join();
-                backgroundThread = null;
-                backgroundHandler = null;
+                previewBackgroundThread.join();
+                previewBackgroundThread = null;
+                previewBackgroundHandler = null;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void stopStreamBackgroundThread() {
+        if (streamBackgroundThread != null) {
+            if (Build.VERSION.SDK_INT >= 18)
+                streamBackgroundThread.quitSafely();
+            else
+                streamBackgroundThread.quit();
+            try {
+                streamBackgroundThread.join();
+                streamBackgroundThread = null;
+                streamBackgroundHandler = null;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -341,14 +419,16 @@ public class CameraManager implements Camera.PreviewCallback {
                         Collections.sort(previewSizes, new CompareSizesByArea());
                         previewSize = calculateNewPreviewSize();
                         createCameraCallback();
-                        createCaptureCallback();
-                        startBackgroundThread();
+                        createPreviewCallback();
+                        createStreamCallback();
+                        startPreviewBackgroundThread();
+                        startStreamBackgroundThread();
                         createImageAvailableListener();
                         imageReader = ImageReader.newInstance(previewSize.width, previewSize.height,
                                 ImageFormat.JPEG, /*maxImages*/2);
                         imageReader.setOnImageAvailableListener(
-                                imageAvailableListener, backgroundHandler);
-                        manager.openCamera(camera2Id, stateCallback, backgroundHandler);
+                                imageAvailableListener, streamBackgroundHandler);
+                        manager.openCamera(camera2Id, stateCallback, previewBackgroundHandler);
                     } catch (Exception e) {
                         error = e.getMessage();
                         e.printStackTrace();
@@ -399,9 +479,13 @@ public class CameraManager implements Camera.PreviewCallback {
             if (Build.VERSION.SDK_INT >= 21) {
                 if (cameraDevice != null && this.texture != null && texture == this.texture) {
                     afterGrandPermission = false;
-                    if (captureSession != null) {
-                        captureSession.close();
-                        captureSession = null;
+                    if (previewSession != null) {
+                        previewSession.close();
+                        previewSession = null;
+                    }
+                    if (streamSession != null) {
+                        streamSession.close();
+                        streamSession = null;
                     }
                     if (cameraDevice != null) {
                         cameraDevice.close();
@@ -411,7 +495,8 @@ public class CameraManager implements Camera.PreviewCallback {
                         imageReader.close();
                         imageReader = null;
                     }
-                    stopBackgroundThread();
+                    stopPreviewBackgroundThread();
+                    stopStreamBackgroundThread();
                     this.texture = null;
                 }
             }
@@ -647,7 +732,15 @@ public class CameraManager implements Camera.PreviewCallback {
                     @Override
                     public void onImageAvailable(ImageReader imageReader) {
                         if (Build.VERSION.SDK_INT >= 21) {
-                            imageReader.acquireLatestImage();
+                            try {
+                                Image image = imageReader.acquireLatestImage();
+                                if (image != null) {
+                                    //processImage(img);
+                                    image.close();
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 };
