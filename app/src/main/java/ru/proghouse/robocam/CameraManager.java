@@ -434,7 +434,7 @@ public class CameraManager implements Camera.PreviewCallback {
                             surfacePreviewSizes[i] = new PreviewSize(outputSizes[i]);
                             ratio.add((float) outputSizes[i].getHeight() / (float) outputSizes[i].getWidth());
                         }
-                        outputSizes = map.getOutputSizes(ImageFormat.JPEG);
+                        outputSizes = map.getOutputSizes(ImageFormat.YUV_420_888);
                         previewSizes.clear();
                         for (int i = 0; i < outputSizes.length; i++)
                             if (ratio.contains((float) outputSizes[i].getHeight() / (float) outputSizes[i].getWidth()))
@@ -448,7 +448,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         startStreamBackgroundThread();
                         createImageAvailableListener();
                         imageReader = ImageReader.newInstance(previewSize.width, previewSize.height,
-                                ImageFormat.JPEG, /*maxImages*/2);
+                                ImageFormat.YUV_420_888, /*maxImages*/2);
                         imageReader.setOnImageAvailableListener(
                                 imageAvailableListener, streamBackgroundHandler);
                         manager.openCamera(camera2Id, stateCallback, previewBackgroundHandler);
@@ -819,7 +819,7 @@ public class CameraManager implements Camera.PreviewCallback {
                             try {
                                 Image image = imageReader.acquireLatestImage();
                                 if (image != null) {
-                                    processJpeg(image);
+                                    //processJpeg(image);
                                     image.close();
                                 }
                             } catch (Exception e) {
