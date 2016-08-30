@@ -24,6 +24,7 @@ import android.graphics.Color;
 import android.graphics.Movie;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
+import android.net.DhcpInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -1319,17 +1320,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (actualState == AP_STATE_ENABLED) {
                 int ipAddress = wifiManager.getDhcpInfo().ipAddress;
                 ipAddressString = getStringIpAddress(ipAddress);
-                for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
-                    NetworkInterface intf = enumerator.nextElement();
-                    if (intf.getName().contains("wlan"))
-                        for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
-                            InetAddress address = enumInetAddress.nextElement();
-                            if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
-                                ipAddressString = address.getHostAddress();
-                                break;
+                /*if (ipAddressString == null) {
+                    for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
+                        NetworkInterface intf = enumerator.nextElement();
+                        if (intf.getName().contains("ap"))
+                            for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
+                                InetAddress address = enumInetAddress.nextElement();
+                                if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
+                                    ipAddressString = address.getHostAddress();
+                                    break;
+                                }
                             }
-                        }
-                }
+                    }
+                }*/
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1339,6 +1342,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             int ipAddress = wifiInfo.getIpAddress();
             ipAddressString = getStringIpAddress(ipAddress);
+        }
+        if (ipAddressString == null) {
+            try {
+                for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
+                    NetworkInterface intf = enumerator.nextElement();
+                    //if (intf.getName().contains("wlan"))
+                    for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
+                        InetAddress address = enumInetAddress.nextElement();
+                        if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
+                            ipAddressString = address.getHostAddress();
+                            break;
+                        }
+                    }
+                    if (ipAddressString != null)
+                        break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                ipAddressString = null;
+            }
         }
         if (ipAddressString != null) {
             ipAddressString = "http://" + ipAddressString;

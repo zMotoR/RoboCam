@@ -1208,7 +1208,7 @@ public class CameraManager implements Camera.PreviewCallback {
             else if (rgb[readIndex].jpeg != null)
                 imageBytes = rgb[readIndex].jpeg;
             if (imageBytes != null) {
-                if (imageRotation != 0 || Build.VERSION.SDK_INT >= 21) {
+                if (imageRotation != 0 || rgb[readIndex].jpeg != null) {
                     Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                     Matrix matrix = new Matrix();
                     matrix.postRotate(imageRotation);
