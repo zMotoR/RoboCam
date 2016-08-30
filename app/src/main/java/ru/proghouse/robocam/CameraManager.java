@@ -25,6 +25,11 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.Script;
+import android.renderscript.Type;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.util.Size;
@@ -61,7 +66,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private boolean previewing = false;
     private volatile int clientCount = 0;
     private int jpegQuality = 60;
-    private OutputStream outputStream = null;
+    //private OutputStream outputStream = null;
     private volatile int displayOrientation = -1;
     private volatile int displayRotation = -1;
     private volatile SurfaceHolder holder = null;
@@ -83,15 +88,15 @@ public class CameraManager implements Camera.PreviewCallback {
     private CameraCaptureSession previewSession = null;
     //private CameraCaptureSession streamSession = null;
     private CaptureRequest.Builder previewRequestBuilder = null;
-    private CaptureRequest.Builder streamRequestBuilder = null;
+    //private CaptureRequest.Builder streamRequestBuilder = null;
     private CaptureRequest previewRequest = null;
-    private CaptureRequest streamRequest = null;
+    //private CaptureRequest streamRequest = null;
     private CameraCaptureSession.CaptureCallback previewCallback = null;
     private CameraCaptureSession.CaptureCallback streamCallback = null;
     private Handler previewBackgroundHandler = null;
-    private Handler streamBackgroundHandler = null;
+    //private Handler streamBackgroundHandler = null;
     private HandlerThread previewBackgroundThread = null;
-    private HandlerThread streamBackgroundThread = null;
+    //private HandlerThread streamBackgroundThread = null;
     private SurfaceTexture texture = null;
     //private DisplayMetrics displayMetrics = null;
     private ImageReader imageReader = null;
@@ -295,11 +300,11 @@ public class CameraManager implements Camera.PreviewCallback {
                 previewRequestBuilder
                         = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewRequestBuilder.addTarget(surface);
-                streamRequestBuilder
-                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-                streamRequestBuilder.addTarget(streamSurface);
+                //previewRequestBuilder
+                //        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                previewRequestBuilder.addTarget(streamSurface);
                 cameraDevice.createCaptureSession(
-                        Arrays.asList(surface, streamSurface),
+                        Arrays.asList(streamSurface, surface),
                         new CameraCaptureSession.StateCallback() {
 
                             @Override
@@ -310,13 +315,15 @@ public class CameraManager implements Camera.PreviewCallback {
                                         previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                         previewRequest = previewRequestBuilder.build();
-
-                                        streamRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                        streamRequest = streamRequestBuilder.build();
-                                        previewSession.setRepeatingBurst(
-                                                Arrays.asList(previewRequest, streamRequest),
+                                        previewSession.setRepeatingRequest(previewRequest,
                                                 previewCallback, previewBackgroundHandler);
+
+                                        //streamRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                        //        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                        //streamRequest = streamRequestBuilder.build();
+                                        //previewSession.setRepeatingBurst(
+                                        //        Arrays.asList(previewRequest, streamRequest),
+                                        //        previewCallback, previewBackgroundHandler);
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -350,13 +357,13 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    private void startStreamBackgroundThread() {
+    /*private void startStreamBackgroundThread() {
         if (streamBackgroundThread == null) {
             streamBackgroundThread = new HandlerThread("StreamBackground");
             streamBackgroundThread.start();
             streamBackgroundHandler = new Handler(streamBackgroundThread.getLooper());
         }
-    }
+    }*/
 
     private void startPreviewBackgroundThread() {
         if (previewBackgroundThread == null) {
@@ -382,7 +389,7 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    private void stopStreamBackgroundThread() {
+    /*private void stopStreamBackgroundThread() {
         if (streamBackgroundThread != null) {
             if (Build.VERSION.SDK_INT >= 18)
                 streamBackgroundThread.quitSafely();
@@ -396,7 +403,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 
     public void initCamera(Activity activity, SurfaceTexture texture) {
         synchronized(HttpServer.sync) {
@@ -426,7 +433,8 @@ public class CameraManager implements Camera.PreviewCallback {
                                 = manager.getCameraCharacteristics(camera2Id);
                         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                         facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                        StreamConfigurationMap map = characteristics.get(
+                                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                         Size[] outputSizes = map.getOutputSizes(SurfaceTexture.class);
                         surfacePreviewSizes = new PreviewSize[outputSizes.length];
                         HashSet<Float> ratio = new HashSet<Float>();
@@ -445,12 +453,12 @@ public class CameraManager implements Camera.PreviewCallback {
                         createPreviewCallback();
                         createStreamCallback();
                         startPreviewBackgroundThread();
-                        startStreamBackgroundThread();
+                        //startStreamBackgroundThread();
                         createImageAvailableListener();
                         imageReader = ImageReader.newInstance(previewSize.width, previewSize.height,
                                 ImageFormat.YUV_420_888, /*maxImages*/2);
                         imageReader.setOnImageAvailableListener(
-                                imageAvailableListener, streamBackgroundHandler);
+                                imageAvailableListener, previewBackgroundHandler);
                         manager.openCamera(camera2Id, stateCallback, previewBackgroundHandler);
                     } catch (Exception e) {
                         error = e.getMessage();
@@ -519,7 +527,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         imageReader = null;
                     }
                     stopPreviewBackgroundThread();
-                    stopStreamBackgroundThread();
+                    //stopStreamBackgroundThread();
                     this.texture = null;
                 }
             }
@@ -819,7 +827,9 @@ public class CameraManager implements Camera.PreviewCallback {
                             try {
                                 Image image = imageReader.acquireLatestImage();
                                 if (image != null) {
-                                    //processJpeg(image);
+                                    //int width = image.getWidth();
+                                    //int height = image.getHeight();
+                                    storeYUV_420_888(image);
                                     image.close();
                                 }
                             } catch (Exception e) {
@@ -828,6 +838,50 @@ public class CameraManager implements Camera.PreviewCallback {
                         }
                     }
                 };
+        }
+    }
+
+    private void storeYUV_420_888(Object _image) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (_image == null)
+                return;
+            Image image = (Image)_image;
+            id++;
+            if (id == Integer.MAX_VALUE)
+                id = Integer.MIN_VALUE;
+            if (id == 0)
+                id++;
+            ByteBuffer yBuf = image.getPlanes()[0].getBuffer();
+            ByteBuffer uBuf = image.getPlanes()[1].getBuffer();
+            ByteBuffer vBuf = image.getPlanes()[2].getBuffer();
+            rgb[writeIndex].yBytes = new byte[yBuf.remaining()];
+            yBuf.rewind();
+            yBuf.get(rgb[writeIndex].yBytes);
+            rgb[writeIndex].uBytes = new byte[uBuf.remaining()];
+            uBuf.rewind();
+            uBuf.get(rgb[writeIndex].uBytes);
+            rgb[writeIndex].vBytes = new byte[vBuf.remaining()];
+            vBuf.rewind();
+            vBuf.get(rgb[writeIndex].vBytes);
+            rgb[writeIndex].uRowStride = image.getPlanes()[1].getRowStride();
+            rgb[writeIndex].uPixelStride = image.getPlanes()[1].getPixelStride();
+            rgb[writeIndex].vRowStride = image.getPlanes()[2].getRowStride();
+            rgb[writeIndex].vPixelStride = image.getPlanes()[2].getPixelStride();
+            rgb[writeIndex].width = image.getWidth();
+            rgb[writeIndex].height = image.getHeight();
+            rgb[writeIndex].initialized = true;
+            rgb[writeIndex].id = id;
+            synchronized (lock) {
+                oldWriteIndex = writeIndex;
+                writeIndex++;
+                if (writeIndex >= rgb.length)
+                    writeIndex = 0;
+                if (writeIndex == readIndex) {
+                    writeIndex++;
+                    if (writeIndex >= rgb.length)
+                        writeIndex = 0;
+                }
+            }
         }
     }
 
@@ -913,6 +967,74 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
+    /*private Bitmap YUV_420_888_toRGB(Image image, int width, int height){
+        if (Build.VERSION.SDK_INT >= 21) {
+            // Get the three image planes
+            Image.Plane[] planes = image.getPlanes();
+            ByteBuffer buffer = planes[0].getBuffer();
+            byte[] y = new byte[buffer.remaining()];
+            buffer.get(y);
+
+            buffer = planes[1].getBuffer();
+            byte[] u = new byte[buffer.remaining()];
+            buffer.get(u);
+
+            buffer = planes[2].getBuffer();
+            byte[] v = new byte[buffer.remaining()];
+            buffer.get(v);
+
+            // get the relevant RowStrides and PixelStrides
+            // (we know from documentation that PixelStride is 1 for y)
+            int yRowStride = planes[0].getRowStride();
+            int uvRowStride = planes[1].getRowStride();  // we know from   documentation that RowStride is the same for u and v.
+            int uvPixelStride = planes[1].getPixelStride();  // we know from   documentation that PixelStride is the same for u and v.
+
+
+            // rs creation just for demo. Create rs just once in onCreate and use it again.
+            RenderScript rs = RenderScript.create(this);
+            //RenderScript rs = MainActivity.rs;
+            ScriptC_yuv420888 mYuv420 = new ScriptC_yuv420888(rs);
+
+            // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.
+            // Note also that uAlloc and vAlloc are 1-dimensional while yAlloc is 2-dimensional.
+            Type.Builder typeUcharY = new Type.Builder(rs, Element.U8(rs));
+            typeUcharY.setX(yRowStride).setY(height);
+            Allocation yAlloc = Allocation.createTyped(rs, typeUcharY.create());
+            yAlloc.copyFrom(y);
+            mYuv420.set_ypsIn(yAlloc);
+
+            Type.Builder typeUcharUV = new Type.Builder(rs, Element.U8(rs));
+            // note that the size of the u's and v's are as follows:
+            //      (  (width/2)*PixelStride + padding  ) * (height/2)
+            // =    (RowStride                          ) * (height/2)
+            // but I noted that on the S7 it is 1 less...
+            typeUcharUV.setX(u.length);
+            Allocation uAlloc = Allocation.createTyped(rs, typeUcharUV.create());
+            uAlloc.copyFrom(u);
+            mYuv420.set_uIn(uAlloc);
+
+            Allocation vAlloc = Allocation.createTyped(rs, typeUcharUV.create());
+            vAlloc.copyFrom(v);
+            mYuv420.set_vIn(vAlloc);
+
+            // handover parameters
+            mYuv420.set_picWidth(width);
+            mYuv420.set_uvRowStride(uvRowStride);
+            mYuv420.set_uvPixelStride(uvPixelStride);
+
+            Bitmap outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Allocation outAlloc = Allocation.createFromBitmap(rs, outBitmap, Allocation.MipmapControl.MIPMAP_NONE, Allocation.USAGE_SCRIPT);
+
+            Script.LaunchOptions lo = new Script.LaunchOptions();
+            lo.setX(0, width);  // by this we ignore the y’s padding zone, i.e. the right side of x between width and yRowStride
+            lo.setY(0, height);
+
+            mYuv420.forEach_doConvert(outAlloc, lo);
+            outAlloc.copyTo(outBitmap);
+        }
+        return outBitmap;
+    }*/
+
     private int id = Integer.MIN_VALUE;
     private RgbData[] rgb = new RgbData[] {new RgbData(), new RgbData(), new RgbData()};
     private int writeIndex = 1, oldWriteIndex = 0, readIndex = 0;
@@ -933,10 +1055,10 @@ public class CameraManager implements Camera.PreviewCallback {
             rgb[writeIndex].height = camera.getParameters().getPreviewSize().height;
             rgb[writeIndex].initialized = true;
         }
-        if (rgb[writeIndex].yuv420 == null || rgb[writeIndex].yuv420.length != data.length)
-            rgb[writeIndex].yuv420 = data.clone();
+        if (rgb[writeIndex].nv21 == null || rgb[writeIndex].nv21.length != data.length)
+            rgb[writeIndex].nv21 = data.clone();
         else
-            System.arraycopy(data, 0, rgb[writeIndex].yuv420, 0, data.length);
+            System.arraycopy(data, 0, rgb[writeIndex].nv21, 0, data.length);
         rgb[writeIndex].id = id;
         synchronized (lock) {
             oldWriteIndex = writeIndex;
@@ -951,7 +1073,59 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    private void processJpeg(Object image) {
+    /*private byte[] convertYUV420ToN21(Object imgYUV420) {
+        byte[] rez = new byte[0];
+        if (Build.VERSION.SDK_INT >= 21) {
+            ByteBuffer buffer0 = ((Image)imgYUV420).getPlanes()[0].getBuffer();
+            ByteBuffer buffer2 = ((Image)imgYUV420).getPlanes()[2].getBuffer();
+            int buffer0_size = buffer0.remaining();
+            int buffer2_size = buffer2.remaining();
+            rez = new byte[buffer0_size + buffer2_size];
+            buffer0.get(rez, 0, buffer0_size);
+            buffer2.get(rez, buffer0_size, buffer2_size);
+        }
+        return rez;
+    }*/
+
+    /*private void storeImage(Object _image) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (_image == null)
+                return;
+            Image image = (Image)_image;
+            id++;
+            if (id == Integer.MAX_VALUE)
+                id = Integer.MIN_VALUE;
+            if (id == 0)
+                id++;
+            if (!rgb[writeIndex].initialized) {
+                rgb[writeIndex].width = image.getWidth();
+                rgb[writeIndex].height = image.getHeight();
+                rgb[writeIndex].initialized = true;
+            }
+            ByteBuffer buffer0 = image.getPlanes()[0].getBuffer();
+            ByteBuffer buffer2 = image.getPlanes()[2].getBuffer();
+            int buffer0_size = buffer0.remaining();
+            int buffer2_size = buffer2.remaining();
+            if (rgb[writeIndex].nv21 == null || rgb[writeIndex].nv21.length != buffer0_size + buffer2_size)
+                rgb[writeIndex].nv21 = new byte[buffer0_size + buffer2_size];
+            buffer0.get(rgb[writeIndex].nv21, 0, buffer0_size);
+            buffer2.get(rgb[writeIndex].nv21, buffer0_size, buffer2_size);
+            rgb[writeIndex].id = id;
+            synchronized (lock) {
+                oldWriteIndex = writeIndex;
+                writeIndex++;
+                if (writeIndex >= rgb.length)
+                    writeIndex = 0;
+                if (writeIndex == readIndex) {
+                    writeIndex++;
+                    if (writeIndex >= rgb.length)
+                        writeIndex = 0;
+                }
+            }
+        }
+    }*/
+
+    /*private void processJpeg(Object image) {
         if (Build.VERSION.SDK_INT >= 21) {
             try {
                 if (image == null || ((Image) image).getFormat() != ImageFormat.JPEG)
@@ -985,7 +1159,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 
     public int writeJpg(OutputStream outputStream, String boundary, int excludedId) throws IOException {
         int readId = 0;
@@ -1001,27 +1175,43 @@ public class CameraManager implements Camera.PreviewCallback {
             readerCount++;
         }
         try {
+            int imageRotation = 0;
+            if (displayOrientation != 0 || Build.VERSION.SDK_INT >= 21)
+                if (portrait_n_facing)
+                    imageRotation = displayOrientation + 180;
+                else if (landscape_n_facing)
+                    imageRotation = (displayOrientation + sensorOrientation + 180) % 360;
+                else
+                    imageRotation = (displayOrientation + sensorOrientation) % 360;
             byte[] imageBytes = null;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if (rgb[readIndex].yuv420 != null) {
-                YuvImage yuvImage = new YuvImage(rgb[readIndex].yuv420, ImageFormat.NV21,
+            if (rgb[readIndex].nv21 != null) {
+                YuvImage yuvImage = new YuvImage(rgb[readIndex].nv21, ImageFormat.NV21,
                         rgb[readIndex].width, rgb[readIndex].height, null);
                 yuvImage.compressToJpeg(new Rect(0, 0, rgb[readIndex].width, rgb[readIndex].height),
-                        displayOrientation == 0 ? jpegQuality : 100, baos);
+                        imageRotation == 0 ? jpegQuality : 100, baos);
+                imageBytes = baos.toByteArray();
+            }
+            else if (rgb[readIndex].yBytes != null
+                    && rgb[readIndex].uBytes != null
+                    && rgb[readIndex].vBytes != null) {
+                int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
+                convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                        rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                        rgb[readIndex].vRowStride, rgb[readIndex].vPixelStride,
+                        rgb[readIndex].width, rgb[readIndex].height);
+                Bitmap bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
+                        Bitmap.Config.ARGB_8888);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
                 imageBytes = baos.toByteArray();
             }
             else if (rgb[readIndex].jpeg != null)
                 imageBytes = rgb[readIndex].jpeg;
             if (imageBytes != null) {
-                if (displayOrientation != 0 || Build.VERSION.SDK_INT >= 21) {
+                if (imageRotation != 0 || Build.VERSION.SDK_INT >= 21) {
                     Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                     Matrix matrix = new Matrix();
-                    if (portrait_n_facing)
-                        matrix.postRotate(displayOrientation + 180);
-                    else if (landscape_n_facing)
-                        matrix.postRotate((displayOrientation + sensorOrientation + 180) % 360);
-                    else
-                        matrix.postRotate((displayOrientation + sensorOrientation) % 360);
+                    matrix.postRotate(imageRotation);
                     bitmap = Bitmap.createBitmap(bitmap, 0, 0,
                             rgb[readIndex].width, rgb[readIndex].height, matrix, true);
                     baos.reset();
@@ -1043,7 +1233,7 @@ public class CameraManager implements Camera.PreviewCallback {
         return readId;
     }
 
-    /*private void decodeYUV420(int[] rgb, byte[] yuv420, int width, int height) {
+    private void decodeYUV420(int[] rgb, byte[] yuv420, int width, int height) {
         final int frameSize = width * height;
         int uvp, u, v, i, y, r, g, b, y1192;
         for (int j = 0, yp = 0; j < height; j++) {
@@ -1073,6 +1263,96 @@ public class CameraManager implements Camera.PreviewCallback {
                 rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
             }
         }
+    }
+
+    private void convertYUV_420_888ToRGB2(int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
+                                          int uRowStride, int uPixelStride,
+                                          int vRowStride, int vPixelStride, int width, int height) {
+        int i, y, u, v, r, g, b, uvIndex;
+        for (int j = 0, yp = 0; j < height; j++) {
+            for (i = 0; i < width; i++, yp++) {
+                y = yBytes[yp];
+                if (y < 0) y += 256;
+                uvIndex = uPixelStride * (i / 2) + uRowStride * (j / 2);
+                u = uBytes[uvIndex];
+                if (u < 0) u += 256;
+                v = vBytes[uvIndex];
+                if (v < 0) v += 256;
+
+                r = (int)((float)y + 1.402f * ((float)v - 128));
+                g = (int)((float)y - 0.34414f * ((float)u - 128) - 0.71414f * ((float)v - 128));
+                b = (int)((float)y + 1.772f * ((float)u - 128));
+
+                r = Math.max(0, Math.min(255, r));
+                g = Math.max(0, Math.min(255, g));
+                b = Math.max(0, Math.min(255, b));
+
+                rgb[yp] = 0xff000000 | ((r << 16) & 0xff0000) | ((g << 8) & 0xff00) | (b & 0xff);
+            }
+        }
+    }
+
+    //Do not work!
+    /*private void convertYUV_420_888ToRGB(int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
+                                         int uRowStride, int vRowStride, int width, int height)
+    {
+        final int BYTES_PER_RGB_PIX = 3;
+        int yp, up, vp; // YUV positions.
+        byte[] yuvPixel = { 0, 0, 0 };
+        byte[] rowBytesRGB = new byte[width * BYTES_PER_RGB_PIX];
+        int lSumR = 0, lSumG = 0, lSumB = 0;
+
+        // For Android 5.0.1(API 21) has an issue which is blank(zero) U, V arrays except the first some bytes(eg. 656 bytes for 176x144).
+        // This issue caused the converted image turned to Green scaled overall of the image.
+        // This issue is fixed in Android 5.1.1(API 22).
+
+        yp = 0;
+        for (int i = 0; i < height; i++)
+        {
+            up = (i >> 1) * uRowStride;
+            vp = (i >> 1) * vRowStride;
+            for (int j = 0; j < width; j++)
+            {
+                yuvPixel[0] = yBytes[yp++];
+                if ((j & 1) == 0)
+                {
+                    yuvPixel[1] = uBytes[up++];
+                    yuvPixel[2] = vBytes[vp++];
+                }
+
+                // For the test to get 3 RGB colors average.
+                yuvToRgb_Test(yuvPixel, j * BYTES_PER_RGB_PIX, rowBytesRGB);
+                lSumR += (rowBytesRGB[j * BYTES_PER_RGB_PIX] & 0xff);
+                lSumG += (rowBytesRGB[j * BYTES_PER_RGB_PIX + 1] & 0xff);
+                lSumB += (rowBytesRGB[j * BYTES_PER_RGB_PIX + 2] & 0xff);
+
+                rgb[yp - 1] = 0xff000000 | ((lSumR << 6) & 0xff0000) | ((lSumG >> 2) & 0xff00) | ((lSumB >> 10) & 0xff);
+            }
+        }
+    }
+
+    private void yuvToRgb_Test(byte[] yuvData, int rgbOffset, byte[] rgbOut)
+    {
+        final int COLOR_MAX = 255;
+
+        float y = yuvData[0] & 0xff; // Y channel
+        float cb = yuvData[1] & 0xff; // U channel
+        float cr = yuvData[2] & 0xff; // V channel
+
+        // Convert YUV fixed pixel to RGB (from JFIF's "Conversion to and from RGB" section).
+        float r = y + 1.402f * (cr - 128);
+        float g = y - 0.34414f * (cb - 128) - 0.71414f * (cr - 128);
+        float b = y + 1.772f * (cb - 128);
+
+        // Clamp to [0, 255].
+        r = Math.max(0, Math.min(COLOR_MAX, r));
+        g = Math.max(0, Math.min(COLOR_MAX, g));
+        b = Math.max(0, Math.min(COLOR_MAX, b));
+
+        // 'byte' is signed, it takes the last 8bits of the integer.
+        rgbOut[rgbOffset] = (byte) ((int) r);
+        rgbOut[rgbOffset + 1] = (byte) ((int) g);
+        rgbOut[rgbOffset + 2] = (byte) ((int) b);
     }*/
 
     /*public void setCameraId(int cameraId) {

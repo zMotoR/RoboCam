@@ -391,7 +391,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
                 HashSet<Float> ratio = new HashSet<Float>();
                 for (Size size : map.getOutputSizes(SurfaceTexture.class))
                     ratio.add((float)size.getHeight() / (float)size.getWidth());
-                for (Size size : map.getOutputSizes(ImageFormat.JPEG))
+                for (Size size : map.getOutputSizes(ImageFormat.YUV_420_888))
                     if (ratio.contains((float)size.getHeight() / (float)size.getWidth()))
                         sizes.add(new PreviewSize(size));
                 Collections.sort(sizes, new CompareSizesByArea());
