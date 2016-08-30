@@ -92,7 +92,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private CaptureRequest previewRequest = null;
     //private CaptureRequest streamRequest = null;
     private CameraCaptureSession.CaptureCallback previewCallback = null;
-    private CameraCaptureSession.CaptureCallback streamCallback = null;
+    //private CameraCaptureSession.CaptureCallback streamCallback = null;
     private Handler previewBackgroundHandler = null;
     //private Handler streamBackgroundHandler = null;
     private HandlerThread previewBackgroundThread = null;
@@ -312,8 +312,30 @@ public class CameraManager implements Camera.PreviewCallback {
                                 try {
                                     if (Build.VERSION.SDK_INT >= 21) {
                                         previewSession = cameraCaptureSession;
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                                                CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                                        //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                        //        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                        //Scene mode
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_MODE,
+                                                CaptureRequest.CONTROL_MODE_AUTO);
+                                        //A special color effect to apply
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE,
+                                                CaptureRequest.CONTROL_EFFECT_MODE_OFF);
+                                        //White balance
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                                                CaptureRequest.CONTROL_AWB_MODE_AUTO);
+                                        //Auto-exposure
+                                        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                                                CaptureRequest.CONTROL_AE_MODE_ON);
+                                        //previewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                                        //        CaptureRequest.FLASH_MODE_TORCH);
+                                        //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION,
+                                        //        6);
+                                        //Auto-focus
                                         previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+
                                         previewRequest = previewRequestBuilder.build();
                                         previewSession.setRepeatingRequest(previewRequest,
                                                 previewCallback, previewBackgroundHandler);
@@ -349,13 +371,13 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }
 
-    private void createStreamCallback() {
+    /*private void createStreamCallback() {
         if (Build.VERSION.SDK_INT >= 21 && streamCallback == null) {
             streamCallback = new CameraCaptureSession.CaptureCallback() {
 
             };
         }
-    }
+    }*/
 
     /*private void startStreamBackgroundThread() {
         if (streamBackgroundThread == null) {
@@ -451,7 +473,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         previewSize = calculateNewPreviewSize();
                         createCameraCallback();
                         createPreviewCallback();
-                        createStreamCallback();
+                        //createStreamCallback();
                         startPreviewBackgroundThread();
                         //startStreamBackgroundThread();
                         createImageAvailableListener();
