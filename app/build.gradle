@@ -2,13 +2,15 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.0"
+    buildToolsVersion '24.0.1'
     defaultConfig {
         applicationId "ru.proghouse.robocam"
         minSdkVersion 9
         targetSdkVersion 24
-        versionCode 2
-        versionName '1.0.a3'
+        versionCode 3
+        versionName '1.0.a4'
+        renderscriptTargetApi 18
+        renderscriptSupportModeEnabled true
     }
     buildTypes {
         release {

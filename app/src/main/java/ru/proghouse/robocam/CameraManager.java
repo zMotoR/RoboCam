@@ -25,11 +25,7 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.Script;
-import android.renderscript.Type;
+import android.support.v8.renderscript.*;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.util.Size;
@@ -101,6 +97,9 @@ public class CameraManager implements Camera.PreviewCallback {
     //private DisplayMetrics displayMetrics = null;
     private ImageReader imageReader = null;
     private ImageReader.OnImageAvailableListener imageAvailableListener = null;
+    private RenderScript renderScript = null;
+    private Allocation inputAllocation = null;
+    private Allocation outputAllocation = null;
 
     CameraManager(){
     }
@@ -430,6 +429,7 @@ public class CameraManager implements Camera.PreviewCallback {
     public void initCamera(Activity activity, SurfaceTexture texture) {
         synchronized(HttpServer.sync) {
             if (Build.VERSION.SDK_INT >= 21) {
+                renderScript = RenderScript.create(activity);
                 this.texture = texture;
                 //Display display = activity.getWindowManager().getDefaultDisplay();
                 //displayMetrics = new DisplayMetrics();
@@ -1183,6 +1183,11 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
+    long mstime1 = 0;
+    long mscount1 = 0;
+    long mstime2 = 0;
+    long mscount2 = 0;
+
     public int writeJpg(OutputStream outputStream, String boundary, int excludedId) throws IOException {
         int readId = 0;
         synchronized (lock) {
@@ -1205,6 +1210,8 @@ public class CameraManager implements Camera.PreviewCallback {
                     imageRotation = (displayOrientation + sensorOrientation + 180) % 360;
                 else
                     imageRotation = (displayOrientation + sensorOrientation) % 360;
+            boolean rotate = true;
+            Bitmap bitmap = null;
             byte[] imageBytes = null;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             if (rgb[readIndex].nv21 != null) {
@@ -1217,21 +1224,67 @@ public class CameraManager implements Camera.PreviewCallback {
             else if (rgb[readIndex].yBytes != null
                     && rgb[readIndex].uBytes != null
                     && rgb[readIndex].vBytes != null) {
-                int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
-                convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
-                        rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                        rgb[readIndex].vRowStride, rgb[readIndex].vPixelStride,
-                        rgb[readIndex].width, rgb[readIndex].height);
-                Bitmap bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
-                        Bitmap.Config.ARGB_8888);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
-                imageBytes = baos.toByteArray();
+                try {
+                    long curtime1 = System.currentTimeMillis();
+                    //Java converting - 100ms
+                    /*int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
+                    convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                            rgb[readIndex].vRowStride, rgb[readIndex].vPixelStride,
+                            rgb[readIndex].width, rgb[readIndex].height);
+                    bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
+                            Bitmap.Config.ARGB_8888);*/
+                    //Converting via RenderScript - 33ms
+                    bitmap = convertYUV_420_888ToRGB3(
+                            rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                    rotate = false;
+                    if (mscount1 == 0)
+                        mstime1 = System.currentTimeMillis() - curtime1;
+                    else
+                        mstime1 = (System.currentTimeMillis() - curtime1 + mstime1) / 2;
+                    mscount1++;
+                    //bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
+                    //imageBytes = baos.toByteArray();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             else if (rgb[readIndex].jpeg != null)
                 imageBytes = rgb[readIndex].jpeg;
-            if (imageBytes != null) {
+            if (rotate && (imageRotation != 0 || rgb[readIndex].jpeg != null)) {
+                //41ms
+                long curtime2 = System.currentTimeMillis();
+                if (imageBytes != null)
+                    bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                Matrix matrix = new Matrix();
+                matrix.postRotate(imageRotation);
+                bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                        rgb[readIndex].width, rgb[readIndex].height, matrix, true);
+                if (mscount2 == 0)
+                    mstime2 = System.currentTimeMillis() - curtime2;
+                else
+                    mstime2 = (System.currentTimeMillis() - curtime2 + mstime2) / 2;
+                mscount2++;
+            }
+            if (bitmap != null) {
+                baos.reset();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
+                imageBytes = baos.toByteArray();
+            }
+            if (imageBytes != null || bitmap != null) {
+                outputStream.write(("Content-type: image/jpeg\r\n"
+                        + "Content-Length: " + imageBytes.length + "\r\n\r\n").getBytes());
+                outputStream.write(imageBytes);
+                outputStream.write(("\r\n").getBytes());
+                outputStream.flush();
+            }
+
+            /*if (imageBytes != null || bitmap != null) {
                 if (imageRotation != 0 || rgb[readIndex].jpeg != null) {
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    if (imageBytes != null)
+                        bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                     Matrix matrix = new Matrix();
                     matrix.postRotate(imageRotation);
                     bitmap = Bitmap.createBitmap(bitmap, 0, 0,
@@ -1240,12 +1293,17 @@ public class CameraManager implements Camera.PreviewCallback {
                     bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
                     imageBytes = baos.toByteArray();
                 }
+                if (imageBytes == null) {
+                    baos.reset();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
+                    imageBytes = baos.toByteArray();
+                }
                 outputStream.write(("Content-type: image/jpeg\r\n"
                         + "Content-Length: " + imageBytes.length + "\r\n\r\n").getBytes());
                 outputStream.write(imageBytes);
                 outputStream.write(("\r\n").getBytes());
                 outputStream.flush();
-            }
+            }*/
         } finally {
             synchronized (lock) {
                 readId = rgb[readIndex].id;
@@ -1255,7 +1313,7 @@ public class CameraManager implements Camera.PreviewCallback {
         return readId;
     }
 
-    private void decodeYUV420(int[] rgb, byte[] yuv420, int width, int height) {
+    /*private void decodeYUV420(int[] rgb, byte[] yuv420, int width, int height) {
         final int frameSize = width * height;
         int uvp, u, v, i, y, r, g, b, y1192;
         for (int j = 0, yp = 0; j < height; j++) {
@@ -1285,7 +1343,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
             }
         }
-    }
+    }*/
 
     private void convertYUV_420_888ToRGB2(int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
                                           int uRowStride, int uPixelStride,
@@ -1407,5 +1465,69 @@ public class CameraManager implements Camera.PreviewCallback {
             this.outputStream = outputStream;
         }
     }*/
+
+    private Bitmap convertYUV_420_888ToRGB3(
+            byte[] yBytes, byte[] uBytes, byte[] vBytes,
+            int uvRowStride, int uvPixelStride, int width, int height, int imageRotation) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            ScriptC_yuv420888 mYuv420 = new ScriptC_yuv420888(renderScript);
+
+            // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.
+            // Note also that uAlloc and vAlloc are 1-dimensional while yAlloc is 2-dimensional.
+            Type.Builder typeUcharY = new Type.Builder(renderScript, Element.U8(renderScript));
+            typeUcharY.setX(width).setY(height);
+            Allocation yAlloc = Allocation.createTyped(renderScript, typeUcharY.create());
+            yAlloc.copyFrom(yBytes);
+            mYuv420.set_ypsIn(yAlloc);
+
+            Type.Builder typeUcharUV = new Type.Builder(renderScript, Element.U8(renderScript));
+            // note that the size of the u's and v's are as follows:
+            //      (  (width/2)*PixelStride + padding  ) * (height/2)
+            // =    (RowStride                          ) * (height/2)
+            // but I noted that on the S7 it is 1 less...
+            typeUcharUV.setX(uBytes.length);
+            Allocation uAlloc = Allocation.createTyped(renderScript, typeUcharUV.create());
+            uAlloc.copyFrom(uBytes);
+            mYuv420.set_uIn(uAlloc);
+
+            Allocation vAlloc = Allocation.createTyped(renderScript, typeUcharUV.create());
+            vAlloc.copyFrom(vBytes);
+            mYuv420.set_vIn(vAlloc);
+
+            // handover parameters
+            //mYuv420.set_picWidth(width);
+            mYuv420.set_uvRowStride(uvRowStride);
+            mYuv420.set_uvPixelStride(uvPixelStride);
+            if (imageRotation < 0)
+                imageRotation += 3600;
+            mYuv420.set_imageRotation(imageRotation % 360);
+            Script.LaunchOptions lo = new Script.LaunchOptions();
+            Bitmap outBitmap = null;
+            if (imageRotation == 270 || imageRotation == 90) {
+                outBitmap = Bitmap.createBitmap(height, width, Bitmap.Config.ARGB_8888);
+                lo.setX(0, height);  // by this we ignore the y’s padding zone, i.e. the right side of x between width and yRowStride
+                lo.setY(0, width);
+                mYuv420.set_width(height);
+                mYuv420.set_height(width);
+            }
+            else {
+                outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                lo.setX(0, width);  // by this we ignore the y’s padding zone, i.e. the right side of x between width and yRowStride
+                lo.setY(0, height);
+                mYuv420.set_width(width);
+                mYuv420.set_height(height);
+            }
+            Allocation outAlloc = Allocation.createFromBitmap(renderScript,
+                    outBitmap, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            mYuv420.forEach_doConvert(outAlloc, lo);
+            outAlloc.copyTo(outBitmap);
+
+            return outBitmap;
+        }
+        return null;
+
+    }
 
 }
