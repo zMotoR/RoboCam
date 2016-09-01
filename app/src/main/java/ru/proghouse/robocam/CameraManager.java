@@ -733,14 +733,14 @@ public class CameraManager implements Camera.PreviewCallback {
         return previewSizes.get(storedPreviewSize);
     }
 
-    public boolean checkIfParametersIsChanged() {
+    /*public boolean checkIfParametersIsChanged() {
         int oldWidth = previewSize == null ? 0 : previewSize.width;
         int oldHeight = previewSize == null ? 0 : previewSize.height;
         PreviewSize newPreviewSize = calculateNewPreviewSize();
         int newWidth = newPreviewSize == null ? 0 : newPreviewSize.width;
         int newHeight = newPreviewSize == null ? 0 : newPreviewSize.height;
         return oldWidth != newWidth || oldHeight != newHeight;
-    }
+    }*/
 
     public void configureTransform(Activity activity, View _textureView,
                                    int viewWidth, int viewHeight) {
@@ -1229,18 +1229,21 @@ public class CameraManager implements Camera.PreviewCallback {
                 try {
                     long curtime1 = System.currentTimeMillis();
                     //Java converting - 100ms
-                    /*int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
+                    int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
                     convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
                             rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                            rgb[readIndex].vRowStride, rgb[readIndex].vPixelStride,
-                            rgb[readIndex].width, rgb[readIndex].height);
-                    bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
-                            Bitmap.Config.ARGB_8888);*/
+                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                    if (imageRotation == 270 || imageRotation == 90)
+                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].height, rgb[readIndex].width,
+                                Bitmap.Config.ARGB_8888);
+                    else
+                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
+                            Bitmap.Config.ARGB_8888);
                     //Converting via RenderScript - 33ms
-                    bitmap = convertYUV_420_888ToRGB3(
+                    /*bitmap = convertYUV_420_888ToRGB3(
                             rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
                             rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);*/
                     rotate = false;
                     if (mscount1 == 0)
                         mstime1 = System.currentTimeMillis() - curtime1;
@@ -1347,33 +1350,6 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
-    private void convertYUV_420_888ToRGB2(int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
-                                          int uRowStride, int uPixelStride,
-                                          int vRowStride, int vPixelStride, int width, int height) {
-        int i, y, u, v, r, g, b, uvIndex;
-        for (int j = 0, yp = 0; j < height; j++) {
-            for (i = 0; i < width; i++, yp++) {
-                y = yBytes[yp];
-                if (y < 0) y += 256;
-                uvIndex = uPixelStride * (i / 2) + uRowStride * (j / 2);
-                u = uBytes[uvIndex];
-                if (u < 0) u += 256;
-                v = vBytes[uvIndex];
-                if (v < 0) v += 256;
-
-                r = (int)((float)y + 1.402f * ((float)v - 128));
-                g = (int)((float)y - 0.34414f * ((float)u - 128) - 0.71414f * ((float)v - 128));
-                b = (int)((float)y + 1.772f * ((float)u - 128));
-
-                r = Math.max(0, Math.min(255, r));
-                g = Math.max(0, Math.min(255, g));
-                b = Math.max(0, Math.min(255, b));
-
-                rgb[yp] = 0xff000000 | ((r << 16) & 0xff0000) | ((g << 8) & 0xff00) | (b & 0xff);
-            }
-        }
-    }
-
     //Do not work!
     /*private void convertYUV_420_888ToRGB(int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
                                          int uRowStride, int vRowStride, int width, int height)
@@ -1468,9 +1444,56 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
+    private void convertYUV_420_888ToRGB2(
+            int[] rgb, byte[] yBytes, byte[] uBytes, byte[] vBytes,
+            int uvRowStride, int uvPixelStride,
+            int width, int height, int imageRotation) {
+        int yuvWidth = width;
+        if (imageRotation == 270 || imageRotation == 90) {
+            width = height;
+            height = yuvWidth;
+        }
+        int i, y, u, v, r, g, b, uvIndex, _x, _y;
+        for (int j = 0, yp = 0; j < height; j++) {
+            for (i = 0; i < width; i++, yp++) {
+                if (imageRotation == 180) {
+                    _x = width - i - 1;
+                    _y = height - j - 1;
+                } else if (imageRotation == 90) {
+                    _x = j;
+                    _y = width - i - 1;
+                } else if (imageRotation == 270) {
+                    _x = height - j - 1;
+                    _y = i;
+                } else {
+                    _x = i;
+                    _y = j;
+                }
+                y = yBytes[_y * yuvWidth + _x];
+                if (y < 0) y += 256;
+                uvIndex = uvRowStride * (_y / 2) + uvPixelStride * (_x / 2);
+                u = uBytes[uvIndex];
+                if (u < 0) u += 256;
+                v = vBytes[uvIndex];
+                if (v < 0) v += 256;
+
+                r = (int)((float)y + 1.402f * ((float)v - 128));
+                g = (int)((float)y - 0.34414f * ((float)u - 128) - 0.71414f * ((float)v - 128));
+                b = (int)((float)y + 1.772f * ((float)u - 128));
+
+                r = Math.max(0, Math.min(255, r));
+                g = Math.max(0, Math.min(255, g));
+                b = Math.max(0, Math.min(255, b));
+
+                rgb[yp] = 0xff000000 | ((r << 16) & 0xff0000) | ((g << 8) & 0xff00) | (b & 0xff);
+            }
+        }
+    }
+
     private Bitmap convertYUV_420_888ToRGB3(
             byte[] yBytes, byte[] uBytes, byte[] vBytes,
-            int uvRowStride, int uvPixelStride, int width, int height, int imageRotation) {
+            int uvRowStride, int uvPixelStride, int width, int height,
+            int imageRotation) {
         if (Build.VERSION.SDK_INT >= 21) {
             ScriptC_yuv420888 mYuv420 = new ScriptC_yuv420888(renderScript);
 

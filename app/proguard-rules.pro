@@ -17,6 +17,8 @@
 #}
 
 -keep class com.android.vending.billing.**
+#-keep class ru.proghouse.robocam.ScriptC_yuv420888
+-keep class android.support.v8.renderscript.** { *; }
 
 -dontwarn javax.servlet.**
 -dontwarn org.osgi.framework.**
