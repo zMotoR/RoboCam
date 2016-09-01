@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private CameraManager cameraManager = CameraManager.getCameraManager();
     private SurfaceView surfaceView = null;
-    private TextureView textureView = null;
+    private View textureView = null;
     private TextureView.SurfaceTextureListener surfaceTextureListener = null;
     private RelativeLayout parentLayout = null;
     private MainActivity thisActivity = null;
@@ -370,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 }
             };
-            textureView.setSurfaceTextureListener(surfaceTextureListener);
+            ((TextureView)textureView).setSurfaceTextureListener(surfaceTextureListener);
         }
     }
 

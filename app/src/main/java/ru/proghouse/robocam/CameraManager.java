@@ -33,6 +33,7 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
+import android.view.View;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -741,9 +742,10 @@ public class CameraManager implements Camera.PreviewCallback {
         return oldWidth != newWidth || oldHeight != newHeight;
     }
 
-    public void configureTransform(Activity activity, TextureView textureView,
+    public void configureTransform(Activity activity, View _textureView,
                                    int viewWidth, int viewHeight) {
         if (Build.VERSION.SDK_INT >= 21) {
+            TextureView textureView = (TextureView)_textureView;
             int orientation = calculateOrientation(activity);
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
