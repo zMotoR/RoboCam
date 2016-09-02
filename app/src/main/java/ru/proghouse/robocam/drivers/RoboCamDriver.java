@@ -51,6 +51,7 @@ public abstract class RoboCamDriver {
     public static final int JOYSTICK_TYPE_INDEPENDENT_MOTORS = 0;
     public static final int JOYSTICK_TYPE_STEERING = 1;
     public static final int JOYSTICK_TYPE_MAILBOX = 2;
+    public static final int JOYSTICK_TYPE_STEERING_PROGRESSIVE = 3;
 
     private static List<String> driverNames = new ArrayList<String>();
     private static List<Class<? extends RoboCamDriver>> driverClasses

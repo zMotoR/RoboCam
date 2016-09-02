@@ -80,7 +80,8 @@
     <string name="joystick_shape">Shape</string>
     <string name="joystick_type">Type</string>
     <string name="joystick_type_independent_motors">Independent motors</string>
-    <string name="joystick_type_steering">Steering</string>
+    <string name="joystick_type_steering">Steering 1 (can move like a car)</string>
+    <string name="joystick_type_steering_progressive">Steering 2 (can spin on the spot)</string>
     <string name="joystick_type_mailbox">Mailbox</string>
     <string name="joystick_behavior1">End of touching (for a horizontal axis)</string>
     <string name="joystick_behavior2">End of touching (for a vertical axis)</string>
@@ -130,4 +131,5 @@
     <string name="request_permission">RoboCam needs camera permission.</string>
     <string name="cannot_init_camera">Cannot initialize the camera.</string>
     <string name="camera_facing_external">External</string>
+    <string name="use_render_script">Use RenderScript to process images</string>
 </resources>

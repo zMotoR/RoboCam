@@ -9,6 +9,7 @@ public class ExtraKey {
     public static final String CAMERA2_ID = "camera2_id";
     public static final String PREVIEW_SIZE = "preview_size";
     public static final String JPEG_QUALITY = "jpeg_quality";
+    public static final String USER_RENDER_SCRIPT = "use_render_script";
     public static final String DRIVER_NAME = "driver_name";
     public static final String DRIVER_PASSWORD = "driver_pswd";
     public static final String SPECTATOR_NAME = "spectator_name";

@@ -44,6 +44,7 @@ import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
@@ -166,6 +167,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private boolean bannerShowOffline = false;
     private AdView adView = null;
     private volatile boolean loadedAds = false;
+    private Thread backgroundThread = null;
+    private volatile boolean backgroundThreadTerminated = false;
+    private volatile int lastCheckedOrientation = Surface.ROTATION_0;
 
     public static double screenMin = 0;
 
@@ -249,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             parentLayout = (RelativeLayout) findViewById(R.id.parentLayout);
 
             surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-            if (Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
                 textureView = new TextureView(this);
                 RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -265,6 +269,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 //if (isScreenOn && cameraManager.getPreviewSize() != null)
                 //    updateCamera();
             }
+            lastCheckedOrientation = getWindowManager().getDefaultDisplay().getRotation();
+            backgroundThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (!thisActivity.backgroundThreadTerminated) {
+                        try {
+                            Thread.sleep(1000);
+                            if (lastCheckedOrientation != getWindowManager().getDefaultDisplay().getRotation()) {
+                                postUpdateCamera();
+                                lastCheckedOrientation = getWindowManager().getDefaultDisplay().getRotation();
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+            setSurfaceSize();
             serverMessage = (TextView) findViewById(R.id.serverMessage);
             serverMessageConnector = (ImageView) findViewById(R.id.serverMessageConnector);
             robotMessage = (TextView) findViewById(R.id.robotMessage);
@@ -334,13 +356,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             banner.setVisibility(View.GONE);
             adView.setVisibility(View.GONE);
             DownloadAd();
+            backgroundThread.start();
         }catch(Throwable e){
             e.printStackTrace();
         }
     }
 
     private void createSurfaceTextureListener() {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             surfaceTextureListener = new TextureView.SurfaceTextureListener() {
 
                 @Override
@@ -386,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     Utils.showError(this, R.string.cannot_init_camera, false);
                 else {
                     cameraManager.initCamera(this, true);
-                    if (Build.VERSION.SDK_INT >= 21) {
+                    if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
                         cameraManager.configureTransform(thisActivity, textureView,
                                 textureView.getWidth(), textureView.getHeight());
                     }
@@ -809,6 +832,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void onDestroy() {
         super.onDestroy();
+        backgroundThreadTerminated = true;
         /*try {
             if (mHelper != null)
                 mHelper.dispose();
@@ -1236,6 +1260,38 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         });
     }
 
+    private void setSurfaceSize() {
+        PreviewSize previewSize = cameraManager.getPreviewSize();
+        if (previewSize != null) {
+            ViewGroup.LayoutParams layoutParams;
+            if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
+                layoutParams = textureView.getLayoutParams();
+            else
+                layoutParams = surfaceView.getLayoutParams();
+            float previewWidth, previewHeight;
+            if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                previewWidth = previewSize.height;
+                previewHeight = previewSize.width;
+            } else {
+                previewWidth = previewSize.width;
+                previewHeight = previewSize.height;
+            }
+            float ratioX = (float) parentLayout.getWidth() / previewWidth;
+            float ratioY = (float) parentLayout.getHeight() / previewHeight;
+            if (ratioX < ratioY) {
+                layoutParams.width = parentLayout.getWidth();
+                layoutParams.height = (int) ((float) previewHeight * ratioX);
+            } else {
+                layoutParams.width = (int) ((float) previewWidth * ratioY);
+                layoutParams.height = parentLayout.getHeight();
+            }
+            if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
+                textureView.setLayoutParams(layoutParams);
+            else
+                surfaceView.setLayoutParams(layoutParams);
+        }
+    }
+
     private void updateCamera() {
         //android:configChanges="orientation|screenSize"
         /*parentLayout.post(new Runnable() {
@@ -1246,13 +1302,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //        (isScreenOn && cameraManager.checkIfDisplayRotationIsChanged(thisActivity))) {
                     boolean orientationIsUpdated = false;
                     boolean parametersIsUpdated = false;
-                    if (Build.VERSION.SDK_INT < 21)
+                    if (Build.VERSION.SDK_INT < CameraManager.CAMERA2_SDK)
                         cameraManager.stopPreview();
                     if (isScreenOn)
                         orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
                     parametersIsUpdated = cameraManager.updateParameters();
-                    ViewGroup.LayoutParams layoutParams;
-                    if (Build.VERSION.SDK_INT >= 21)
+                    setSurfaceSize();
+                    if (Build.VERSION.SDK_INT < CameraManager.CAMERA2_SDK)
+                        cameraManager.startPreview();
+                    /*ViewGroup.LayoutParams layoutParams;
+                    if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
                         layoutParams = textureView.getLayoutParams();
                     else
                         layoutParams = surfaceView.getLayoutParams();
@@ -1273,12 +1332,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         layoutParams.width = (int) ((float) previewWidth * ratioY);
                         layoutParams.height = parentLayout.getHeight();
                     }
-                    if (Build.VERSION.SDK_INT >= 21)
+                    if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
                         textureView.setLayoutParams(layoutParams);
                     else {
                         surfaceView.setLayoutParams(layoutParams);
                         cameraManager.startPreview();
-                    }
+                    }*/
                     if (orientationIsUpdated || parametersIsUpdated)
                         HttpServer.broadcastMessage("<msg><name>updatePictureSize</name>"
                                 + "<prw>" + cameraManager.getActualPreviewWidth() + "</prw>"

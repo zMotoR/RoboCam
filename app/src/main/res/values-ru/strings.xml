@@ -78,7 +78,7 @@
     <string name="joystick_type">Тип</string>
     <string name="joystick_type_independent_motors">Независимые моторы</string>
     <string name="joystick_type_mailbox">Почтовый ящик</string>
-    <string name="joystick_type_steering">Рулевое управление</string>
+    <string name="joystick_type_steering">Руление 1 (может двигаться как машина)</string>
     <string name="joystick_behavior1">Окончание прикосновения (для горизонтальной оси)</string>
     <string name="joystick_behavior2">Окончание прикосновения (для вертикальной оси)</string>
     <string name="joystick_behavior_hold_position">Сохранять позицию</string>
@@ -129,4 +129,6 @@
     <string name="request_permission">Программе RoboCam требуется право на использование камеры.</string>
     <string name="cannot_init_camera">Не удаётся включить камеру.</string>
     <string name="camera_facing_external">Внешняя</string>
+    <string name="joystick_type_steering_progressive">Руление 2 (может вертеться на месте)</string>
+    <string name="use_render_script">Использовать RenderScript для обработки изображений</string>
 </resources>

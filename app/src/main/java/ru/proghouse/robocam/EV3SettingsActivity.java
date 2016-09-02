@@ -78,6 +78,13 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private Button buttonDeletePortJoystick3 = null;
     private Button buttonDeletePortJoystick4 = null;
 
+    private int[] indexToJoystickTypes = {
+            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS,
+            RoboCamDriver.JOYSTICK_TYPE_STEERING,
+            RoboCamDriver.JOYSTICK_TYPE_STEERING_PROGRESSIVE,
+            RoboCamDriver.JOYSTICK_TYPE_MAILBOX
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -185,9 +192,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     joystickComponents.shapeSpinner.setSelection(5);
                 else if (shape.equals(RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS))
                     joystickComponents.shapeSpinner.setSelection(6);
-                joystickComponents.typeSpinner.setSelection(StringHelper.intFromString(
+                joystickComponents.typeSpinner.setSelection(indexToJoystickTypes[StringHelper.intFromString(
                         joystickNode.getAttribute("Type"),
-                        RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS));
+                        RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS)]);
                 joystickComponents.behavior1Spinner.setSelection(StringHelper.intFromString(
                         joystickNode.getAttribute("Behavior0"),
                         RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
@@ -225,7 +232,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                             joystickComponents.outputPorts.add(new OutputPortComponents(this,
                                     joystickComponents.joystickPortsLinearLayout, joystickIndex,
                                     group, layer, portName, joystickType, power, invert, coefficient,
-                                    brake, joystickComponents.typeSpinner.getSelectedItemPosition()));
+                                    brake, indexToJoystickTypes[joystickComponents.typeSpinner.getSelectedItemPosition()]));
 
                         }
                         catch(Exception e) {
@@ -328,13 +335,15 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         }
 
         private void setPortsVisibility() {
-            int portVisibility = typeSpinner.getSelectedItemPosition() == RoboCamDriver.JOYSTICK_TYPE_MAILBOX ? View.GONE : View.VISIBLE;
+            int portVisibility = indexToJoystickTypes[typeSpinner.getSelectedItemPosition()] == RoboCamDriver.JOYSTICK_TYPE_MAILBOX ? View.GONE : View.VISIBLE;
             joystickPortsTextView.setVisibility(portVisibility);
             joystickPortsLinearLayout.setVisibility(portVisibility);
             joystickPortButtonsLinearLayout.setVisibility(portVisibility);
             for (OutputPortComponents portComponents : outputPorts) {
-                portComponents.setTypeVisibility(typeSpinner.getSelectedItemPosition() != RoboCamDriver.JOYSTICK_TYPE_STEERING);
-                portComponents.updateGroupSpinner(typeSpinner.getSelectedItemPosition());
+                portComponents.setTypeVisibility(
+                        indexToJoystickTypes[typeSpinner.getSelectedItemPosition()] != RoboCamDriver.JOYSTICK_TYPE_STEERING
+                        && indexToJoystickTypes[typeSpinner.getSelectedItemPosition()] != RoboCamDriver.JOYSTICK_TYPE_STEERING_PROGRESSIVE);
+                portComponents.updateGroupSpinner(indexToJoystickTypes[typeSpinner.getSelectedItemPosition()]);
             }
         }
 
@@ -389,6 +398,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             SpinnerHelper.initSpinner(typeSpinner, activity, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_type_independent_motors),
                     activity.getString(R.string.joystick_type_steering),
+                    activity.getString(R.string.joystick_type_steering_progressive),
                     activity.getString(R.string.joystick_type_mailbox) + " ("
                             //xywzabcd
                             + (index == 0 ? "x, y"
@@ -473,7 +483,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             }
             int position = typeSpinner.getSelectedItemPosition();
             CustomAdapter adapter = (CustomAdapter)typeSpinner.getAdapter();
-            adapter.getObjects().set(2, adapter.getActivity().getString(R.string.joystick_type_mailbox)
+            adapter.getObjects().set(3, adapter.getActivity().getString(R.string.joystick_type_mailbox)
                     + " (" + axis + ")");
             typeSpinner.setAdapter(adapter);
             typeSpinner.setSelection(position);
@@ -597,7 +607,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             layoutJoystickType = spinnerLayout[0];
             //Separator
             separatorJoystickType = createSeparator(activity, portLayout);
-            setTypeVisibility(joystickType != RoboCamDriver.JOYSTICK_TYPE_STEERING);
+            setTypeVisibility(joystickType != RoboCamDriver.JOYSTICK_TYPE_STEERING
+                && joystickType != RoboCamDriver.JOYSTICK_TYPE_STEERING_PROGRESSIVE);
             //Power
             textViewPower = createTextViewTitle(activity, portLayout, R.string.joystick_power);
             editTextPower = createEditTextInteger(activity, portLayout, power,
@@ -786,10 +797,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     joystickElement.setAttribute("Shape", RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS);
                     break;
             }
-            if (joystickComponent.typeSpinner.getSelectedItemPosition() != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
+            if (indexToJoystickTypes[joystickComponent.typeSpinner.getSelectedItemPosition()] != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                     || joystickComponent.visibilityCheckBox.isChecked())
                 joystickElement.setAttribute("Type",
-                        Integer.toString(joystickComponent.typeSpinner.getSelectedItemPosition()));
+                        Integer.toString(indexToJoystickTypes[joystickComponent.typeSpinner.getSelectedItemPosition()]));
             if (joystickComponent.behavior1Spinner.getSelectedItemPosition() != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO)
                 joystickElement.setAttribute("Behavior0",
                         Integer.toString(joystickComponent.behavior1Spinner.getSelectedItemPosition()));
@@ -912,7 +923,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 joystickComponents[joystickIndex].outputPorts.add(new OutputPortComponents(this,
                         joystickComponents[joystickIndex].joystickPortsLinearLayout, joystickIndex,
                         0, 0, "A", EV3Driver.JOYSTICK_TYPE_POWER, 0, false, 1, EV3Driver.BRAKE,
-                        joystickComponents[joystickIndex].typeSpinner.getSelectedItemPosition()));
+                        indexToJoystickTypes[joystickComponents[joystickIndex].typeSpinner.getSelectedItemPosition()]));
                 Toast.makeText(this, getString(R.string.port_has_been_added),
                         Toast.LENGTH_LONG).show();
             } catch(Exception e) {

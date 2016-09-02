@@ -50,6 +50,8 @@ import java.util.List;
  * Created by Alexey Valuev on 23.01.2016.
  */
 public class CameraManager implements Camera.PreviewCallback {
+    //Using Camera2 since this SDK
+    public final static int CAMERA2_SDK = 23;
     private static CameraManager cameraManager = new CameraManager();
     private String error = null;
     private HttpServer server = null;
@@ -101,6 +103,7 @@ public class CameraManager implements Camera.PreviewCallback {
     private RenderScript renderScript = null;
     private Allocation inputAllocation = null;
     private Allocation outputAllocation = null;
+    private volatile boolean useRenderScript = true;
 
     CameraManager(){
     }
@@ -111,7 +114,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public boolean isInitialized() {
         synchronized(HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21)
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK)
                 return cameraDevice != null;
             else
                 return camera != null;
@@ -138,7 +141,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public int getActualPreviewWidth() {
         synchronized (HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21)
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK)
                 return displayRotation == Surface.ROTATION_0
                         || displayRotation == Surface.ROTATION_180
                         ? getPreviewHeight() : getPreviewWidth();
@@ -153,7 +156,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public int getActualPreviewHeight() {
         synchronized (HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21)
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK)
                 return displayRotation == Surface.ROTATION_0
                         || displayRotation == Surface.ROTATION_180
                         ? getPreviewWidth() : getPreviewHeight();
@@ -194,12 +197,12 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void initCamera(Activity activity, boolean afterGrandPermission) {
         this.afterGrandPermission = afterGrandPermission;
-        if ((!isInitialized()) && holder != null)
-            initCamera(activity, holder);
+        if ((!isInitialized()) && texture != null)
+            initCamera(activity, texture);
     }
 
     private void createCameraCallback() {
-        if (Build.VERSION.SDK_INT >= 21 && stateCallback == null) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK && stateCallback == null) {
             stateCallback = new CameraDevice.StateCallback() {
 
                 @Override
@@ -211,7 +214,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
                 @Override
                 public void onDisconnected(CameraDevice _cameraDevice) {
-                    if (Build.VERSION.SDK_INT >= 21) {
+                    if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                         _cameraDevice.close();
                         cameraDevice = null;
                     }
@@ -219,7 +222,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
                 @Override
                 public void onError(CameraDevice _cameraDevice, int i) {
-                    if (Build.VERSION.SDK_INT >= 21) {
+                    if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                         _cameraDevice.close();
                         cameraDevice = null;
                     }
@@ -252,7 +255,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     /*private void createCameraStreamSession() {
         try {
-            if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK && cameraDevice != null
                     && streamSession == null && !previewing) {
                 Surface surface = imageReader.getSurface();
                 streamRequestBuilder
@@ -265,7 +268,7 @@ public class CameraManager implements Camera.PreviewCallback {
                             @Override
                             public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                                 try {
-                                    if (Build.VERSION.SDK_INT >= 21) {
+                                    if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                                         streamSession = cameraCaptureSession;
                                         streamRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -291,7 +294,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     private void createCameraPreviewSession() {
         try {
-            if (Build.VERSION.SDK_INT >= 21 && cameraDevice != null
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK && cameraDevice != null
                     && previewSession == null && !previewing) {
                 PreviewSize optimalSize = chooseOptimalSize();
                 texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
@@ -310,7 +313,7 @@ public class CameraManager implements Camera.PreviewCallback {
                             @Override
                             public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                                 try {
-                                    if (Build.VERSION.SDK_INT >= 21) {
+                                    if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                                         previewSession = cameraCaptureSession;
                                         previewRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
                                                 CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
@@ -364,7 +367,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     private void createPreviewCallback() {
-        if (Build.VERSION.SDK_INT >= 21 && previewCallback == null) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK && previewCallback == null) {
             previewCallback = new CameraCaptureSession.CaptureCallback() {
 
             };
@@ -372,7 +375,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     /*private void createStreamCallback() {
-        if (Build.VERSION.SDK_INT >= 21 && streamCallback == null) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK && streamCallback == null) {
             streamCallback = new CameraCaptureSession.CaptureCallback() {
 
             };
@@ -429,7 +432,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void initCamera(Activity activity, SurfaceTexture texture) {
         synchronized(HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                 renderScript = RenderScript.create(activity);
                 this.texture = texture;
                 //Display display = activity.getWindowManager().getDefaultDisplay();
@@ -437,6 +440,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 //display.getMetrics(displayMetrics);
                 SharedPreferences settings = activity.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
                 storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
+                useRenderScript = settings.getBoolean(ExtraKey.USER_RENDER_SCRIPT, DefaultValue.USER_RENDER_SCRIPT);
                 jpegQuality = settings.getInt(ExtraKey.JPEG_QUALITY, 60);
                 if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -494,7 +498,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void initCamera(Activity activity, SurfaceHolder holder){
         synchronized(HttpServer.sync) {
-            if (Build.VERSION.SDK_INT < 21) {
+            if (Build.VERSION.SDK_INT < CAMERA2_SDK) {
                 this.holder = holder;
                 SharedPreferences settings = activity.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
                 storedPreviewSize = settings.getInt(ExtraKey.PREVIEW_SIZE, -1);
@@ -512,6 +516,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 if (camera != null) {
                     Camera.Parameters parameters = camera.getParameters();
                     List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+                    this.previewSizes.clear();
                     for (int i = 0; i < previewSizes.size(); i++)
                         this.previewSizes.add(new PreviewSize(previewSizes.get(i)));
                     try {
@@ -530,7 +535,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void releaseCamera(SurfaceTexture texture){
         synchronized(HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                 if (cameraDevice != null && this.texture != null && texture == this.texture) {
                     afterGrandPermission = false;
                     if (previewSession != null) {
@@ -623,7 +628,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         break;
                 }
                 int result = 0;
-                if (Build.VERSION.SDK_INT >= 21) {
+                if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                     if (facing == CameraCharacteristics.LENS_FACING_FRONT
                             || facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = (360 - degrees) % 360;
@@ -682,7 +687,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         break;
                 }
                 int result = 0;
-                if (Build.VERSION.SDK_INT >= 21) {
+                if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                     if (facing == CameraCharacteristics.LENS_FACING_FRONT
                             || facing == CameraCharacteristics.LENS_FACING_BACK) {
                         result = (360 - degrees) % 360;
@@ -744,7 +749,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void configureTransform(Activity activity, View _textureView,
                                    int viewWidth, int viewHeight) {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             TextureView textureView = (TextureView)_textureView;
             int orientation = calculateOrientation(activity);
             Matrix matrix = new Matrix();
@@ -784,7 +789,7 @@ public class CameraManager implements Camera.PreviewCallback {
     public boolean updateParameters(){
         boolean result = false;
         synchronized(HttpServer.sync) {
-            if (Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                 if (cameraDevice == null)
                     return result;
             } else {
@@ -800,7 +805,7 @@ public class CameraManager implements Camera.PreviewCallback {
                 data.Restore();
             //rgbReader.Restore();
             //rgbWriter.Restore();
-            if (Build.VERSION.SDK_INT < 21) {
+            if (Build.VERSION.SDK_INT < CAMERA2_SDK) {
                 Camera.Parameters parameters = camera.getParameters();
                 parameters.setPreviewSize(previewSize.width, previewSize.height);
                 parameters.setJpegQuality(100);
@@ -842,12 +847,12 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     private void createImageAvailableListener() {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             if (imageAvailableListener == null)
                 imageAvailableListener = new ImageReader.OnImageAvailableListener() {
                     @Override
                     public void onImageAvailable(ImageReader imageReader) {
-                        if (Build.VERSION.SDK_INT >= 21) {
+                        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
                             try {
                                 Image image = imageReader.acquireLatestImage();
                                 if (image != null) {
@@ -866,7 +871,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     private void storeYUV_420_888(Object _image) {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             if (_image == null)
                 return;
             Image image = (Image)_image;
@@ -878,13 +883,19 @@ public class CameraManager implements Camera.PreviewCallback {
             ByteBuffer yBuf = image.getPlanes()[0].getBuffer();
             ByteBuffer uBuf = image.getPlanes()[1].getBuffer();
             ByteBuffer vBuf = image.getPlanes()[2].getBuffer();
-            rgb[writeIndex].yBytes = new byte[yBuf.remaining()];
+            int size = yBuf.remaining();
+            if (rgb[writeIndex].yBytes == null || rgb[writeIndex].yBytes.length != size)
+                rgb[writeIndex].yBytes = new byte[size];
             yBuf.rewind();
             yBuf.get(rgb[writeIndex].yBytes);
-            rgb[writeIndex].uBytes = new byte[uBuf.remaining()];
+            size = uBuf.remaining();
+            if (rgb[writeIndex].uBytes == null || rgb[writeIndex].uBytes.length != size)
+                rgb[writeIndex].uBytes = new byte[size];
             uBuf.rewind();
             uBuf.get(rgb[writeIndex].uBytes);
-            rgb[writeIndex].vBytes = new byte[vBuf.remaining()];
+            size = vBuf.remaining();
+            if (rgb[writeIndex].vBytes == null || rgb[writeIndex].vBytes.length != size)
+                rgb[writeIndex].vBytes = new byte[vBuf.remaining()];
             vBuf.rewind();
             vBuf.get(rgb[writeIndex].vBytes);
             rgb[writeIndex].uRowStride = image.getPlanes()[1].getRowStride();
@@ -992,7 +1003,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }*/
 
     /*private Bitmap YUV_420_888_toRGB(Image image, int width, int height){
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             // Get the three image planes
             Image.Plane[] planes = image.getPlanes();
             ByteBuffer buffer = planes[0].getBuffer();
@@ -1099,7 +1110,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     /*private byte[] convertYUV420ToN21(Object imgYUV420) {
         byte[] rez = new byte[0];
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             ByteBuffer buffer0 = ((Image)imgYUV420).getPlanes()[0].getBuffer();
             ByteBuffer buffer2 = ((Image)imgYUV420).getPlanes()[2].getBuffer();
             int buffer0_size = buffer0.remaining();
@@ -1112,7 +1123,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }*/
 
     /*private void storeImage(Object _image) {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             if (_image == null)
                 return;
             Image image = (Image)_image;
@@ -1150,7 +1161,7 @@ public class CameraManager implements Camera.PreviewCallback {
     }*/
 
     /*private void processJpeg(Object image) {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             try {
                 if (image == null || ((Image) image).getFormat() != ImageFormat.JPEG)
                     return;
@@ -1185,10 +1196,10 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
-    long mstime1 = 0;
-    long mscount1 = 0;
-    long mstime2 = 0;
-    long mscount2 = 0;
+    //long mstime1 = 0;
+    //long mscount1 = 0;
+    //long mstime2 = 0;
+    //long mscount2 = 0;
 
     public int writeJpg(OutputStream outputStream, String boundary, int excludedId) throws IOException {
         int readId = 0;
@@ -1205,7 +1216,7 @@ public class CameraManager implements Camera.PreviewCallback {
         }
         try {
             int imageRotation = 0;
-            if (displayOrientation != 0 || Build.VERSION.SDK_INT >= 21)
+            if (displayOrientation != 0 || Build.VERSION.SDK_INT >= CAMERA2_SDK)
                 if (portrait_n_facing)
                     imageRotation = displayOrientation + 180;
                 else if (landscape_n_facing)
@@ -1227,29 +1238,32 @@ public class CameraManager implements Camera.PreviewCallback {
                     && rgb[readIndex].uBytes != null
                     && rgb[readIndex].vBytes != null) {
                 try {
-                    long curtime1 = System.currentTimeMillis();
-                    //Java converting - 100ms
-                    int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
-                    convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
-                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
-                    if (imageRotation == 270 || imageRotation == 90)
-                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].height, rgb[readIndex].width,
-                                Bitmap.Config.ARGB_8888);
-                    else
-                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
-                            Bitmap.Config.ARGB_8888);
-                    //Converting via RenderScript - 33ms
-                    /*bitmap = convertYUV_420_888ToRGB3(
-                            rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
-                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);*/
+                    //long curtime1 = System.currentTimeMillis();
+                    if (useRenderScript) {
+                        //Converting via RenderScript - 33ms
+                        bitmap = convertYUV_420_888ToRGB3(
+                                rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                                rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                                rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                    } else {
+                        //Java converting - 100ms
+                        int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
+                        convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                                rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                                rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                        if (imageRotation == 270 || imageRotation == 90)
+                            bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].height, rgb[readIndex].width,
+                                    Bitmap.Config.ARGB_8888);
+                        else
+                            bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
+                                    Bitmap.Config.ARGB_8888);
+                    }
                     rotate = false;
-                    if (mscount1 == 0)
-                        mstime1 = System.currentTimeMillis() - curtime1;
-                    else
-                        mstime1 = (System.currentTimeMillis() - curtime1 + mstime1) / 2;
-                    mscount1++;
+                    //if (mscount1 == 0)
+                    //    mstime1 = System.currentTimeMillis() - curtime1;
+                    //else
+                    //    mstime1 = (System.currentTimeMillis() - curtime1 + mstime1) / 2;
+                    //mscount1++;
                     //bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
                     //imageBytes = baos.toByteArray();
                 } catch (Exception e) {
@@ -1260,18 +1274,18 @@ public class CameraManager implements Camera.PreviewCallback {
                 imageBytes = rgb[readIndex].jpeg;
             if (rotate && (imageRotation != 0 || rgb[readIndex].jpeg != null)) {
                 //41ms
-                long curtime2 = System.currentTimeMillis();
+                //long curtime2 = System.currentTimeMillis();
                 if (imageBytes != null)
                     bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                 Matrix matrix = new Matrix();
                 matrix.postRotate(imageRotation);
                 bitmap = Bitmap.createBitmap(bitmap, 0, 0,
                         rgb[readIndex].width, rgb[readIndex].height, matrix, true);
-                if (mscount2 == 0)
-                    mstime2 = System.currentTimeMillis() - curtime2;
-                else
-                    mstime2 = (System.currentTimeMillis() - curtime2 + mstime2) / 2;
-                mscount2++;
+                //if (mscount2 == 0)
+                //    mstime2 = System.currentTimeMillis() - curtime2;
+                //else
+                //    mstime2 = (System.currentTimeMillis() - curtime2 + mstime2) / 2;
+                //mscount2++;
             }
             if (bitmap != null) {
                 baos.reset();
@@ -1494,7 +1508,7 @@ public class CameraManager implements Camera.PreviewCallback {
             byte[] yBytes, byte[] uBytes, byte[] vBytes,
             int uvRowStride, int uvPixelStride, int width, int height,
             int imageRotation) {
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             ScriptC_yuv420888 mYuv420 = new ScriptC_yuv420888(renderScript);
 
             // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.

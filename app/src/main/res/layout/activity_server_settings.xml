@@ -139,6 +139,21 @@
         android:paddingLeft="11dp"
         android:paddingBottom="6dp" />
 
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewUseRenderScript"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                style="@style/SettingsCheckBox"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pref_item_height"
+                android:text="@string/use_render_script"
+                android:id="@+id/checkBoxUseRenderScript"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
+
             <TextView
                 style="@style/SettingsSectionTitle"
                 android:text="@string/security"

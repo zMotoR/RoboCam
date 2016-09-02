@@ -16,11 +16,11 @@ public final class PreviewSize {
     }
 
     public PreviewSize(Object o) {
-        if (Build.VERSION.SDK_INT < 21
+        if (Build.VERSION.SDK_INT < CameraManager.CAMERA2_SDK
                 && Camera.Size.class.isAssignableFrom(o.getClass())) {
             width = ((Camera.Size) o).width;
             height = ((Camera.Size) o).height;
-        } else if (Build.VERSION.SDK_INT >= 21
+        } else if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK
                 && Size.class.isAssignableFrom(o.getClass())) {
             width = ((Size)o).getWidth();
             height = ((Size)o).getHeight();

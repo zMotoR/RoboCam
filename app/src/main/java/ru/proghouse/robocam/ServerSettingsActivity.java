@@ -16,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -50,6 +51,9 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private String spectatorPassword;
     private EditText editTextSpectatorPassword = null;
     private CheckBox checkBoxAllowSpectators = null;
+    private CheckBox checkBoxUseRenderScript = null;
+    private ImageView imageViewUseRenderScript = null;
+    private boolean useRenderScript = true;
     private boolean allowSpectators = true;
     private TextView textViewSpectatorName = null;
     private TextView textViewSpectatorPassword = null;
@@ -65,7 +69,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
         spinnerCamera = (Spinner)findViewById(R.id.spinnerCamera);
         SpinnerHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             camera2Id = settings.getString(ExtraKey.CAMERA2_ID, null);
             if (camera2Id == null || !cameraIds.contains(camera2Id))
                 camera2Id = cameraIds.get(0);
@@ -116,6 +120,17 @@ public class ServerSettingsActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
+
+        //Use RenderScript
+        checkBoxUseRenderScript = (CheckBox)findViewById(R.id.checkBoxUseRenderScript);
+        imageViewUseRenderScript = (ImageView)findViewById(R.id.imageViewUseRenderScript);
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
+            useRenderScript = settings.getBoolean(ExtraKey.USER_RENDER_SCRIPT, DefaultValue.USER_RENDER_SCRIPT);
+            checkBoxUseRenderScript.setChecked(useRenderScript);
+        } else {
+            checkBoxUseRenderScript.setVisibility(View.GONE);
+            imageViewUseRenderScript.setVisibility(View.GONE);
+        }
 
         //ADMIN NAME
         driverName = settings.getString(ExtraKey.DRIVER_NAME, DefaultValue.DRIVER_NAME);
@@ -342,7 +357,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
     public List<String> getCameras() {
         List<String> cameras = new ArrayList<String>();
         cameraIds.clear();
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             try {
                 cameraManager = (android.hardware.camera2.CameraManager) getSystemService(Context.CAMERA_SERVICE);
                 for (String cameraId : cameraManager.getCameraIdList()) {
@@ -384,7 +399,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
 
     public List<String> getPreviewSizes(List<PreviewSize> sizes) {
         List<String> previewSizes = new ArrayList<String>();
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             try {
                 CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(camera2Id);
                 StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -442,7 +457,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
             getPreferenceEditor().putString(ExtraKey.SPECTATOR_PASSWORD, editTextSpectatorPassword.getText().toString());
             changed = true;
         }
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             if (!cameraIds.get(spinnerCamera.getSelectedItemPosition()).equals(camera2Id)){
                 getPreferenceEditor().putString(ExtraKey.CAMERA2_ID, cameraIds.get(spinnerCamera.getSelectedItemPosition()));
                 changed = true;
@@ -467,6 +482,10 @@ public class ServerSettingsActivity extends AppCompatActivity {
         }
         if (allowSpectators != checkBoxAllowSpectators.isChecked()) {
             getPreferenceEditor().putBoolean(ExtraKey.ALLOW_SPECTATORS, checkBoxAllowSpectators.isChecked());
+            changed = true;
+        }
+        if (useRenderScript != checkBoxUseRenderScript.isChecked()) {
+            getPreferenceEditor().putBoolean(ExtraKey.USER_RENDER_SCRIPT, checkBoxUseRenderScript.isChecked());
             changed = true;
         }
         if (changed)
