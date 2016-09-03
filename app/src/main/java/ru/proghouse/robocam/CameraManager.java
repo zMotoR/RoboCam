@@ -171,6 +171,7 @@ public class CameraManager implements Camera.PreviewCallback {
 
     public void addClient() {
         if (clientCount == 0) {
+            readerCount = 0;
             for (RgbData data : rgb)
                 data.Restore();
         }
@@ -862,7 +863,8 @@ public class CameraManager implements Camera.PreviewCallback {
                                 if (image != null) {
                                     //int width = image.getWidth();
                                     //int height = image.getHeight();
-                                    storeYUV_420_888(image);
+                                    if (clientCount > 0)
+                                        storeYUV_420_888(image);
                                     image.close();
                                 }
                             } catch (Exception e) {
