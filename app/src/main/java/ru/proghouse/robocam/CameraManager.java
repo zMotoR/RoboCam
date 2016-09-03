@@ -170,6 +170,10 @@ public class CameraManager implements Camera.PreviewCallback {
     }
 
     public void addClient() {
+        if (clientCount == 0) {
+            for (RgbData data : rgb)
+                data.Restore();
+        }
         clientCount++;
     }
 
@@ -1074,11 +1078,12 @@ public class CameraManager implements Camera.PreviewCallback {
     private RgbData[] rgb = new RgbData[] {new RgbData(), new RgbData(), new RgbData()};
     private int writeIndex = 1, oldWriteIndex = 0, readIndex = 0;
     private Object lock = new Object();
+    private Object readObject = new Object();
     private int readerCount = 0;
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        if (!previewing)
+        if (clientCount <= 0 || !previewing)
             return;
         id++;
         if (id == Integer.MAX_VALUE)
@@ -1215,84 +1220,92 @@ public class CameraManager implements Camera.PreviewCallback {
             readerCount++;
         }
         try {
-            int imageRotation = 0;
-            if (displayOrientation != 0 || Build.VERSION.SDK_INT >= CAMERA2_SDK)
-                if (portrait_n_facing)
-                    imageRotation = displayOrientation + 180;
-                else if (landscape_n_facing)
-                    imageRotation = (displayOrientation + sensorOrientation + 180) % 360;
-                else
-                    imageRotation = (displayOrientation + sensorOrientation) % 360;
-            boolean rotate = true;
-            Bitmap bitmap = null;
             byte[] imageBytes = null;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if (rgb[readIndex].nv21 != null) {
-                YuvImage yuvImage = new YuvImage(rgb[readIndex].nv21, ImageFormat.NV21,
-                        rgb[readIndex].width, rgb[readIndex].height, null);
-                yuvImage.compressToJpeg(new Rect(0, 0, rgb[readIndex].width, rgb[readIndex].height),
-                        imageRotation == 0 ? jpegQuality : 100, baos);
-                imageBytes = baos.toByteArray();
-            }
-            else if (rgb[readIndex].yBytes != null
-                    && rgb[readIndex].uBytes != null
-                    && rgb[readIndex].vBytes != null) {
-                try {
-                    //long curtime1 = System.currentTimeMillis();
-                    if (useRenderScript) {
-                        //Converting via RenderScript - 33ms
-                        bitmap = convertYUV_420_888ToRGB3(
-                                rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
-                                rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                                rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+            synchronized (readObject) {
+                if (rgb[readIndex].id != excludedId) {
+                    if (rgb[readIndex].imageBytesId != rgb[readIndex].id) {
+                        int imageRotation = 0;
+                        if (displayOrientation != 0 || Build.VERSION.SDK_INT >= CAMERA2_SDK)
+                            if (portrait_n_facing)
+                                imageRotation = displayOrientation + 180;
+                            else if (landscape_n_facing)
+                                imageRotation = (displayOrientation + sensorOrientation + 180) % 360;
+                            else
+                                imageRotation = (displayOrientation + sensorOrientation) % 360;
+                        boolean rotate = true;
+                        Bitmap bitmap = null;
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        if (rgb[readIndex].nv21 != null) {
+                            YuvImage yuvImage = new YuvImage(rgb[readIndex].nv21, ImageFormat.NV21,
+                                    rgb[readIndex].width, rgb[readIndex].height, null);
+                            yuvImage.compressToJpeg(new Rect(0, 0, rgb[readIndex].width, rgb[readIndex].height),
+                                    imageRotation == 0 ? jpegQuality : 100, baos);
+                            imageBytes = baos.toByteArray();
+                        } else if (rgb[readIndex].yBytes != null
+                                && rgb[readIndex].uBytes != null
+                                && rgb[readIndex].vBytes != null) {
+                            try {
+                                //long curtime1 = System.currentTimeMillis();
+                                if (useRenderScript) {
+                                    //Converting via RenderScript - 33ms
+                                    bitmap = convertYUV_420_888ToRGB3(
+                                            rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                                } else {
+                                    //Java converting - 100ms
+                                    int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
+                                    convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
+                                            rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
+                                            rgb[readIndex].width, rgb[readIndex].height, imageRotation);
+                                    if (imageRotation == 270 || imageRotation == 90)
+                                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].height, rgb[readIndex].width,
+                                                Bitmap.Config.ARGB_8888);
+                                    else
+                                        bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
+                                                Bitmap.Config.ARGB_8888);
+                                }
+                                rotate = false;
+                                //if (mscount1 == 0)
+                                //    mstime1 = System.currentTimeMillis() - curtime1;
+                                //else
+                                //    mstime1 = (System.currentTimeMillis() - curtime1 + mstime1) / 2;
+                                //mscount1++;
+                                //bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
+                                //imageBytes = baos.toByteArray();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        } else if (rgb[readIndex].jpeg != null)
+                            imageBytes = rgb[readIndex].jpeg;
+                        if (rotate && (imageRotation != 0 || rgb[readIndex].jpeg != null)) {
+                            //41ms
+                            //long curtime2 = System.currentTimeMillis();
+                            if (imageBytes != null)
+                                bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                            Matrix matrix = new Matrix();
+                            matrix.postRotate(imageRotation);
+                            bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                                    rgb[readIndex].width, rgb[readIndex].height, matrix, true);
+                            //if (mscount2 == 0)
+                            //    mstime2 = System.currentTimeMillis() - curtime2;
+                            //else
+                            //    mstime2 = (System.currentTimeMillis() - curtime2 + mstime2) / 2;
+                            //mscount2++;
+                        }
+                        if (bitmap != null) {
+                            baos.reset();
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
+                            imageBytes = baos.toByteArray();
+                        }
+                        rgb[readIndex].imageBytesId = rgb[readIndex].id;
+                        rgb[readIndex].imageBytes = imageBytes;
                     } else {
-                        //Java converting - 100ms
-                        int[] bmp = new int[rgb[readIndex].width * rgb[readIndex].height];
-                        convertYUV_420_888ToRGB2(bmp, rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
-                                rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
-                                rgb[readIndex].width, rgb[readIndex].height, imageRotation);
-                        if (imageRotation == 270 || imageRotation == 90)
-                            bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].height, rgb[readIndex].width,
-                                    Bitmap.Config.ARGB_8888);
-                        else
-                            bitmap = Bitmap.createBitmap(bmp, rgb[readIndex].width, rgb[readIndex].height,
-                                    Bitmap.Config.ARGB_8888);
+                        imageBytes = rgb[readIndex].imageBytes;
                     }
-                    rotate = false;
-                    //if (mscount1 == 0)
-                    //    mstime1 = System.currentTimeMillis() - curtime1;
-                    //else
-                    //    mstime1 = (System.currentTimeMillis() - curtime1 + mstime1) / 2;
-                    //mscount1++;
-                    //bitmap.compress(Bitmap.CompressFormat.JPEG, imageRotation == 0 ? jpegQuality : 100, baos);
-                    //imageBytes = baos.toByteArray();
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
-            else if (rgb[readIndex].jpeg != null)
-                imageBytes = rgb[readIndex].jpeg;
-            if (rotate && (imageRotation != 0 || rgb[readIndex].jpeg != null)) {
-                //41ms
-                //long curtime2 = System.currentTimeMillis();
-                if (imageBytes != null)
-                    bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                Matrix matrix = new Matrix();
-                matrix.postRotate(imageRotation);
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0,
-                        rgb[readIndex].width, rgb[readIndex].height, matrix, true);
-                //if (mscount2 == 0)
-                //    mstime2 = System.currentTimeMillis() - curtime2;
-                //else
-                //    mstime2 = (System.currentTimeMillis() - curtime2 + mstime2) / 2;
-                //mscount2++;
-            }
-            if (bitmap != null) {
-                baos.reset();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, baos);
-                imageBytes = baos.toByteArray();
-            }
-            if (imageBytes != null || bitmap != null) {
+            if (imageBytes != null) {
                 outputStream.write(("Content-type: image/jpeg\r\n"
                         + "Content-Length: " + imageBytes.length + "\r\n\r\n").getBytes());
                 outputStream.write(imageBytes);

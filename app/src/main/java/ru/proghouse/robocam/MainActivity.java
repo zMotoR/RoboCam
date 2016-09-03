@@ -266,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             } else {
                 surfaceView.getHolder().addCallback(this);
                 surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+                setSurfaceSize();
                 //if (isScreenOn && cameraManager.getPreviewSize() != null)
                 //    updateCamera();
             }
@@ -286,7 +287,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
             });
-            setSurfaceSize();
             serverMessage = (TextView) findViewById(R.id.serverMessage);
             serverMessageConnector = (ImageView) findViewById(R.id.serverMessageConnector);
             robotMessage = (TextView) findViewById(R.id.robotMessage);
@@ -1377,9 +1377,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (actualState < 10)
                 actualState += 10;
             if (actualState == AP_STATE_ENABLED) {
-                int ipAddress = wifiManager.getDhcpInfo().ipAddress;
-                ipAddressString = getStringIpAddress(ipAddress);
-                /*if (ipAddressString == null) {
+                //Android 2.3 patch
+                for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
+                    NetworkInterface intf = enumerator.nextElement();
+                    for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
+                        InetAddress address = enumInetAddress.nextElement();
+                        if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
+                            String ip = address.getHostAddress();
+                            if ("192.168.43.1".equals(ip)) {
+                                ipAddressString = ip;
+                                break;
+                            }
+                        }
+                    }
+                    if (ipAddressString != null)
+                        break;
+                }
+                //Android 6 patch
+                if (ipAddressString == null)
                     for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
                         NetworkInterface intf = enumerator.nextElement();
                         if (intf.getName().contains("ap"))
@@ -1390,8 +1405,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                     break;
                                 }
                             }
+                        if (ipAddressString != null)
+                            break;
                     }
-                }*/
+                if (ipAddressString == null) {
+                    int ipAddress = wifiManager.getDhcpInfo().ipAddress;
+                    ipAddressString = getStringIpAddress(ipAddress);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1406,14 +1426,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             try {
                 for (Enumeration<NetworkInterface> enumerator = NetworkInterface.getNetworkInterfaces(); enumerator.hasMoreElements(); ) {
                     NetworkInterface intf = enumerator.nextElement();
-                    //if (intf.getName().contains("wlan"))
-                    for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
-                        InetAddress address = enumInetAddress.nextElement();
-                        if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
-                            ipAddressString = address.getHostAddress();
-                            break;
+                    if (intf.getName().contains("wlan"))
+                        for (Enumeration<InetAddress> enumInetAddress = intf.getInetAddresses(); enumInetAddress.hasMoreElements(); ) {
+                            InetAddress address = enumInetAddress.nextElement();
+                            if (!address.isLoopbackAddress() && (address.getAddress().length == 4)) {
+                                ipAddressString = address.getHostAddress();
+                                break;
+                            }
                         }
-                    }
                     if (ipAddressString != null)
                         break;
                 }

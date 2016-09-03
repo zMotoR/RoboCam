@@ -5,6 +5,8 @@ package ru.proghouse.robocam;
  */
 public class RgbData {
     public volatile boolean initialized = false;
+    public byte[] imageBytes = null;
+    public int imageBytesId = 0;
     //public int[] buf = null;
     public byte[] nv21 = null;
     public byte[] jpeg = null;
