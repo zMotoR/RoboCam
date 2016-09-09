@@ -25,7 +25,6 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.v8.renderscript.*;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.util.Size;
@@ -100,10 +99,11 @@ public class CameraManager implements Camera.PreviewCallback {
     //private DisplayMetrics displayMetrics = null;
     private ImageReader imageReader = null;
     private ImageReader.OnImageAvailableListener imageAvailableListener = null;
-    private RenderScript renderScript = null;
-    private Allocation inputAllocation = null;
-    private Allocation outputAllocation = null;
+    //private RenderScript renderScript = null;
+    //private Allocation inputAllocation = null;
+    //private Allocation outputAllocation = null;
     private volatile boolean useRenderScript = true;
+    private ImageHelper rsHelper = null;
 
     CameraManager(){
     }
@@ -306,7 +306,11 @@ public class CameraManager implements Camera.PreviewCallback {
                 Surface surface = new Surface(texture);
                 Surface streamSurface = imageReader.getSurface();
                 previewRequestBuilder
-                        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                        = (CaptureRequest.Builder)CameraDevice.class
+                        .getMethod("createCaptureRequest", int.class)
+                        .invoke(cameraDevice, CameraDevice.TEMPLATE_PREVIEW);
+                //previewRequestBuilder
+                //        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewRequestBuilder.addTarget(surface);
                 //previewRequestBuilder
                 //        = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
@@ -435,10 +439,23 @@ public class CameraManager implements Camera.PreviewCallback {
         }
     }*/
 
+    public interface ImageHelper {
+        void setActivity(Activity activity);
+        Bitmap convertYUV_420_888ToRGB3(
+                byte[] yBytes, byte[] uBytes, byte[] vBytes,
+                int uvRowStride, int uvPixelStride, int width, int height,
+                int imageRotation);
+    }
+
     public void initCamera(Activity activity, SurfaceTexture texture) {
         synchronized(HttpServer.sync) {
             if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
-                renderScript = RenderScript.create(activity);
+                try {
+                    rsHelper = (ImageHelper)Class.forName("ru.proghouse.robocam.RSHelper").newInstance();
+                    rsHelper.setActivity(activity);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 this.texture = texture;
                 //Display display = activity.getWindowManager().getDefaultDisplay();
                 //displayMetrics = new DisplayMetrics();
@@ -552,7 +569,12 @@ public class CameraManager implements Camera.PreviewCallback {
                         streamSession = null;
                     }*/
                     if (cameraDevice != null) {
-                        cameraDevice.close();
+                        try {
+                            CameraDevice.class.getMethod("close").invoke(cameraDevice);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        //cameraDevice.close();
                         cameraDevice = null;
                     }
                     if (imageReader != null) {
@@ -673,7 +695,6 @@ public class CameraManager implements Camera.PreviewCallback {
             displayOrientation = calculateOrientation(activity);
             if (camera != null)
                 camera.setDisplayOrientation(displayOrientation);
-
             /*if ((camera != null && !previewing) || cameraDevice != null) {
                 int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 int degrees = 0;
@@ -1248,9 +1269,9 @@ public class CameraManager implements Camera.PreviewCallback {
                                 && rgb[readIndex].vBytes != null) {
                             try {
                                 //long curtime1 = System.currentTimeMillis();
-                                if (useRenderScript) {
+                                if (useRenderScript && rsHelper != null) {
                                     //Converting via RenderScript - 33ms
-                                    bitmap = convertYUV_420_888ToRGB3(
+                                    bitmap = rsHelper.convertYUV_420_888ToRGB3(
                                             rgb[readIndex].yBytes, rgb[readIndex].uBytes, rgb[readIndex].vBytes,
                                             rgb[readIndex].uRowStride, rgb[readIndex].uPixelStride,
                                             rgb[readIndex].width, rgb[readIndex].height, imageRotation);
@@ -1523,7 +1544,7 @@ public class CameraManager implements Camera.PreviewCallback {
             byte[] yBytes, byte[] uBytes, byte[] vBytes,
             int uvRowStride, int uvPixelStride, int width, int height,
             int imageRotation) {
-        if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
+        /*if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             ScriptC_yuv420888 mYuv420 = new ScriptC_yuv420888(renderScript);
 
             // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.
@@ -1579,7 +1600,7 @@ public class CameraManager implements Camera.PreviewCallback {
             outAlloc.copyTo(outBitmap);
 
             return outBitmap;
-        }
+        }*/
         return null;
 
     }

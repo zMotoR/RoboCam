@@ -7,10 +7,8 @@ android {
         applicationId "ru.proghouse.robocam"
         minSdkVersion 9
         targetSdkVersion 24
-        versionCode 3
-        versionName '1.0.a4'
-        renderscriptTargetApi 18
-        renderscriptSupportModeEnabled true
+        versionCode 6
+        versionName '1.0.a7'
     }
     buildTypes {
         release {
@@ -19,6 +17,17 @@ android {
         }
     }
     productFlavors {
+        withoutRenderScript {
+        }
+        withRenderScript {
+            versionCode 8
+            renderscriptTargetApi 11
+            renderscriptSupportModeEnabled true
+        }
+    }
+    sourceSets {
+        withRenderScript.renderscript.srcDirs = ['src/main/rs2']
+        withRenderScript.java.srcDirs = ['src/main/java', 'src/main/rs2']
     }
 }
 

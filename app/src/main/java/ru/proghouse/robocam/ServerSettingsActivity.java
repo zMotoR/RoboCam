@@ -124,7 +124,13 @@ public class ServerSettingsActivity extends AppCompatActivity {
         //Use RenderScript
         checkBoxUseRenderScript = (CheckBox)findViewById(R.id.checkBoxUseRenderScript);
         imageViewUseRenderScript = (ImageView)findViewById(R.id.imageViewUseRenderScript);
-        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
+        Class rsHelperClass = null;
+        try {
+            rsHelperClass = Class.forName("ru.proghouse.robocam.RSHelper");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK && rsHelperClass != null) {
             useRenderScript = settings.getBoolean(ExtraKey.USER_RENDER_SCRIPT, DefaultValue.USER_RENDER_SCRIPT);
             checkBoxUseRenderScript.setChecked(useRenderScript);
         } else {
