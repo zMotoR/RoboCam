@@ -16,4 +16,5 @@ public class ExtraKey {
     public static final String SPECTATOR_PASSWORD = "spectator_pswd";
     public static final String ALLOW_SPECTATORS = "allow_spectators";
     public static final String CURRENT_ROBOT_SETTINGS = "current_robot_settings";
+    public static final String CURRENT_PATH = "current_path";
 }

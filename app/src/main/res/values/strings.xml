@@ -132,4 +132,13 @@
     <string name="cannot_init_camera">Cannot initialize the camera.</string>
     <string name="camera_facing_external">External</string>
     <string name="use_render_script">Use RenderScript to process images</string>
+    <string name="title_activity_import">Import of robot settings</string>
+    <string name="action_import_robot_settings_from_file">Import from a file</string>
+    <string name="action_export_robot_settings_to_file">Export to a file</string>
+    <string name="settings_ware_exported_successfully">Settings ware exported successfully into the file %s</string>
+    <string name="error_while_exporting_settings_xml">Error while exporting settings. %s</string>
+    <string name="action_copy_robot_settings">Make a copy</string>
+    <string name="error_while_copying_settings_xml">Error while copying the settings. %s</string>
+    <string name="settings_ware_copied_successfully">Settings ware copied successfully.</string>
+    <string name="settings_ware_imported_successfully">Settings were imported successfully.</string>
 </resources>

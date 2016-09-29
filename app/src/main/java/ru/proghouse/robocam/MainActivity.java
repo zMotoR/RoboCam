@@ -420,34 +420,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-    private Point getScreenSize() {
-        Point screenSize = new Point();
-        Display display = getWindowManager().getDefaultDisplay();
-        DisplayMetrics metrics = new DisplayMetrics();
-        display.getMetrics(metrics);
-        // since SDK_INT = 1;
-        screenSize.x = metrics.widthPixels;
-        screenSize.y = metrics.heightPixels;
-        // includes window decorations (statusbar bar/menu bar)
-        if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 17)
-            try {
-                screenSize.x = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
-                screenSize.y = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        // includes window decorations (statusbar bar/menu bar)
-        if (Build.VERSION.SDK_INT >= 17)
-            try {
-                Point realSize = new Point();
-                Display.class.getMethod("getRealSize", Point.class).invoke(display, realSize);
-                return realSize;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        return screenSize;
-    }
-
     private void DownloadFile(String src, File dst) throws IOException {
         URL url = new URL(src);
         InputStream inputStream = url.openStream();
@@ -525,24 +497,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             this.locales = locales;
         }
 
-        public void copy(File source, File dest) throws IOException {
-            FileInputStream is = new FileInputStream(source);
-            try {
-                FileOutputStream os = new FileOutputStream(dest);
-                try {
-                    byte[] buffer = new byte[4096];
-                    int length;
-                    while ((length = is.read(buffer)) > 0) {
-                        os.write(buffer, 0, length);
-                    }
-                } finally {
-                    os.close();
-                }
-            } finally {
-                is.close();
-            }
-        }
-
         @Override
         public void run() {
             if (!loadingAds) {
@@ -609,7 +563,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         File localizedVersionFile = new File(adsDir, "v" + country[0] + "-" + language[0] + ".xml");
                         localizedVersionFile.delete();
                         versionFile.delete();
-                        copy(newVersionFile, localizedVersionFile);
+                        Utils.copy(newVersionFile, localizedVersionFile);
                         newVersionFile.renameTo(versionFile);
                     }
                 } catch (Exception e) {
@@ -946,7 +900,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
             if (driver.needBluetooth()) {
                 if (BluetoothAdapter.getDefaultAdapter() == null) {
-                    showServerMessageError(getString(R.string.bluetooth_is_not_supported));
+                    showRobotMessageError(getString(R.string.bluetooth_is_not_supported));
                     return;
                 }
                 if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {

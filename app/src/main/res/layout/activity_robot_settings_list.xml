@@ -48,6 +48,15 @@
                 android:id="@+id/buttonDelete"
                 android:focusable="false" />
 
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView10"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
             <Button
                 style="@style/Widget.AppCompat.ActionButton"
                 android:layout_width="wrap_content"
@@ -55,6 +64,23 @@
                 android:text="@string/add"
                 android:id="@+id/buttonAdd"
                 android:focusable="false" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView11"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <ImageButton
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/buttonOverflow"
+                android:src="@drawable/overflow" />
+
         </LinearLayout>
     </LinearLayout>
 

@@ -373,7 +373,7 @@ public class EV3Driver extends RoboCamDriver {
     }
 
     @Override
-    protected void loadSettingsFromXml(Context context, File file, Document xml) throws Exception {
+    public void loadSettingsFromXml(Context context, File file, Document xml) throws Exception {
         if (!xml.getDocumentElement().getNodeName().equals(DefaultValue.EV3))
             throw new Exception(context.getString(R.string.unknown_driver_name,
                     xml.getDocumentElement().getNodeName()));

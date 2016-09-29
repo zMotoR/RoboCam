@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -46,8 +47,10 @@ import ru.proghouse.robocam.util.Inventory;
 
 public class RobotSettingsListActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int MI_ADD_EV3_SETTINGS = -1;
+    private static final int MI_IMPORT_SETTINGS = -2;
     private Button buttonAdd = null;
     private Button buttonDelete = null;
+    private ImageButton buttonOverflow = null;
     private File cacheDir, ev3Dir, ev3DefaultSettingsFile;
     private ListView settingsListView = null;
     private Spinner spinnerCurrentRobotSettings = null;
@@ -87,6 +90,10 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         buttonDelete = (Button)findViewById(R.id.buttonDelete);
         buttonDelete.setOnClickListener(this);
         registerForContextMenu(buttonDelete);
+
+        buttonOverflow = (ImageButton)findViewById(R.id.buttonOverflow);
+        buttonOverflow.setOnClickListener(this);
+        registerForContextMenu(buttonOverflow);
 
         cacheDir = getCacheDir();
         ev3Dir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
@@ -346,14 +353,18 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 menu.add(Menu.NONE, i + 1, i + 1, selectedSettings.title);
             }
         }
+        else if (v.getId() == R.id.buttonOverflow)
+            menu.add(Menu.NONE, MI_IMPORT_SETTINGS, Menu.NONE, R.string.action_import_robot_settings_from_file);
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case MI_ADD_EV3_SETTINGS:
-                Intent intent = new Intent(this, EV3SettingsActivity.class);
-                startActivity(intent);
+                startActivity(new Intent(this, EV3SettingsActivity.class));
+                break;
+            case MI_IMPORT_SETTINGS:
+                startActivity(new Intent(this, ImportActivity.class));
                 break;
             default:
                 if (item.getItemId() > 0 && item.getItemId() <= settingsListView.getAdapter().getCount()) {
@@ -389,6 +400,11 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 popup.show();*/
             }
             case R.id.buttonDelete: {
+                v.showContextMenu();
+            }
+            case R.id.buttonOverflow: {
+                //OpenFileDialog fileDialog = new OpenFileDialog(this);
+                //fileDialog.show();
                 v.showContextMenu();
             }
         }

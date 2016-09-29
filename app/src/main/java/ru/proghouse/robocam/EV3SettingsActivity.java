@@ -8,6 +8,7 @@ import android.content.res.Resources;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
@@ -28,6 +29,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -72,6 +74,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private int CHECKBOX_PADDING = 0;
     private EditText editTextBotName = null;
     private EditText editTextBotDesc = null;
+    private ImageButton buttonOverflow = null;
+    private static final int MI_EXPORT_SETTINGS = -3;
+    private static final int MI_COPY_SETTINGS = -4;
 
     private Button buttonDeletePortJoystick1 = null;
     private Button buttonDeletePortJoystick2 = null;
@@ -89,6 +94,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ev3_settings);
+
+        buttonOverflow = (ImageButton)findViewById(R.id.buttonOverflow);
+        buttonOverflow.setOnClickListener(this);
+        registerForContextMenu(buttonOverflow);
 
         if (Build.VERSION.SDK_INT < 17) {
             CheckBox rb = new CheckBox(this);
@@ -119,7 +128,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 loadSettings(savedSettings);
             } catch (Exception e) {
                 Toast.makeText(this, getString(R.string.error_while_opening_settings,
-                        e.getMessage()), Toast.LENGTH_LONG).show();
+                        e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
             }
         } else {
             File settingsFile = getSettingsFile();
@@ -128,7 +137,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     loadSettings(settingsFile);
                 } catch (Exception e) {
                     Toast.makeText(this, getString(R.string.error_while_opening_settings_file,
-                            settingsFileName, e.getMessage()), Toast.LENGTH_LONG).show();
+                            settingsFileName, e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
                 }
             }
         }
@@ -274,6 +283,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             for (int i = 0; i < joystickComponents[joystickIndex].outputPorts.size(); i++)
                 menu.add(Menu.NONE, (joystickIndex + 1) * 1000000 + i + 1, i + 1,
                         joystickComponents[joystickIndex].outputPorts.get(i).textViewTitle.getText());
+        else {
+            menu.add(Menu.NONE, MI_EXPORT_SETTINGS, Menu.NONE, R.string.action_export_robot_settings_to_file);
+            menu.add(Menu.NONE, MI_COPY_SETTINGS, Menu.NONE, R.string.action_copy_robot_settings);
+        }
     }
 
     @Override
@@ -286,7 +299,67 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             Toast.makeText(this, R.string.port_was_deleted, Toast.LENGTH_LONG).show();
             return true;
         }
+        else if (item.getItemId() == MI_EXPORT_SETTINGS)
+            exportSettings();
+        else if (item.getItemId() == MI_COPY_SETTINGS)
+            copySettings();
         return super.onContextItemSelected(item);
+    }
+
+    private void copySettings() {
+        try {
+            //Creating xml.
+            Document xml = createCurrentSettingsXml();
+            //Searching for names of existing settings.
+            String name = Utils.createNewSettingsName(this, editTextBotName.getText().toString(), "EV3");
+            //Changing the settings name.
+            xml.getDocumentElement().setAttribute("Name", name);
+            //Getting the file name.
+            SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmsszzz", Locale.ENGLISH);
+            String newFileName = "EV3_" + format.format(new Date()) + ".xml";
+            //Saving the file.
+            Utils.saveXml(new File(Utils.getRobotDir(this), newFileName), xml);
+            RoboCamBroker.setLastSettingsModified(new Date());
+            Toast.makeText(this, getString(R.string.settings_ware_copied_successfully),
+                    Toast.LENGTH_LONG).show();
+            //Utils.showError(this, getString(R.string.settings_ware_copied_successfully), false);
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_while_copying_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void exportSettings() {
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            path.mkdirs();
+            String fileName = "RoboCam_";
+            String settingsName = editTextBotName.getText().toString();
+            if (settingsName != null && (!settingsName.isEmpty()))
+                fileName += settingsName.replace("\\", "_").replace("/", "_").replace(":", "_").replace(" ", "_") + "_";
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+            fileName += format.format(new Date());
+            if (new File(path.getPath() + "/" + fileName + ".xml").exists()) {
+                int n = 2;
+                while (new File(path.getPath() + "/" + fileName + "_" + Integer.toString(n) + ".xml").exists())
+                    n++;
+                fileName += "_" + Integer.toString(n);
+            }
+            fileName = path.getPath() + "/" + fileName + ".xml";
+            Document xml = createCurrentSettingsXml();
+            DOMSource source = new DOMSource(xml);
+            FileOutputStream stream = new FileOutputStream(fileName);
+            StreamResult result = new StreamResult(stream);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.transform(source, result);
+            Utils.showError(this, getString(R.string.settings_ware_exported_successfully, fileName), false);
+            //Toast.makeText(this, getString(R.string.settings_ware_exported_successfully, fileName),
+            //        Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_while_exporting_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -301,6 +374,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         else if (v.getId() == R.id.buttonDeletePortJoystick4)
             joystickIndex = 3;
         if (joystickIndex >= 0 && joystickComponents[joystickIndex].outputPorts.size() > 0)
+            v.showContextMenu();
+        else if (v.getId() == R.id.buttonOverflow)
             v.showContextMenu();
     }
 
@@ -845,8 +920,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             transformer.transform(source, result);
             return writer.toString();
         } catch (Exception e) {
-            Toast.makeText(this, getString(R.string.error_while_creating_settings_xml),
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.error_while_creating_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
         }
         return null;
     }
@@ -903,8 +978,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             Toast.makeText(this, R.string.settings_were_saved, Toast.LENGTH_SHORT).show();
             finish();
         } catch (Exception e) {
-            Toast.makeText(this, getString(R.string.error_while_creating_settings_xml),
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.error_while_creating_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -927,8 +1002,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 Toast.makeText(this, getString(R.string.port_has_been_added),
                         Toast.LENGTH_LONG).show();
             } catch(Exception e) {
-                Toast.makeText(this, getString(R.string.error_while_creating_settings_xml),
-                        Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.error_while_creating_settings_xml,
+                        e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
             }
         }
     }

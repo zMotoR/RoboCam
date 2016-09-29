@@ -117,7 +117,7 @@
     <string name="port_has_been_added">Порт добавлен</string>
     <string name="cannot_delete_settings_file">Не удалось удалить настройки</string>
     <string name="cannot_delete_current_settings_file">Нельзя удалять текущие настройки</string>
-    <string name="settings_were_deleted">Настройки были удалены</string>
+    <string name="settings_were_deleted">Настройки удалены</string>
     <string name="port_was_deleted">Порт был удалён</string>
     <string name="joystick_group_left">Левый</string>
     <string name="joystick_group_right">Правый</string>
@@ -131,4 +131,13 @@
     <string name="camera_facing_external">Внешняя</string>
     <string name="joystick_type_steering_progressive">Руление 2 (может вертеться на месте)</string>
     <string name="use_render_script">Использовать RenderScript для обработки изображений</string>
+    <string name="title_activity_import">Импорт настроек робота</string>
+    <string name="action_import_robot_settings_from_file">Импортировать из файла</string>
+    <string name="action_export_robot_settings_to_file">Экспортировать в файл</string>
+    <string name="settings_ware_exported_successfully">Настройки успешно импортированы в файл %s</string>
+    <string name="error_while_exporting_settings_xml">Ошибка во время экспорта настроек. %s</string>
+    <string name="action_copy_robot_settings">Сделать копию</string>
+    <string name="error_while_copying_settings_xml">Ошибка во время копирования настроек. %s</string>
+    <string name="settings_ware_copied_successfully">Настройки успешно скопированы</string>
+    <string name="settings_ware_imported_successfully">Настройки успешно импортированы</string>
 </resources>

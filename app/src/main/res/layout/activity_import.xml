@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="ru.proghouse.robocam.RobotSettingsListActivity"
+    android:orientation="vertical"
+    android:id="@+id/robot_settings_list_main_layout">
+
+    <LinearLayout
+        style="@style/Widget.AppCompat.ActionBar"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:weightSum="1"
+        android:measureWithLargestChild="false" >
+
+        <LinearLayout
+            style="@style/Widget.AppCompat.ActionBar"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false" >
+
+            <ImageButton
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageButton"
+                android:src="@drawable/back"
+                android:onClick="onBackButtonClick" />
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/Widget.AppCompat.ActionBar"
+            android:orientation="horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:layout_weight="1"
+            android:gravity="right" >
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/buttonCancel"
+                android:focusable="false"
+                android:text="@string/cancel"
+                android:onClick="onCancelButtonClick" />
+
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="6dp">
+
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:id="@+id/fileTextView"
+            android:ellipsize="middle"
+            android:singleLine="true" />
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/fileListView"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
+</LinearLayout>

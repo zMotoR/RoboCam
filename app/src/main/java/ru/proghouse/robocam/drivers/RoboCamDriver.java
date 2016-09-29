@@ -108,7 +108,18 @@ public abstract class RoboCamDriver {
         }
     }
 
-    protected abstract void loadSettingsFromXml(Context context, File file, Document xml) throws Exception;
+    public abstract void loadSettingsFromXml(Context context, File file, Document xml) throws Exception;
+
+    public static RoboCamDriver createDriverAndLoadSettingsFromXml(Context context, File file) throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document xml = db.parse(file);
+        xml.getDocumentElement().normalize();
+        String driverName = xml.getDocumentElement().getNodeName();
+        RoboCamDriver driver = createDriver(context, driverName);
+        driver.loadSettingsFromXml(context, file, xml);
+        return driver;
+    }
 
     public abstract String getName();
 

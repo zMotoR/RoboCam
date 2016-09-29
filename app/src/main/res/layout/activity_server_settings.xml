@@ -182,7 +182,8 @@
                 android:id="@+id/textViewDriverPassword"
                 android:layout_gravity="center_horizontal"
                 android:paddingLeft="11dp"
-                android:paddingTop="6dp" />
+                android:paddingTop="6dp"
+                style="@style/SettingsSectionEditTextTitle" />
 
             <EditText
                 android:layout_width="match_parent"
@@ -192,7 +193,8 @@
                 android:id="@+id/editTextDriverPassword"
                 android:layout_gravity="center_horizontal"
                 android:paddingLeft="11dp"
-                android:paddingRight="11dp"/>
+                android:paddingRight="11dp"
+                style="@style/SettingsEditText" />
 
             <ImageView
                 android:layout_width="match_parent"
@@ -224,7 +226,8 @@
                 android:id="@+id/textViewSpectatorName"
                 android:layout_gravity="center_horizontal"
                 android:paddingLeft="11dp"
-                android:paddingTop="6dp" />
+                android:paddingTop="6dp"
+                style="@style/SettingsSectionEditTextTitle" />
 
             <EditText
                 android:layout_width="match_parent"
@@ -235,7 +238,8 @@
                 android:lines="1"
                 android:singleLine="true"
                 android:paddingLeft="11dp"
-                android:paddingRight="11dp"/>
+                android:paddingRight="11dp"
+                style="@style/SettingsEditText" />
 
             <ImageView
                 android:layout_width="match_parent"
@@ -252,7 +256,8 @@
                 android:id="@+id/textViewSpectatorPassword"
                 android:layout_gravity="center_horizontal"
                 android:paddingLeft="11dp"
-                android:paddingTop="6dp" />
+                android:paddingTop="6dp"
+                style="@style/SettingsSectionEditTextTitle" />
 
             <EditText
                 android:layout_width="match_parent"
@@ -262,7 +267,8 @@
                 android:id="@+id/editTextSpectatorPassword"
                 android:layout_gravity="center_horizontal"
                 android:paddingLeft="11dp"
-                android:paddingRight="11dp"/>
+                android:paddingRight="11dp"
+                style="@style/SettingsEditText" />
 
         </LinearLayout>
     </ScrollView>
