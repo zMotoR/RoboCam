@@ -64,7 +64,7 @@
     <string name="app_settings">Бағдарламаның параметрлері</string>
     <string name="joysticks">Джойстиктар</string>
     <string name="joystick1">Джойстик 1</string>
-    <string name="visibility">Көріну</string>
+    <string name="visibility">Көрсету</string>
     <string name="joystick2">Джойстик 2</string>
     <string name="joystick3">Джойстик 3</string>
     <string name="joystick4">Джойстик 4</string>
@@ -79,8 +79,8 @@
     <string name="joystick_type_independent_motors">Тәуелсіз моторлар</string>
     <string name="joystick_type_mailbox">Пошталық жәшік</string>
     <string name="joystick_type_steering">Рульдеу 1 (көлік секілді қозғала алады)</string>
-    <string name="joystick_behavior1">Жанасудың аяқталыуы (для горизонтальной оси)</string>
-    <string name="joystick_behavior2">Жанасудың аяқталыуы (для вертикальной оси)</string>
+    <string name="joystick_behavior1">Жанасудың аяқталыуы (көлденең ось үшін)</string>
+    <string name="joystick_behavior2">Жанасудың аяқталыуы (тік ось үшін)</string>
     <string name="joystick_behavior_hold_position">Орнын сақтау</string>
     <string name="joystick_behavior_return_to_zero">Нөлге қайту</string>
     <string name="joystick1_ports">1 джойстик порттары</string>
@@ -91,7 +91,7 @@
     <string name="joystick_shape_vertical_arrows">Тік бағыттамалар</string>
     <string name="brake">Баяулату</string>
     <string name="coefficient">Коэффициенті</string>
-    <string name="invert">Инвертировать</string>
+    <string name="invert">Инверттеу</string>
     <string name="output_port">Шығу порты</string>
     <string name="port">Порт</string>
     <string name="power">Қуаты</string>
@@ -105,7 +105,7 @@
     <string name="joystick_type_angle">Мотордың бұрылу бұрышы</string>
     <string name="joystick_type_power">Мотордың қуаты</string>
     <string name="joystick_type_cv">Өзгертілетін мәні</string>
-    <string name="joystick_invert">Инвертировать</string>
+    <string name="joystick_invert">Инверттеу</string>
     <string name="joystick_coefficient">Коэффициенті</string>
     <string name="joystick_brake">Баяулату</string>
     <string name="error_while_opening_settings">Параметрлерді оқу кезіндегі қате. %s</string>
@@ -126,7 +126,7 @@
     <string name="hide">Жасыру</string>
     <string name="error_poor_connection_quality">Қосылыстар сапасы нашар.</string>
     <string name="error_security_settings_have_been_changed">Қауіпсіздік параметрлері өзгертілген.</string>
-    <string name="request_permission">RoboCam бағдарламасына камераны пайдалануға құқық керек.</string>
+    <string name="request_camera_permission">RoboCam бағдарламасына камераны пайдалануға құқық керек.</string>
     <string name="cannot_init_camera">Камераны қосу мүмкін емес</string>
     <string name="camera_facing_external">Сыртқы</string>
     <string name="joystick_type_steering_progressive">Рульдеу 1 (бір орында айнала алады)</string>

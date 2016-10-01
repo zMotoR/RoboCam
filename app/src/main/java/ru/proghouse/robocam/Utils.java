@@ -1,9 +1,13 @@
 package ru.proghouse.robocam;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.os.Build;
+import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
@@ -38,7 +42,7 @@ public class Utils {
             ErrorDialog.newInstance(message, finishActivity)
                     .show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);
         else {
-            Toast.makeText(activity, activity.getString(R.string.request_permission), Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
             activity.finish();
         }
     }
@@ -48,7 +52,7 @@ public class Utils {
             ErrorDialog.newInstance(activity.getString(messageId), finishActivity)
                     .show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);
         else {
-            Toast.makeText(activity, activity.getString(R.string.request_permission), Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, activity.getString(messageId), Toast.LENGTH_SHORT).show();
             activity.finish();
         }
     }
@@ -143,6 +147,10 @@ public class Utils {
         return name;
     }
 
+    public static void saveXml(String fileName, Document xml) throws FileNotFoundException, TransformerException {
+        saveXml(new File(fileName), xml);
+    }
+
     public static void saveXml(File file, Document xml) throws FileNotFoundException, TransformerException {
         DOMSource source = new DOMSource(xml);
         FileOutputStream stream = new FileOutputStream(file);
@@ -150,5 +158,37 @@ public class Utils {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(source, result);
+    }
+
+    public static boolean requestExternalStoragePermission(Activity activity, int requestCode) {
+        boolean go = false;
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (ActivityCompat.checkSelfPermission(activity,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(activity,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    Bundle bundle = new Bundle();
+                    bundle.putInt(ConfirmationDialog.MESSAGE_ID,
+                            R.string.request_write_external_storage_permission);
+                    bundle.putStringArray(ConfirmationDialog.PERMISSIONS,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
+                    bundle.putInt(ConfirmationDialog.REQUEST_CODE, requestCode);
+                    bundle.putBoolean(ConfirmationDialog.FINISH_ACTIVITY, false);
+                    ConfirmationDialog dialog = new ConfirmationDialog();
+                    dialog.setArguments(bundle);
+                    dialog.show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);
+                } else {
+                    ActivityCompat.requestPermissions(activity,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            requestCode);
+                }
+            }
+            else
+                go = true;
+        }
+        else
+            go = true;
+        return go;
     }
 }

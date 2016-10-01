@@ -402,7 +402,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                            @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED)
-                Utils.showError(this, R.string.request_permission, true);
+                Utils.showError(this, R.string.request_camera_permission, true);
             else
             if (!cameraManager.isInitialized()) {
                 if (cameraManager.getAfterGrandPermission())

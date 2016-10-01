@@ -20,9 +20,11 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.icu.text.CollationKey;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.ActivityCompat;
@@ -467,7 +469,14 @@ public class CameraManager implements Camera.PreviewCallback {
                 if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA)
                         != PackageManager.PERMISSION_GRANTED) {
                     if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)) {
-                        new ConfirmationDialog().show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);
+                        Bundle bundle = new Bundle();
+                        bundle.putInt(ConfirmationDialog.MESSAGE_ID, R.string.request_camera_permission);
+                        bundle.putStringArray(ConfirmationDialog.PERMISSIONS, new String[]{Manifest.permission.CAMERA});
+                        bundle.putInt(ConfirmationDialog.REQUEST_CODE, MainActivity.REQUEST_CAMERA_PERMISSION);
+                        bundle.putBoolean(ConfirmationDialog.FINISH_ACTIVITY, true);
+                        ConfirmationDialog dialog = new ConfirmationDialog();
+                        dialog.setArguments(bundle);
+                        dialog.show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);
                     } else {
                         ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.CAMERA},
                                 MainActivity.REQUEST_CAMERA_PERMISSION);

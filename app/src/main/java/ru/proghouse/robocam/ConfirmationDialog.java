@@ -17,28 +17,36 @@ import android.support.v4.app.ActivityCompat;
  */
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class ConfirmationDialog extends DialogFragment {
+    public static final String MESSAGE_ID = "message_id";
+    public static final String PERMISSIONS = "permissions";
+    public static final String REQUEST_CODE = "request_code";
+    public static final String FINISH_ACTIVITY = "finish_activity";
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= 17) {
             final Fragment parent = getParentFragment();
+            Bundle bundle = getArguments();
             return new AlertDialog.Builder(getActivity())
-                    .setMessage(R.string.request_permission)
+                    .setMessage(bundle.getInt(MESSAGE_ID) /*R.string.request_camera_permission*/)
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            Bundle bundle = getArguments();
                             ActivityCompat.requestPermissions(getActivity(),
-                                    new String[]{Manifest.permission.CAMERA},
-                                    MainActivity.REQUEST_CAMERA_PERMISSION);
+                                    bundle.getStringArray(PERMISSIONS) /*new String[]{Manifest.permission.CAMERA}*/,
+                                    bundle.getInt(REQUEST_CODE) /*MainActivity.REQUEST_CAMERA_PERMISSION*/);
                         }
                     })
-                    .setNegativeButton(android.R.string.cancel,
-                            new DialogInterface.OnClickListener() {
+                    .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    Activity activity = parent.getActivity();
-                                    if (activity != null) {
-                                        activity.finish();
+                                    Bundle bundle = getArguments();
+                                    if (bundle.getBoolean(FINISH_ACTIVITY)) {
+                                        Activity activity = parent.getActivity();
+                                        if (activity != null) {
+                                            activity.finish();
+                                        }
                                     }
                                 }
                             })

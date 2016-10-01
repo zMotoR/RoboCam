@@ -128,7 +128,7 @@
     <string name="banner_ad_unit_id" translatable="false">ca-app-pub-7800876624909705/2125140872</string>
     <string name="error_poor_connection_quality">Poor connection quality.</string>
     <string name="error_security_settings_have_been_changed">Security settings have been changed.</string>
-    <string name="request_permission">RoboCam needs camera permission.</string>
+    <string name="request_camera_permission">RoboCam needs camera permission.</string>
     <string name="cannot_init_camera">Cannot initialize the camera.</string>
     <string name="camera_facing_external">External</string>
     <string name="use_render_script">Use RenderScript to process images</string>
@@ -141,4 +141,6 @@
     <string name="error_while_copying_settings_xml">Error while copying the settings. %s</string>
     <string name="settings_ware_copied_successfully">Settings ware copied successfully.</string>
     <string name="settings_ware_imported_successfully">Settings were imported successfully.</string>
+    <string name="action_send_robot_settings">Send to</string>
+    <string name="request_write_external_storage_permission">RoboCam needs external storage permission.</string>
 </resources>

@@ -1,12 +1,16 @@
 package ru.proghouse.robocam;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Path;
 import android.os.Build;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Xml;
@@ -63,7 +67,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     private TextView textViewSubsWarning = null;
     private LinearLayout linearLayoutSubsWarning = null;
     private static final String WARNING_HIDED = "WarningHided";
-
+    private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT = 1;
     //private IabHelper mHelper;
     //private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
     //private boolean isPremium = false;
@@ -358,13 +362,35 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT) {
+            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED)
+                Utils.showError(this, R.string.request_write_external_storage_permission, false);
+            else {
+                //Trying one more time.
+                if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT)
+                    importSettings();
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    private void importSettings() {
+        if (Utils.requestExternalStoragePermission(this,
+                REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT))
+            startActivity(new Intent(this, ImportActivity.class));
+    }
+
+    @Override
     public boolean onContextItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case MI_ADD_EV3_SETTINGS:
                 startActivity(new Intent(this, EV3SettingsActivity.class));
                 break;
             case MI_IMPORT_SETTINGS:
-                startActivity(new Intent(this, ImportActivity.class));
+                importSettings();
                 break;
             default:
                 if (item.getItemId() > 0 && item.getItemId() <= settingsListView.getAdapter().getCount()) {

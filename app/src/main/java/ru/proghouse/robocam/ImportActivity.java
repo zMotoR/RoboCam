@@ -95,8 +95,8 @@ public class ImportActivity extends AppCompatActivity {
                     final File file = getItem(position);
                     String name;
                     if (file.isDirectory() && (
-                            file.getPath().toLowerCase().equals(System.getenv("EXTERNAL_STORAGE").toLowerCase())
-                            || file.getPath().toLowerCase().equals(System.getenv("SECONDARY_STORAGE").toLowerCase())
+                            file.getPath().toLowerCase().equals(System.getenv("EXTERNAL_STORAGE") != null ? System.getenv("EXTERNAL_STORAGE").toLowerCase() : null)
+                            || file.getPath().toLowerCase().equals(System.getenv("SECONDARY_STORAGE") != null ? System.getenv("SECONDARY_STORAGE").toLowerCase() : null)
                             || file.getPath().toLowerCase().equals(Environment.getExternalStorageDirectory().getPath().toLowerCase())))
                         name = file.getPath();
                     else
@@ -172,14 +172,18 @@ public class ImportActivity extends AppCompatActivity {
         File[] files = null;
         if (directoryPath == null || directoryPath.equals("")) {
             File extFile = Environment.getExternalStorageDirectory();
-            if ((!extFile.exists()) || (!extFile.isDirectory()))
+            if (((!extFile.exists()) || (!extFile.isDirectory()))
+                    && System.getenv("EXTERNAL_STORAGE") != null)
                 extFile = new File(System.getenv("EXTERNAL_STORAGE"));
-            File secFile = new File(System.getenv("SECONDARY_STORAGE"));
-            if (extFile.exists() && extFile.isDirectory() && secFile.exists() && secFile.isDirectory())
+            File secFile = null;
+            if (System.getenv("SECONDARY_STORAGE") != null)
+                secFile = new File(System.getenv("SECONDARY_STORAGE"));
+            if (extFile != null && extFile.exists() && extFile.isDirectory()
+                    && secFile != null && secFile.exists() && secFile.isDirectory())
                 files = new File[] {extFile, secFile};
-            else if (extFile.exists() && extFile.isDirectory())
+            else if (extFile != null && extFile.exists() && extFile.isDirectory())
                 files = new File[] {extFile};
-            else if (secFile.exists() && secFile.isDirectory())
+            else if (secFile != null && secFile.exists() && secFile.isDirectory())
                 files = new File[] {secFile};
         }
         else {
@@ -214,8 +218,8 @@ public class ImportActivity extends AppCompatActivity {
             finish();
         }
         else {
-            if (currentPath.toLowerCase().equals(System.getenv("EXTERNAL_STORAGE").toLowerCase())
-                    || currentPath.toLowerCase().equals(System.getenv("SECONDARY_STORAGE").toLowerCase())
+            if (currentPath.toLowerCase().equals(System.getenv("EXTERNAL_STORAGE") != null ? System.getenv("EXTERNAL_STORAGE").toLowerCase() : null)
+                    || currentPath.toLowerCase().equals(System.getenv("SECONDARY_STORAGE") != null ? System.getenv("SECONDARY_STORAGE").toLowerCase() : null)
                     || currentPath.toLowerCase().equals(Environment.getExternalStorageDirectory().getPath().toLowerCase()))
                 currentPath = null;
             else {
