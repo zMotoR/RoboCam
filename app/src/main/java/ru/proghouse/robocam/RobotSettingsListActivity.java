@@ -55,7 +55,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     private Button buttonAdd = null;
     private Button buttonDelete = null;
     private ImageButton buttonOverflow = null;
-    private File cacheDir, ev3Dir, ev3DefaultSettingsFile;
+    private File cacheDir, robotDir, ev3DefaultSettingsFile;
     private ListView settingsListView = null;
     private Spinner spinnerCurrentRobotSettings = null;
     private List<SettingsTitle> settingsList = null;
@@ -99,9 +99,10 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         buttonOverflow.setOnClickListener(this);
         registerForContextMenu(buttonOverflow);
 
-        cacheDir = getCacheDir();
-        ev3Dir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
-        ev3Dir.mkdirs();
+        //cacheDir = getCacheDir();
+        //ev3Dir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
+        //ev3Dir.mkdirs();
+        robotDir = Utils.getRobotDir(this);
 
         settingsListView = (ListView)findViewById(R.id.settingsListView);
 
@@ -228,7 +229,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
 
     private void fillSettinsList() {
         settingsList = new ArrayList<SettingsTitle>();
-        File[] files = ev3Dir.listFiles();
+        File[] files = robotDir.listFiles();
         for (File file : files) {
             if (file.getName().trim().endsWith(".xml")) {
                 try {

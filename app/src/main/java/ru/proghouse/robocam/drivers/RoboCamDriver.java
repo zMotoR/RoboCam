@@ -24,6 +24,7 @@ import ru.proghouse.robocam.ExtraKey;
 import ru.proghouse.robocam.HttpServer;
 import ru.proghouse.robocam.MainActivity;
 import ru.proghouse.robocam.R;
+import ru.proghouse.robocam.Utils;
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 
 /**
@@ -82,14 +83,13 @@ public abstract class RoboCamDriver {
     public static void updateCurrentDriver(Context context, boolean update) {
         SharedPreferences settings = context.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         String currentDriverSettings = settings.getString(ExtraKey.CURRENT_ROBOT_SETTINGS, "");
-        File cacheDir = context.getCacheDir();
-        File driverDir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
+        File robotDir = Utils.getRobotDir(context);
         try {
             if (currentDriverSettings.equals("")) {
                 currentDriverSettings = DefaultValue.EV3_SETTINGS_FILE;
                 EV3Driver.checkDefaultSettingsFile(context);
             }
-            File settingsFile = new File(driverDir, currentDriverSettings);
+            File settingsFile = new File(robotDir, currentDriverSettings);
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document xml = db.parse(settingsFile);

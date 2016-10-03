@@ -75,7 +75,8 @@ public class HttpServer extends IntentService {
     private static int webSocketPort = 8089;
     private volatile WebServer webServer = null;
     private volatile RoboCamWebSocketHandler webSocketHandler = null;
-    private static volatile File cacheDir = null;
+    //private static volatile File cacheDir = null;
+    private static volatile File adsDir = null;
     private static HttpServer server = null;
     private static Hashtable<WebSocketConnection, String> currentConnections = new Hashtable<WebSocketConnection, String>();
     private static Hashtable<WebSocketConnection, String> currentConnectionTests = new Hashtable<WebSocketConnection, String>();
@@ -422,7 +423,8 @@ public class HttpServer extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         try {
-            cacheDir = getCacheDir();
+            adsDir = Utils.getAdsDir(this);
+            //cacheDir = getCacheDir();
             //intent.getStringExtra()
             webSocketHandler = new RoboCamWebSocketHandler();
             webServer = WebServers.createWebServer(webSocketPort)
@@ -725,7 +727,7 @@ public class HttpServer extends IntentService {
                     }
                 }
                 if (screenMin > 0) {
-                    File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                    //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
                     File versionFile = new File(adsDir, "v.xml");
                     if (versionFile.exists()) {
                         Element[] condition = {null};
@@ -968,8 +970,9 @@ public class HttpServer extends IntentService {
                     }
                     catch(FileNotFoundException e1) {
                         try {
-                            File cacheDir = server.getCacheDir();
-                            File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                            //File cacheDir = server.getCacheDir();
+                            //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                            File adsDir = Utils.getAdsDir(server);
                             File file = new File(adsDir, method[1]);
                             assetStream = new FileInputStream(file);
                             method[1] = file.getName();

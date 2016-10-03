@@ -172,10 +172,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     }
 
     private File getSettingsFile() {
-        File cacheDir = getCacheDir();
-        File ev3Dir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
-        ev3Dir.mkdirs();
-        return new File(ev3Dir, settingsFileName);
+        File robotDir = Utils.getRobotDir(this);
+        return new File(robotDir, settingsFileName);
     }
 
     private void loadSettingsFromXml(Document xml) throws Exception {

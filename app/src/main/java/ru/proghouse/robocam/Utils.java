@@ -104,10 +104,40 @@ public class Utils {
         }
     }
 
+    public static void deleteDir(File dir) {
+        if (dir.isDirectory())
+            for (File subDir : dir.listFiles())
+                deleteDir(subDir);
+        dir.delete();
+    }
+
     public static File getRobotDir(Context context) {
-        File robotDir = new File(context.getCacheDir(), DefaultValue.ROBOT_SETTINGS_DIRECTORY);
-        robotDir.mkdirs();
+        File oldRobotDir = new File(context.getCacheDir(), DefaultValue.ROBOT_SETTINGS_DIRECTORY);
+        File robotDir = new File(context.getFilesDir(), DefaultValue.ROBOT_SETTINGS_DIRECTORY);
+        if (oldRobotDir.exists() && oldRobotDir.isDirectory() && !robotDir.exists()) {
+            //Copying old settings from the old path.
+            robotDir.mkdirs();
+            File[] oldFiles = oldRobotDir.listFiles();
+            for (File oldFile : oldFiles) {
+                if (oldFile.getName().trim().endsWith(".xml")) {
+                    File file = new File(robotDir, oldFile.getName());
+                    try {
+                        Utils.copy(oldFile, file);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        else
+            robotDir.mkdirs();
         return robotDir;
+    }
+
+    public static File getAdsDir(Context context) {
+        File adsDir = new File(context.getFilesDir(), DefaultValue.ADS_DIRECTORY);
+        adsDir.mkdirs();
+        return adsDir;
     }
 
     public static String createNewSettingsName(Context context, String currentSettingsName,

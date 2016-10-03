@@ -31,6 +31,7 @@ import ru.proghouse.robocam.DefaultValue;
 import ru.proghouse.robocam.HttpServer;
 import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.StringHelper;
+import ru.proghouse.robocam.Utils;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
 
 /**
@@ -693,10 +694,8 @@ public class EV3Driver extends RoboCamDriver {
     }
 
     public static void checkDefaultSettingsFile(Context context) throws Exception {
-        File cacheDir = context.getCacheDir();
-        File ev3Dir = new File(cacheDir, DefaultValue.ROBOT_SETTINGS_DIRECTORY);
-        ev3Dir.mkdirs();
-        File ev3DefaultSettingsFile = new File(ev3Dir, DefaultValue.EV3_SETTINGS_FILE);
+        File robotDir = Utils.getRobotDir(context);
+        File ev3DefaultSettingsFile = new File(robotDir, DefaultValue.EV3_SETTINGS_FILE);
         if (!ev3DefaultSettingsFile.exists()) {
             FileOutputStream fileOutputStream = new FileOutputStream(ev3DefaultSettingsFile);
             try {

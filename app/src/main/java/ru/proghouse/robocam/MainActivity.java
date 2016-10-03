@@ -433,8 +433,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private void DownloadAd() {
         try {
-            //File cacheDir = getCacheDir();
-            //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            ////File cacheDir = getCacheDir();
+            ////File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            //File adsDir = Utils.getAdsDir(thisActivity);
             //File adsLocalizedDir = new File(adsDir, getString(R.string.local_web_path));
             /*Display display = getWindowManager().getDefaultDisplay();
             DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -502,9 +503,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (!loadingAds) {
                 try {
                     loadingAds = true;
-                    File cacheDir = getCacheDir();
-                    File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
-                    adsDir.mkdirs();
+                    //File cacheDir = getCacheDir();
+                    //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+                    //adsDir.mkdirs();
+                    File adsDir = Utils.getAdsDir(thisActivity);
                     File newVersionFile = new File(adsDir, "nv.xml");
                     DownloadFile(AD_DOWNLOAD_ROOT_PATH + "v.xml", newVersionFile);
                     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -558,7 +560,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                 if (file.isFile() && !file.getName().equals(newVersionFile.getName()))
                                     file.delete();
                                 else if (file.isDirectory() && !file.getName().equals(newVersionDir.getName()))
-                                    deleteDir(file);
+                                    Utils.deleteDir(file);
                         }
                         File localizedVersionFile = new File(adsDir, "v" + country[0] + "-" + language[0] + ".xml");
                         localizedVersionFile.delete();
@@ -590,13 +592,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-
-        private void deleteDir(File dir) {
-            if (dir.isDirectory())
-                for (File subDir : dir.listFiles())
-                    deleteDir(subDir);
-            dir.delete();
         }
     }
 
@@ -652,8 +647,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         loadedAds = true;
         boolean showAdView = true;
         try {
-            File cacheDir = getCacheDir();
-            File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            //File cacheDir = getCacheDir();
+            //File adsDir = new File(cacheDir, DefaultValue.ADS_DIRECTORY);
+            File adsDir = Utils.getAdsDir(this);
             File versionFile = new File(adsDir, "v.xml");
             if (!versionFile.exists())
                 return;
