@@ -144,6 +144,8 @@ public class Utils {
                 n++;
             name += " " + Integer.toString(n);
         }
+        else
+            name = name + (n > 0 ? " " + Integer.toString(n) : "");
         return name;
     }
 

@@ -50,6 +50,7 @@ public class ImportActivity extends AppCompatActivity {
     private TextView fileTextView = null;
     private Activity thisActivity = null;
     private SharedPreferences.Editor editor = null;
+    private int selectionPos = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +121,7 @@ public class ImportActivity extends AppCompatActivity {
                         files.clear();
                         files.addAll(getFiles(currentPath));
                         adapter.notifyDataSetChanged();
+                        fileListView.setSelectionAfterHeaderView();
                         updateTextView();
                     } else {
                         importSettings(selectedFile);
@@ -218,6 +220,7 @@ public class ImportActivity extends AppCompatActivity {
             finish();
         }
         else {
+            String oldCurrentPath = currentPath;
             if (currentPath.toLowerCase().equals(System.getenv("EXTERNAL_STORAGE") != null ? System.getenv("EXTERNAL_STORAGE").toLowerCase() : null)
                     || currentPath.toLowerCase().equals(System.getenv("SECONDARY_STORAGE") != null ? System.getenv("SECONDARY_STORAGE").toLowerCase() : null)
                     || currentPath.toLowerCase().equals(Environment.getExternalStorageDirectory().getPath().toLowerCase()))
@@ -229,6 +232,20 @@ public class ImportActivity extends AppCompatActivity {
             files.clear();
             files.addAll(getFiles(currentPath));
             ((ArrayAdapter<File>) fileListView.getAdapter()).notifyDataSetChanged();
+            for (int i = 0; i < files.size(); i++)
+                if (files.get(i).toString().equals(oldCurrentPath)) {
+                    selectionPos = i;
+                    fileListView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (selectionPos > 0)
+                                fileListView.setSelection(selectionPos);
+                            selectionPos = -1;
+                        }
+                    });
+                    fileListView.setSelection(i);
+                    break;
+                }
             updateTextView();
         }
     }

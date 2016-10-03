@@ -131,4 +131,15 @@
     <string name="camera_facing_external">Сыртқы</string>
     <string name="joystick_type_steering_progressive">Рульдеу 1 (бір орында айнала алады)</string>
     <string name="use_render_script">Суреттерді өңдеу үшін RenderScript пайдалану </string>
+    <string name="title_activity_import">Импорт настроек робота</string>
+    <string name="action_import_robot_settings_from_file">Импортировать из файла</string>
+    <string name="action_export_robot_settings_to_file">Экспортировать в файл</string>
+    <string name="settings_ware_exported_successfully">Настройки успешно экспортированы в файл %s</string>
+    <string name="error_while_exporting_settings_xml">Ошибка во время экспорта настроек. %s</string>
+    <string name="action_copy_robot_settings">Сделать копию</string>
+    <string name="error_while_copying_settings_xml">Ошибка во время копирования настроек. %s</string>
+    <string name="settings_ware_copied_successfully">Настройки успешно скопированы</string>
+    <string name="settings_ware_imported_successfully">Настройки успешно импортированы</string>
+    <string name="action_send_robot_settings">Отправить</string>
+    <string name="request_write_external_storage_permission">Программе RoboCam требуется доступ к файлам.</string>
 </resources>
