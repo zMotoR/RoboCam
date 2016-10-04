@@ -7,8 +7,8 @@ android {
         applicationId "ru.proghouse.robocam"
         minSdkVersion 9
         targetSdkVersion 24
-        versionCode 15
-        versionName '1.1.1'
+        versionCode 17
+        versionName '1.1.2'
     }
     buildTypes {
         release {
@@ -20,7 +20,7 @@ android {
         withoutRenderScript {
         }
         withRenderScript {
-            versionCode 16
+            versionCode 18
             renderscriptTargetApi 11
             renderscriptSupportModeEnabled true
         }

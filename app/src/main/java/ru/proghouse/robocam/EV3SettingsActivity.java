@@ -972,8 +972,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     portElement.setAttribute("Invert", "1");
                 if (!outputPortComponent.editTextCoefficient.getText().toString().equals("1"))
                     portElement.setAttribute("Coefficient", outputPortComponent.editTextCoefficient.getText().toString());
-                if (outputPortComponent.checkBoxBrake.isChecked())
-                    portElement.setAttribute("Brake", "1");
+                if (!outputPortComponent.checkBoxBrake.isChecked())
+                    portElement.setAttribute("Brake", "0");
             }
             index++;
         }
