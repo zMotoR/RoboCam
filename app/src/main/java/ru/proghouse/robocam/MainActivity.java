@@ -91,6 +91,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -173,6 +175,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     public static double screenMin = 0;
 
+    private SharedPreferences.Editor editor = null;
+
+    private String lastBluetoothDevice = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,6 +187,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             getSupportActionBar().hide();
             mainActivity = this;
             thisActivity = this;
+
+            SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+            if (savedInstanceState != null)
+                lastBluetoothDevice = savedInstanceState.getString(ExtraKey.LAST_BLUETOOTH_DEVICE);
+            else
+                lastBluetoothDevice = settings.getString(ExtraKey.LAST_BLUETOOTH_DEVICE, null);
 
             Display display = getWindowManager().getDefaultDisplay();
             DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -360,6 +372,34 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }catch(Throwable e){
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState (Bundle outState) {
+        outState.putString(ExtraKey.LAST_BLUETOOTH_DEVICE, lastBluetoothDevice);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState (Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        lastBluetoothDevice = savedInstanceState.getString(ExtraKey.LAST_BLUETOOTH_DEVICE);
+    }
+
+    private SharedPreferences.Editor getPreferenceEditor() {
+        if (editor == null) {
+            SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+            editor = settings.edit();
+        }
+        return editor;
+    }
+
+    private void apply() {
+        if (editor != null)
+            if (Build.VERSION.SDK_INT >= 9)
+                editor.apply();
+            else
+                editor.commit();
     }
 
     private void createSurfaceTextureListener() {
@@ -1064,6 +1104,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 if (robotState == ROBOT_STATE_SELECTING){
                     RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
                     robotState = ROBOT_STATE_CONNECTING;
+                    lastBluetoothDevice = ((BluetoothDevice)robotListView.getAdapter().getItem(position)).getName();
+                    getPreferenceEditor().putString(ExtraKey.LAST_BLUETOOTH_DEVICE, lastBluetoothDevice);
+                    apply();
                     driver.connect((BluetoothDevice)robotListView.getAdapter().getItem(position));
                     updateControls();
                 }
@@ -1533,6 +1576,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>(
                         BluetoothAdapter.getDefaultAdapter().getBondedDevices());
                 if (devices.size() > 0) {
+                    Collections.sort(devices, new Comparator<BluetoothDevice>() {
+                        @Override
+                        public int compare(BluetoothDevice lhs, BluetoothDevice rhs) {
+                            if (lhs.getName().equals(lastBluetoothDevice)
+                                    && rhs.getName().equals(lastBluetoothDevice))
+                                return 0;
+                            else if (lhs.getName().equals(lastBluetoothDevice))
+                                return -1;
+                            else if (rhs.getName().equals(lastBluetoothDevice))
+                                return 1;
+                            else
+                                return lhs.getName().compareTo(rhs.getName());
+                        }
+                    });
                     ArrayAdapter<BluetoothDevice> adapter = new ArrayAdapter<BluetoothDevice>(this,
                             android.R.layout.simple_list_item_1, devices) {
                         @Override

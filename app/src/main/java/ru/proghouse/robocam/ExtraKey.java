@@ -17,4 +17,5 @@ public class ExtraKey {
     public static final String ALLOW_SPECTATORS = "allow_spectators";
     public static final String CURRENT_ROBOT_SETTINGS = "current_robot_settings";
     public static final String CURRENT_PATH = "current_path";
+    public static final String LAST_BLUETOOTH_DEVICE = "last_bluetooth_device";
 }
