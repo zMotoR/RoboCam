@@ -4,6 +4,7 @@ import android.content.Context;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -13,11 +14,15 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
  * Created by Alexey Valuev on 03.02.2016.
  */
 public class RoboCamBroker {
-    public static boolean DEBUG_HTTP = false;//true;
+    public static boolean DEBUG_HTTP = true;
     private static List<RoboCamBrokerListener> listeners = new ArrayList<RoboCamBrokerListener>();
 
     public static void setJoystickValues(Hashtable<String, Integer> joystickValues) {
         RoboCamDriver.getCurrentDriver().setJoystickValues(joystickValues);
+    }
+
+    public static void setPressedKeys(HashSet<Integer> pressedKeys) {
+        RoboCamDriver.getCurrentDriver().setPressedKeys(pressedKeys);
     }
 
     public interface RoboCamBrokerListener{

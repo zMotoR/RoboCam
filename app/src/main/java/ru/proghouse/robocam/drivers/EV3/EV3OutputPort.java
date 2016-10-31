@@ -13,18 +13,7 @@ public class EV3OutputPort {
     private volatile float angle = 0;
     private volatile int preparedCount = 0;
     private volatile int brake = EV3Driver.BRAKE;
-    private volatile int motorDirection = 0;
-    private volatile float stopAngle = 0;
-    private volatile float oldSentAngle = 0;
-    private volatile int mailboxId = -1;
-
-    public float getOldSentAngle() {
-        return oldSentAngle;
-    }
-
-    public void setOldSentAngle(float oldSentAngle) {
-        this.oldSentAngle = oldSentAngle;
-    }
+    private volatile int step = 0; //(0 - 200) Max step that increases or decreases the power or angle value (before using the coefficient).
 
     public EV3OutputPort(int layer, int number) {
         this.layer = layer;
@@ -35,24 +24,74 @@ public class EV3OutputPort {
         return layer;
     }
 
-    public void setLayer(int layer) {
-        this.layer = layer;
-    }
-
     public float getAngle() {
         return angle;
     }
 
-    public void setAngle(float angle) {
-        this.angle = angle;
+    public boolean setAngle(float angle, boolean useStep, boolean canGotoNextStep) {
+        if (!useStep)
+            this.angle = angle;
+        else if (angle > this.angle) {
+            if (step > 0) {
+                if (canGotoNextStep) {
+                    float newAngle = this.angle + (float) step;
+                    if (newAngle > angle)
+                        this.angle = angle;
+                    else
+                        this.angle = newAngle;
+                }
+            }
+            else
+                this.angle = angle;
+        } else if (angle < this.angle) {
+            if (step > 0) {
+                if (canGotoNextStep) {
+                    float newAngle = this.angle - (float) step;
+                    if (newAngle < angle)
+                        this.angle = angle;
+                    else
+                        this.angle = newAngle;
+                }
+            }
+            else
+                this.angle = angle;
+        }
+        return angle == this.angle;
     }
 
     public int getPower() {
         return power;
     }
 
-    public void setPower(int power) {
-        this.power = power;
+    public boolean setPower(int power, boolean useStep, boolean canGotoNextStep) {
+        if (!useStep)
+            this.power = power;
+        else if (power > this.power) {
+            if (step > 0) {
+                if (canGotoNextStep) {
+                    int newPower = this.power + step;
+                    if (newPower > power)
+                        this.power = power;
+                    else
+                        this.power = newPower;
+                }
+            }
+            else
+                this.power = power;
+        } else if (power < this.power) {
+            if (step > 0) {
+                if (canGotoNextStep) {
+                    int newPower = this.power - step;
+                    if (newPower < power)
+                        this.power = power;
+                    else
+                        this.power = newPower;
+                }
+            }
+            else
+                this.power = power;
+        }
+        return power == this.power;
     }
 
     public int getJoystickType() {
@@ -137,30 +176,10 @@ public class EV3OutputPort {
                 && port.coefficient == coefficient && brake == brake;
     }
 
-    public int getPreparedCount() {
-        return preparedCount;
-    }
-
     public String getId() {
-        //Using input port numering for id generating
+        //Using input port numbering for id generating
         return new Integer(layer).toString() + ":"
                 + new Integer(EV3Driver.getInputPortNumberByOutputPortNumber(number)).toString();
-    }
-
-    public int getMotorDirection() {
-        return motorDirection;
-    }
-
-    public void setMotorDirection(int motorDirection) {
-        this.motorDirection = motorDirection;
-    }
-
-    public float getStopAngle() {
-        return stopAngle;
-    }
-
-    public void setStopAngle(float stopAngle) {
-        this.stopAngle = stopAngle;
     }
 
     public int getPreparedPower() {
@@ -181,15 +200,12 @@ public class EV3OutputPort {
         return number;
     }
 
-    public void setMailboxId(int mailboxId) {
-        this.mailboxId = mailboxId;
+    public int getStep() {
+        return step;
     }
 
-    public int getMailboxId() {
-        return mailboxId;
+    public void setStep(int step) {
+        this.step = step;
     }
 
-    public String getMailboxName() {
-        return new Integer(getLayer()).toString() + ":" + getNumberDesc();
-    }
 }

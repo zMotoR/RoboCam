@@ -13,6 +13,7 @@ import org.w3c.dom.Document;
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -78,7 +79,16 @@ public abstract class RoboCamDriver {
      */
     public abstract String getJoystickShapes();
 
+    /**
+     * Which keys are used?
+     * @return
+     */
+    public abstract String getUsedKeys();
+
+
     public abstract void setJoystickValues(Hashtable<String, Integer> joystickValues);
+
+    public abstract void setPressedKeys(HashSet<Integer> pressedKeys);
 
     public static void updateCurrentDriver(Context context, boolean update) {
         SharedPreferences settings = context.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);

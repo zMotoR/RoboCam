@@ -353,6 +353,7 @@ public class HttpServer extends IntentService {
                         connection.send("<msg><name>updateJoysticks</name>"
                                 + "<jb>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000") + "</jb>"
                                 + "<js>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----") + "</js>"
+                                + "<kb>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getUsedKeys() : "") + "</kb>"
                                 + "</msg>");
                 }
             }
@@ -415,6 +416,27 @@ public class HttpServer extends IntentService {
                             //Log.d("RoboCam", "Message from joystick");
                         }
                     }
+                    else if (msgParts.length == 2 && msgParts[0].equalsIgnoreCase("kp")) {
+                        try {
+                            HashSet<Integer> pressedKeys = new HashSet<Integer>();
+                            for (int i = 0; i < msgParts[1].length() / 3; i++) {
+                                int keyCode = Integer.parseInt(msgParts[1].substring(i * 3, i * 3 + 3));
+                                if (keyCode > 0 && keyCode <= 255)
+                                    pressedKeys.add(keyCode);
+                            }
+                            RoboCamBroker.setPressedKeys(pressedKeys);
+                        } catch (NumberFormatException e) {
+                            //
+                        }
+                    }
+                    /*else if (msgParts.length == 2 && msgParts[0].equalsIgnoreCase("kr")) {
+                        try {
+                            int keyCode = Integer.parseInt(msgParts[1]);
+                            RoboCamBroker.keyReleased(keyCode);
+                        } catch (NumberFormatException e) {
+                            //
+                        }
+                    }*/
                 }
             }
         }
@@ -777,6 +799,7 @@ public class HttpServer extends IntentService {
                         + "<prh>" + cameraManager.getActualPreviewHeight() + "</prh>"
                         + "<jb>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000") + "</jb>"
                         + "<js>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----") + "</js>"
+                        + "<kb>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getUsedKeys() : "") + "</kb>"
                         + "<lng>" + server.getString(R.string.local_web_path) + "</lng>"
                         + "<sk>" + sessionKey + "</sk>";
                 if ((!bannerPath.equals("")) && bannerWidth > 0 && bannerHeight > 0

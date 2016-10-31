@@ -142,4 +142,5 @@
     <string name="settings_ware_imported_successfully">Настройки успешно импортированы</string>
     <string name="action_send_robot_settings">Отправить</string>
     <string name="request_write_external_storage_permission">Программе RoboCam требуется доступ к файлам.</string>
+    <string name="invalid_mailbox_name">Неправильное имя почтового ящика. Имя не может быть \"x\", \"y\", \"w\", \"z\", \"a\", \"b\", \"c\" и \"d\".</string>
 </resources>
