@@ -13,7 +13,6 @@ public class EV3OutputPort {
     private volatile float angle = 0;
     private volatile int preparedCount = 0;
     private volatile int brake = EV3Driver.BRAKE;
-    private volatile int step = 0; //(0 - 200) Max step that increases or decreases the power or angle value (before using the coefficient).
 
     public EV3OutputPort(int layer, int number) {
         this.layer = layer;
@@ -28,7 +27,11 @@ public class EV3OutputPort {
         return angle;
     }
 
-    public boolean setAngle(float angle, boolean useStep, boolean canGotoNextStep) {
+    public void setAngle(float angle) {
+        this.angle = angle;
+    }
+
+    /*public boolean setAngle(float angle, boolean useStep, boolean canGotoNextStep) {
         if (!useStep)
             this.angle = angle;
         else if (angle > this.angle) {
@@ -57,13 +60,17 @@ public class EV3OutputPort {
                 this.angle = angle;
         }
         return angle == this.angle;
-    }
+    }*/
 
     public int getPower() {
         return power;
     }
 
-    public boolean setPower(int power, boolean useStep, boolean canGotoNextStep) {
+    public void setPower(int power) {
+        this.power = power;
+    }
+
+    /*public boolean setPower(int power, boolean useStep, boolean canGotoNextStep) {
         if (!useStep)
             this.power = power;
         else if (power > this.power) {
@@ -92,7 +99,7 @@ public class EV3OutputPort {
                 this.power = power;
         }
         return power == this.power;
-    }
+    }*/
 
     public int getJoystickType() {
         return joystickType;
@@ -198,14 +205,6 @@ public class EV3OutputPort {
             case EV3Driver.OUTPUT_PORT_D: return "D";
         }
         return number;
-    }
-
-    public int getStep() {
-        return step;
-    }
-
-    public void setStep(int step) {
-        this.step = step;
     }
 
 }

@@ -85,6 +85,11 @@ public abstract class RoboCamDriver {
      */
     public abstract String getUsedKeys();
 
+    /**
+     * Do I have to hide joysticks while using a keyboard?
+     * @return
+     */
+    public abstract boolean isHideJoysticks();
 
     public abstract void setJoystickValues(Hashtable<String, Integer> joystickValues);
 
@@ -281,4 +286,13 @@ public abstract class RoboCamDriver {
         }
     }
 
+    private boolean showDebugInfo = true;
+
+    public boolean isShowDebugInfo() {
+        return showDebugInfo;
+    }
+
+    public void setShowDebugInfo(boolean showDebugInfo) {
+        this.showDebugInfo = showDebugInfo;
+    }
 }

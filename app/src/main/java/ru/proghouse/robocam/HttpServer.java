@@ -354,6 +354,10 @@ public class HttpServer extends IntentService {
                                 + "<jb>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000") + "</jb>"
                                 + "<js>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----") + "</js>"
                                 + "<kb>" + (RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getUsedKeys() : "") + "</kb>"
+                                + "<hj>" + (RoboCamDriver.getCurrentDriver().isConnected()
+                                        && RoboCamDriver.getCurrentDriver().isHideJoysticks() ? "1" : "0") + "</hj>"
+                                + "<di>" + (RoboCamDriver.getCurrentDriver().isConnected()
+                                        && RoboCamDriver.getCurrentDriver().isShowDebugInfo() ? "1" : "0") + "</di>"
                                 + "</msg>");
                 }
             }
@@ -800,6 +804,10 @@ public class HttpServer extends IntentService {
                         + "<jb>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000") + "</jb>"
                         + "<js>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----") + "</js>"
                         + "<kb>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected() ? RoboCamDriver.getCurrentDriver().getUsedKeys() : "") + "</kb>"
+                        + "<hj>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected()
+                            && RoboCamDriver.getCurrentDriver().isHideJoysticks() ? "1" : "0") + "</hj>"
+                        + "<di>" + (isAdmin && RoboCamDriver.getCurrentDriver().isConnected()
+                            && RoboCamDriver.getCurrentDriver().isShowDebugInfo() ? "1" : "0") + "</di>"
                         + "<lng>" + server.getString(R.string.local_web_path) + "</lng>"
                         + "<sk>" + sessionKey + "</sk>";
                 if ((!bannerPath.equals("")) && bannerWidth > 0 && bannerHeight > 0

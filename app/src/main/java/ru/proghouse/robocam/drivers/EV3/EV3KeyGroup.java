@@ -13,8 +13,14 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
 public class EV3KeyGroup extends EV3Controller {
     private int x = 0;
     private int y = 0;
-    private int oldX = 0;
-    private int oldY = 0;
+    private int incX = 0; //(0 - 200) Max step that increases the power or angle value (before using the coefficient).
+    private int incY = 0;
+    private int decX = 0; //(0 - 200) Max step that decreases the power or angle value (before using the coefficient).
+    private int decY = 0;
+    private int stepXPause = 100; //The pause between steps in milliseconds.
+    private int stepYPause = 100;
+    private long lastStepXTime = System.currentTimeMillis();
+    private long lastStepYTime = System.currentTimeMillis();
     private String oldKeysHash = "";
     private boolean isFinished = true;
     private HashSet<Integer> oldPressedKeys = null;
@@ -110,26 +116,96 @@ public class EV3KeyGroup extends EV3Controller {
             behavior1 = behavior;
     }
 
-    @Override
-    public boolean gotoNextStep(boolean canGotoNextStep) {
-        if (!isFinished)
-            return _setPressedKeys(oldPressedKeys, canGotoNextStep);
-        return true;
+    public int getIncX() {
+        return incX;
     }
 
-    public boolean setPressedKeys(HashSet<Integer> pressedKeys, boolean canGotoNextStep) {
+    public void setIncX(int incX) {
+        this.incX = Math.min(200, Math.max(0, incX));
+    }
+
+    public int getDecX() {
+        return decX;
+    }
+
+    public void setDecX(int decX) {
+        this.decX = Math.min(200, Math.max(0, decX));
+    }
+
+    public int getIncY() {
+        return incY;
+    }
+
+    public void setIncY(int incY) {
+        this.incY = Math.min(200, Math.max(0, incY));
+    }
+
+    public int getDecY() {
+        return decY;
+    }
+
+    public void setDecY(int decY) {
+        this.decY = Math.min(200, Math.max(0, decY));
+    }
+
+    public int getStepXPause() {
+        return stepXPause;
+    }
+
+    public void setStepXPause(int stepXPause) {
+        this.stepXPause = Math.max(100, ((int)stepXPause / 100) * 100);
+    }
+
+    public int getStepYPause() {
+        return stepYPause;
+    }
+
+    private boolean hasStepX() {
+        return (incX > 0 && incX <= 200) || (decX > 0 && decX <= 200);
+    }
+
+    private boolean hasStepY() {
+        return (incY > 0 && incY <= 200) || (decY > 0 && decY <= 200);
+    }
+
+    public void setStepYPause(int stepYPause) {
+        this.stepYPause = Math.max(100, ((int)stepYPause / 100) * 100);
+    }
+
+    public boolean gotoNextStep() {
+        if (!isFinished) {
+            long curTime = System.currentTimeMillis();
+            if (curTime - lastStepXTime >= stepXPause
+                    || curTime - lastStepYTime >= stepYPause)
+                _setPressedKeys(oldPressedKeys);
+        }
+        return isFinished;
+    }
+
+    public boolean setPressedKeys(HashSet<Integer> pressedKeys) {
         String keysHash = "";
         for (Integer pressedKey : pressedKeys)
             keysHash += pressedKey.toString() + ":";
         if (oldKeysHash.equals(keysHash) && isFinished)
             return true;
         oldPressedKeys = (HashSet<Integer>)pressedKeys.clone();
-        boolean finished = _setPressedKeys(pressedKeys, canGotoNextStep);
+        long curTime = System.currentTimeMillis();
+        if ((hasStepX() && curTime - lastStepXTime >= stepXPause)
+                || (hasStepY() && curTime - lastStepYTime >= stepYPause))
+            _setPressedKeys(pressedKeys);
         oldKeysHash = keysHash;
-        return finished;
+        return isFinished;
     }
 
-    private boolean _setPressedKeys(HashSet<Integer> pressedKeys, boolean canGotoNextStep) {
+    private static int sign(int x) {
+        if (x > 0)
+            return 1;
+        else if (x < 0)
+            return -1;
+        return 0;
+    }
+
+    private void _setPressedKeys(HashSet<Integer> pressedKeys) {
         boolean finished = true;
         if (active) {
             int newX = 0;
@@ -158,29 +234,54 @@ public class EV3KeyGroup extends EV3Controller {
                     }
                 }
             }
-            if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS) {
-                if (behavior0 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !horzPressed)
+            long curTime = System.currentTimeMillis();
+            if (behavior0 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !horzPressed)
+                newX = x;
+            else if (((sign(newX) == sign(x) || (newX != 0 && x == 0)) && incX > 0 && incX <= 200)
+                    || ((sign(newX) * sign(x) < 0 || (newX == 0 && x != 0)) && decX > 0 && decX <= 200)) {
+                int tmp = newX;
+                int step = (sign(newX) == sign(x) || (newX != 0 && x == 0)) ? incX : decX;
+                if (curTime - lastStepXTime >= stepXPause) {
+                    if (newX > x)
+                        newX = Math.min(newX, x + step);
+                    else
+                        newX = Math.max(newX, x - step);
+                    lastStepXTime = curTime;
+                }
+                else
                     newX = x;
-                if (behavior1 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !vertPressed)
+                finished = tmp == newX && finished;
+            }
+            if (behavior1 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !vertPressed)
+                newY = y;
+            else if (((sign(newY) == sign(y) || (newY != 0 && y == 0)) && incY > 0 && incY <= 200)
+                    || ((sign(newY) * sign(y) < 0 || (newY == 0 && y != 0)) && decY > 0 && decY <= 200)) {
+                int tmp = newY;
+                int step = (sign(newY) == sign(y) || (newY != 0 && y == 0)) ? incY : decY;
+                if (curTime - lastStepYTime >= stepYPause) {
+                    if (newY > y)
+                        newY = Math.min(newY, y + step);
+                    else
+                        newY = Math.max(newY, y - step);
+                    lastStepYTime = curTime;
+                }
+                else
                     newY = y;
+                finished = tmp == newY && finished;
+            }
+            x = newX;
+            y = newY;
+            if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS) {
                 for (EV3OutputPort outputPortX : outputPorts0)
-                    if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER) {
-                        finished = outputPortX.setPower(newX, true, canGotoNextStep) && finished;
-                        x = outputPortX.getPower();
-                    }
-                    else {
-                        finished = outputPortX.setAngle(newX, true, canGotoNextStep) && finished;
-                        x = (int)outputPortX.getAngle();
-                    }
+                    if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                        outputPortX.setPower(newX);
+                    else
+                        outputPortX.setAngle(newX);
                 for (EV3OutputPort outputPortY : outputPorts1)
-                    if (outputPortY.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER) {
-                        finished = outputPortY.setPower(newY, true, canGotoNextStep) && finished;
-                        y = outputPortY.getPower();
-                    }
-                    else {
-                        finished = outputPortY.setAngle(newY, true, canGotoNextStep) && finished;
-                        y = (int)outputPortY.getAngle();
-                    }
+                    if (outputPortY.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                        outputPortY.setPower(newY);
+                    else
+                        outputPortY.setAngle(newY);
             } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING
                     || type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
                 int powerL = newY;
@@ -190,27 +291,17 @@ public class EV3KeyGroup extends EV3Controller {
                     powerR = -newX;
                 } else if (newX != 0) {
                     if (newX < 0)
-                        powerL = 0;
+                        powerL = (Math.abs(powerL) - Math.abs(newX)) * sign(powerL);
                     else
-                        powerR = 0;
+                        powerR = (Math.abs(powerR) - Math.abs(newX)) * sign(powerR);
                 }
-                if (behavior0 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !horzPressed)
-                    powerL = oldPowerL;
-                if (behavior1 != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO && !vertPressed)
-                    powerR = oldPowerR;
-                for (EV3OutputPort outputPortL : outputPorts0) {
-                    finished = outputPortL.setPower(powerL, true, canGotoNextStep) && finished;
-                    oldPowerL = outputPortL.getPower();
-                }
-                for (EV3OutputPort outputPortR : outputPorts1) {
-                    finished = outputPortR.setPower(powerR, true, canGotoNextStep) && finished;
-                    oldPowerR = outputPortR.getPower();
-                }
+                for (EV3OutputPort outputPortL : outputPorts0)
+                    outputPortL.setPower(powerL);
+                for (EV3OutputPort outputPortR : outputPorts1)
+                    outputPortR.setPower(powerR);
             }
-            oldX = x; oldY = y;
         }
         isFinished = finished;
-        return finished;
     }
 
 }

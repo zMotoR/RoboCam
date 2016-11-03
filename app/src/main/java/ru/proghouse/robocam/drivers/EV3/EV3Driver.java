@@ -116,7 +116,8 @@ public class EV3Driver extends RoboCamDriver {
 
     private List<EV3Joystick> joysticks = new ArrayList<EV3Joystick>();
     private List<EV3KeyGroup> keyGroups = new ArrayList<EV3KeyGroup>();
-    private HashSet<Integer> pressedKeys = null;
+    private boolean pressedKeysChanged = false;
+    private HashSet<Integer> pressedKeys = new HashSet<Integer>();
 
     public EV3Driver() {
         joysticks.add(new EV3Joystick());
@@ -155,6 +156,13 @@ public class EV3Driver extends RoboCamDriver {
     private volatile String settingsName = "";
     private volatile String settingsFileName = "";
     private volatile long lastModified = 0;
+
+    private volatile boolean hideJoysticks = true;
+
+    @Override
+    public boolean isHideJoysticks() {
+        return hideJoysticks;
+    }
 
     private EV3ByteCodes createAPIAndWriteMessageHeader(EV3ByteCodes c, int commandType, int globalSize,
             int localSize) throws IOException {
@@ -292,7 +300,8 @@ public class EV3Driver extends RoboCamDriver {
     @Override
     public void setPressedKeys(HashSet<Integer> pressedKeys) {
         synchronized (joystickSyncObject) {
-            this.pressedKeys = (HashSet<Integer>)pressedKeys.clone();
+            this.pressedKeys = pressedKeys;
+            pressedKeysChanged = true;
         }
         synchronized (joystickMonitor) {
             joystickMonitor.notifyAll();
@@ -331,11 +340,10 @@ public class EV3Driver extends RoboCamDriver {
                 controller.getOutputPorts(group).add(outputPort);
                 outputPort.setJoystickType(StringHelper.intFromString(outputPortNode.getAttribute("JoystickType"),
                         EV3Driver.JOYSTICK_TYPE_POWER));
-                outputPort.setPower(StringHelper.intFromString(outputPortNode.getAttribute("Power"), 0), false, true);
+                outputPort.setPower(StringHelper.intFromString(outputPortNode.getAttribute("Power"), 0));
                 outputPort.setInvert(StringHelper.booleanFromString(outputPortNode.getAttribute("Invert"), false));
                 outputPort.setCoefficient(StringHelper.floatFromString(outputPortNode.getAttribute("Coefficient"), 1));
                 outputPort.setBrake(StringHelper.intFromString(outputPortNode.getAttribute("Brake"), EV3Driver.BRAKE));
-                outputPort.setStep(StringHelper.intFromString(outputPortNode.getAttribute("Step"), 0));
             }
         }
     }
@@ -346,6 +354,8 @@ public class EV3Driver extends RoboCamDriver {
             throw new Exception(context.getString(R.string.unknown_driver_name,
                     xml.getDocumentElement().getNodeName()));
         settingsName = xml.getDocumentElement().getAttribute("Name");
+        hideJoysticks = StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("HideJoysticks"), true);
+        setShowDebugInfo(StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("ShowDebugInfo"), true));
         settingsFileName = file.getName();
         lastModified = file.lastModified();
         clearJoysticks();
@@ -381,6 +391,12 @@ public class EV3Driver extends RoboCamDriver {
                     RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
             keyGroup.setBehavior(1, StringHelper.intFromString(keyGroupNode.getAttribute("Behavior1"),
                     RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
+            keyGroup.setIncX(StringHelper.intFromString(keyGroupNode.getAttribute("IncX"), 0));
+            keyGroup.setDecX(StringHelper.intFromString(keyGroupNode.getAttribute("DecX"), 0));
+            keyGroup.setIncY(StringHelper.intFromString(keyGroupNode.getAttribute("IncY"), 0));
+            keyGroup.setDecY(StringHelper.intFromString(keyGroupNode.getAttribute("DecY"), 0));
+            keyGroup.setStepXPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepXPause"), 100));
+            keyGroup.setStepYPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepYPause"), 100));
             if (keyGroup.getType() != JOYSTICK_TYPE_MAILBOX)
                 loadOutputPorts(keyGroupNode, keyGroup);
             loadKeys(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
@@ -408,7 +424,7 @@ public class EV3Driver extends RoboCamDriver {
         joysticks.get(1).setType(JOYSTICK_TYPE_INDEPENDENT_MOTORS);
         joysticks.get(1).getOutputPorts(1).add(new EV3OutputPort(0, OUTPUT_PORT_A));
         joysticks.get(1).getOutputPorts(1).get(0).setJoystickType(JOYSTICK_TYPE_ANGLE);
-        joysticks.get(1).getOutputPorts(1).get(0).setPower(50, false, true);
+        joysticks.get(1).getOutputPorts(1).get(0).setPower(50);
         joysticks.get(1).getOutputPorts(1).get(0).setInvert(true);
         joysticks.get(1).setBehavior(1, JOYSTICK_BEHAVIOR_HOLD_POSITION);
 
@@ -422,20 +438,23 @@ public class EV3Driver extends RoboCamDriver {
         keyGroups.get(0).getDownKeyCodes().add(40);//down arrow
         keyGroups.get(0).getRightKeyCodes().add(68);//D
         keyGroups.get(0).getRightKeyCodes().add(39);//right arrow
+        keyGroups.get(0).setIncX(15);
+        keyGroups.get(0).setDecX(50);
+        keyGroups.get(0).setIncY(15);
+        keyGroups.get(0).setDecY(50);
         keyGroups.get(0).getOutputPorts(0).add(new EV3OutputPort(0, OUTPUT_PORT_B));
         keyGroups.get(0).getOutputPorts(1).add(new EV3OutputPort(0, OUTPUT_PORT_C));
-        keyGroups.get(1).getOutputPorts(0).get(0).setStep(20);
-        keyGroups.get(1).getOutputPorts(1).get(0).setStep(20);
 
         keyGroups.add(new EV3KeyGroup());
         keyGroups.get(1).getUpKeyCodes().add(89);//Y (to see up)
         keyGroups.get(1).getDownKeyCodes().add(72);//H (to see down)
         keyGroups.get(1).setType(JOYSTICK_TYPE_INDEPENDENT_MOTORS);
+        keyGroups.get(1).setIncY(5);
+        keyGroups.get(1).setDecY(5);
         keyGroups.get(1).getOutputPorts(1).add(new EV3OutputPort(0, OUTPUT_PORT_A));
         keyGroups.get(1).getOutputPorts(1).get(0).setJoystickType(JOYSTICK_TYPE_ANGLE);
-        keyGroups.get(1).getOutputPorts(1).get(0).setPower(50, false, true);
+        keyGroups.get(1).getOutputPorts(1).get(0).setPower(50);
         keyGroups.get(1).getOutputPorts(1).get(0).setInvert(true);
-        keyGroups.get(1).getOutputPorts(1).get(0).setStep(5);
         keyGroups.get(1).setBehavior(1, JOYSTICK_BEHAVIOR_HOLD_POSITION);
     }
 
@@ -638,7 +657,7 @@ public class EV3Driver extends RoboCamDriver {
         }
         synchronized (joystickSyncObject) {
             joystickValues.clear();
-            pressedKeys = null;
+            pressedKeys.clear();
         }
     }
 
@@ -659,7 +678,7 @@ public class EV3Driver extends RoboCamDriver {
                             + "<Joystick Index=\"1\" Visible=\"1\" Shape=\"v\" Type=\"0\" Behavior1=\"1\">"
                                 + "<OutputPort Group=\"1\" Layer=\"0\" Number=\"A\" JoystickType=\"1\" Power=\"50\" Invert=\"1\"/>"
                             + "</Joystick>"
-                            + "<KeyGroup Active=\"1\" Type=\"1\">"
+                            + "<KeyGroup Active=\"1\" Type=\"1\" IncX=\"15\" IncY=\"15\" DecX=\"50\" DecY=\"50\">"
                                 + "<UpKey>87</UpKey>"
                                 + "<UpKey>38</UpKey>"
                                 + "<LeftKey>65</LeftKey>"
@@ -668,13 +687,13 @@ public class EV3Driver extends RoboCamDriver {
                                 + "<DownKey>40</DownKey>"
                                 + "<RightKey>68</RightKey>"
                                 + "<RightKey>39</RightKey>"
-                                + "<OutputPort Group=\"0\" Layer=\"0\" Number=\"B\" Step=\"20\"/>"
-                                + "<OutputPort Group=\"1\" Layer=\"0\" Number=\"C\" Step=\"20\"/>"
+                                + "<OutputPort Group=\"0\" Layer=\"0\" Number=\"B\"/>"
+                                + "<OutputPort Group=\"1\" Layer=\"0\" Number=\"C\"/>"
                             + "</KeyGroup>"
-                            + "<KeyGroup Active=\"1\" Type=\"0\" Behavior1=\"1\">"
+                            + "<KeyGroup Active=\"1\" Type=\"0\" Behavior1=\"1\" IncY=\"5\" DecY=\"5\">"
                                 + "<UpKey>89</UpKey>"
                                 + "<DownKey>72</DownKey>"
-                                + "<OutputPort Group=\"1\" Layer=\"0\" Number=\"A\" JoystickType=\"1\" Power=\"50\" Invert=\"1\" Step=\"5\"/>"
+                                + "<OutputPort Group=\"1\" Layer=\"0\" Number=\"A\" JoystickType=\"1\" Power=\"50\" Invert=\"1\"/>"
                             + "</KeyGroup>"
                         + "</EV3>"
                 ).getBytes("UTF-8"));
@@ -857,7 +876,7 @@ public class EV3Driver extends RoboCamDriver {
                         } else {
                             outputPorts.get(joystickPort.getId()).setJoystickType(joystickPort.getJoystickType());
                             if (joystickPort.getJoystickType() == JOYSTICK_TYPE_ANGLE) {
-                                outputPorts.get(joystickPort.getId()).setPower(joystickPort.getPower(), false, true);
+                                outputPorts.get(joystickPort.getId()).setPower(joystickPort.getPower());
                                 angleOutputPorts.add(outputPorts.get(joystickPort.getId()));
                             }
                         }
@@ -1331,6 +1350,8 @@ public class EV3Driver extends RoboCamDriver {
     class EV3ControllerValuesReader implements Runnable {
         private EV3Driver driver = null;
         private boolean isFinished = true;
+        HashSet<Integer> newPressedKeys = null;
+        long lastSendTime = System.currentTimeMillis();
 
         @Override
         public void run() {
@@ -1351,33 +1372,44 @@ public class EV3Driver extends RoboCamDriver {
         }
 
         public void setControllerValues() {
-            boolean isDone = false;
             while (true) {
                 if (socketState == SOCKET_ABORTED || socket == null)
                     break;
                 Hashtable<String, Integer> newJoystickValues = null;
-                HashSet<Integer> newPressedKeys = null;
                 synchronized (joystickSyncObject) {
                     if (joystickValues.size() > 0) { //We have the joystick message
                         newJoystickValues = (Hashtable<String, Integer>) joystickValues.clone();
                         joystickValues.clear();
                     }
-                    if (pressedKeys != null) {
-                        newPressedKeys = (HashSet<Integer>)pressedKeys.clone();
-                        pressedKeys = null;
+                    if (pressedKeysChanged) {
+                        newPressedKeys = pressedKeys;
+                        pressedKeysChanged = false;
+                        isFinished = false;
                     }
                 }
-                if (newJoystickValues == null && newPressedKeys == null && (isFinished || isDone))
+                long currentTime = System.currentTimeMillis();
+                if (newJoystickValues == null
+                        && (isFinished || currentTime - lastSendTime < 100)) {
                     break;
+                }
                 else {
-                    isFinished = setControllerValues(newJoystickValues, newPressedKeys, !isDone);
-                    isDone = true;
+                    /*String nps = "";
+                    if (newPressedKeys != null)
+                        for (Integer i : newPressedKeys)
+                            nps += i.toString() + ",";
+                    Log.d("RoboCam", "setControllerValues (" + (newPressedKeys == null ? "null" : nps) + ")");*/
+                    isFinished = setControllerValues(newJoystickValues, newPressedKeys);
+                    //Log.d("RoboCam", "isFinished = " + Boolean.toString(isFinished));
+                    //Log.d("RoboCam", "currentTime - lastSendTime = " + Long.toString(currentTime - lastSendTime));
+                    if (isFinished)
+                        newPressedKeys = null;
+                    lastSendTime = currentTime;
                 }
             }
         }
 
         public boolean setControllerValues(Hashtable<String, Integer> newJoystickValues,
-                                        HashSet<Integer> newPressedKeys, boolean canGotoNextStep) {
+                                        HashSet<Integer> newPressedKeys) {
             boolean finished = true;
             if (socketState == SOCKET_ABORTED
                     && (newJoystickValues != null || newPressedKeys != null))
@@ -1394,9 +1426,8 @@ public class EV3Driver extends RoboCamDriver {
                                     ? newJoystickValues.get(axisNames[i * 2]) : null;
                             Integer newY = newJoystickValues.containsKey(axisNames[i * 2 + 1])
                                     ? newJoystickValues.get(axisNames[i * 2 + 1]) : null;
-                            finished = joysticks.get(i).setCoordinates(newX, newY, canGotoNextStep) && finished;
-                        } else
-                            finished = joysticks.get(i).gotoNextStep(canGotoNextStep) && finished;
+                            joysticks.get(i).setCoordinates(newX, newY);
+                        }
                         //Calculating sum of port values
                         for (int j = 0; j < 2; j++)
                             for (EV3OutputPort port : joysticks.get(i).getOutputPorts(j)) {
@@ -1409,9 +1440,9 @@ public class EV3Driver extends RoboCamDriver {
                     }
                     for (EV3KeyGroup keyGroup : keyGroups) {
                         if (newPressedKeys != null)
-                            finished = keyGroup.setPressedKeys(newPressedKeys, canGotoNextStep) && finished;
+                            finished = keyGroup.setPressedKeys(newPressedKeys) && finished;
                         else
-                            finished = keyGroup.gotoNextStep(canGotoNextStep) && finished;
+                            finished = keyGroup.gotoNextStep() && finished;
                         //Calculating sum of port values
                         for (int j = 0; j < 2; j++)
                             for (EV3OutputPort port : keyGroup.getOutputPorts(j)) {
@@ -1546,10 +1577,10 @@ public class EV3Driver extends RoboCamDriver {
                         EV3OutputPort joystickPort = ports.get(key);
                         outputPort.setInvert(joystickPort.isInvert());
                         outputPort.setCoefficient(joystickPort.getCoefficient());
-                        outputPort.setPower(joystickPort.getPower(), false, true);
+                        outputPort.setPower(joystickPort.getPower());
                         float oldAngle = outputPort.getAngle();
                         float newAngle = joystickPort.getAngle();
-                        outputPort.setAngle(newAngle, false, true);
+                        outputPort.setAngle(newAngle);
                         outputPort.setBrake(joystickPort.getBrake());
                         outputPort.setJoystickType(joystickPort.getJoystickType());
                         if (newAngle != oldAngle)

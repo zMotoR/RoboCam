@@ -81,104 +81,88 @@ public class EV3Joystick extends EV3Controller {
         return type;
     }
 
-    @Override
-    public boolean gotoNextStep(boolean canGotoNextStep) {
-        if (!isFinished)
-            return _setCoordinates(oldX, oldY, canGotoNextStep);
-        return true;
-    }
-
-    public boolean setCoordinates(Integer newX, Integer newY, boolean canGotoNextStep) {
-        if (newX == null)
-            newX = x;
-        if (newY == null)
-            newY = y;
-        if (newX.intValue() == x && newY.intValue() == y && isFinished)
-            return true;
-        return _setCoordinates(newX, newY, canGotoNextStep);
-    }
-
-    public boolean _setCoordinates(int newX, int newY, boolean canGotoNextStep) {
-        boolean finished = true;
-        x = newX;
-        y = newY;
-        if (x != oldX || y != oldY) {
-            if (EV3Driver.JOYSTICK_SHAPE_INVISIBLE.equals(shape)) {
-                //Nothing to do
-            } else if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
-                    || type == EV3Driver.JOYSTICK_TYPE_MAILBOX
-                    || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
-                    || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
-                    || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape)
-                    || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape)) {
-                if (RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
-                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape))
-                    y = 0;
-                if (RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
-                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape))
-                    x = 0;
-                for (EV3OutputPort outputPortX : outputPorts0)
-                    if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
-                        finished = outputPortX.setPower(x, true, canGotoNextStep) && finished;
-                    else
-                        finished = outputPortX.setAngle(x, true, canGotoNextStep) && finished;
-                for (EV3OutputPort outputPortY : outputPorts1)
-                    if (outputPortY.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
-                        finished = outputPortY.setPower(y, true, canGotoNextStep) && finished;
-                    else
-                        finished = outputPortY.setAngle(y, true, canGotoNextStep) && finished;
-            } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING
-                    || type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
-                int powerL = y;
-                int powerR = y;
-                if (RoboCamDriver.JOYSTICK_SHAPE_ARROWS.equals(shape)) {
-                    if (y == 0) {
-                        powerL = x;
-                        powerR = -x;
-                    }
-                } else {
-                    //c- and q-shaped joystick
-                    if (type == EV3Driver.JOYSTICK_TYPE_STEERING) {
-                        //Method: Attenuation to zero
-                        if (x < 0)
-                            powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
-                        else if (x > 0)
-                            powerR = Math.round(powerR * (100 - x) / 100);
-                    } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
-                        //Method: Progressive (can spin on the spot)
-                        double angle = Math.atan2(y, x) * 180.0 / Math.PI;
-                        double d = Math.sqrt(x * x + y * y); //distance from center of circle to point
-                        if (d > 100)
-                            d = 100;
-                        double L = 0, R = 0;
-                        if (angle >= 0 && angle <= 90) {
-                            R = angle / 90 * 201 - 100;
-                            L = 100;
-                        } else if (angle < 0 && angle >= -90) {
-                            L = (angle / 90 * -201 - 100) * -1;
-                            R = -100;
-                        } else if (angle > 90 && angle <= 180) {
-                            L = ((angle - 90) / 90 * 201 - 100) * -1;
-                            R = 100;
-                        } else if (angle < -90 && angle >= -180) {
-                            R = (angle + 90) / 90 * -201 - 100;
-                            L = -100;
+    public void setCoordinates(Integer newX, Integer newY) {
+        if (newX != null || newY != null) {
+            if (newX != null)
+                x = newX;
+            if (newY != null)
+                y = newY;
+            if (x != oldX || y != oldY) {
+                if (EV3Driver.JOYSTICK_SHAPE_INVISIBLE.equals(shape)) {
+                    //Nothing to do
+                } else if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
+                        || type == EV3Driver.JOYSTICK_TYPE_MAILBOX
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape)
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape)) {
+                    if (RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
+                            || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape))
+                        y = 0;
+                    if (RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
+                            || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape))
+                        x = 0;
+                    for (EV3OutputPort outputPortX : outputPorts0)
+                        if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                            outputPortX.setPower(x);
+                        else
+                            outputPortX.setAngle(x);
+                    for (EV3OutputPort outputPortY : outputPorts1)
+                        if (outputPortY.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
+                            outputPortY.setPower(y);
+                        else
+                            outputPortY.setAngle(y);
+                } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING
+                        || type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
+                    int powerL = y;
+                    int powerR = y;
+                    if (RoboCamDriver.JOYSTICK_SHAPE_ARROWS.equals(shape)) {
+                        if (y == 0) {
+                            powerL = x;
+                            powerR = -x;
                         }
-                        L = L / 100 * d;
-                        R = R / 100 * d;
-                        powerR = (int) Math.round(R);
-                        powerL = (int) Math.round(L);
+                    } else {
+                        //c- and q-shaped joystick
+                        if (type == EV3Driver.JOYSTICK_TYPE_STEERING) {
+                            //Method: Attenuation to zero
+                            if (x < 0)
+                                powerL = Math.round(powerL * (100 - Math.abs(x)) / 100);
+                            else if (x > 0)
+                                powerR = Math.round(powerR * (100 - x) / 100);
+                        } else if (type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
+                            //Method: Progressive (can spin on the spot)
+                            double angle = Math.atan2(y, x) * 180.0 / Math.PI;
+                            double d = Math.sqrt(x * x + y * y); //distance from center of circle to point
+                            if (d > 100)
+                                d = 100;
+                            double L = 0, R = 0;
+                            if (angle >= 0 && angle <= 90) {
+                                R = angle / 90 * 201 - 100;
+                                L = 100;
+                            } else if (angle < 0 && angle >= -90) {
+                                L = (angle / 90 * -201 - 100) * -1;
+                                R = -100;
+                            } else if (angle > 90 && angle <= 180) {
+                                L = ((angle - 90) / 90 * 201 - 100) * -1;
+                                R = 100;
+                            } else if (angle < -90 && angle >= -180) {
+                                R = (angle + 90) / 90 * -201 - 100;
+                                L = -100;
+                            }
+                            L = L / 100 * d;
+                            R = R / 100 * d;
+                            powerR = (int) Math.round(R);
+                            powerL = (int) Math.round(L);
+                        }
                     }
+                    for (EV3OutputPort outputPortL : outputPorts0)
+                        outputPortL.setPower(powerL);
+                    for (EV3OutputPort outputPortR : outputPorts1)
+                        outputPortR.setPower(powerR);
                 }
-                for (EV3OutputPort outputPortL : outputPorts0)
-                    finished = outputPortL.setPower(powerL, true, canGotoNextStep) && finished;
-                for (EV3OutputPort outputPortR : outputPorts1)
-                    finished = outputPortR.setPower(powerR, true, canGotoNextStep) && finished;
             }
+            oldX = x; oldY = y;
         }
-        oldX = x; oldY = y;
-        isFinished = finished;
-        return finished;
     }
 
 }

@@ -7,5 +7,4 @@ import java.util.List;
  */
 public abstract class EV3Controller {
     public abstract List<EV3OutputPort> getOutputPorts(int group);
-    public abstract boolean gotoNextStep(boolean canGotoNextStep);
 }
