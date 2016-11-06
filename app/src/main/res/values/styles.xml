@@ -27,7 +27,27 @@
         <item name="android:textAppearance">?android:attr/textAppearanceLarge</item>
         <item name="android:layout_gravity">center_horizontal</item>
         <item name="android:paddingLeft">11dp</item>
+        <item name="android:paddingRight">11dp</item>
         <item name="android:paddingTop">6dp</item>
+    </style>
+
+    <style name="SettingsSectionEditTextDesc">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceSmall</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:paddingLeft">11dp</item>
+        <item name="android:paddingRight">11dp</item>
+    </style>
+
+    <style name="SettingsSectionEditTextDescBP">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceSmall</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:paddingLeft">11dp</item>
+        <item name="android:paddingRight">11dp</item>
+        <item name="android:paddingBottom">6dp</item>
     </style>
 
     <style name="SettingsSpinner" parent="Widget.AppCompat.Spinner">

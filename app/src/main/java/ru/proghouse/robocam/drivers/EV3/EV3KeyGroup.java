@@ -1,9 +1,11 @@
 package ru.proghouse.robocam.drivers.EV3;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import ru.proghouse.robocam.KeyDescription;
 import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
 
@@ -45,6 +47,80 @@ public class EV3KeyGroup extends EV3Controller {
     private List<EV3OutputPort> outputPorts1 = new ArrayList<EV3OutputPort>();
     private int behavior0 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
     private int behavior1 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
+
+    private static List<KeyDescription> keyDescriptions = null;
+
+    private static void addKeyDescriptions(int code1, int code2) {
+        byte[] buf = new byte[1];
+        for (byte i = (byte)code1; i <= (byte)code2; i++) {
+            buf[0] = i;
+            keyDescriptions.add(new KeyDescription(i, new String(buf)));
+        }
+    }
+
+    public static List<KeyDescription> getKeyDescriptions() {
+        if (keyDescriptions == null) {
+            keyDescriptions = new ArrayList<KeyDescription>();
+            addKeyDescriptions(0x30, 0x39);
+            addKeyDescriptions(0x41, 0x5a);
+            keyDescriptions.addAll(Arrays.asList(new KeyDescription[]{
+                    new KeyDescription(192, "`"),
+                    new KeyDescription(189, "-"),
+                    new KeyDescription(219, "["),
+                    new KeyDescription(221, "]"),
+                    new KeyDescription(220, "\\"),
+                    new KeyDescription(186, ";"),
+                    new KeyDescription(222, "'"),
+                    new KeyDescription(188, ","),
+                    new KeyDescription(190, "."),
+                    new KeyDescription(191, "/"),
+                    new KeyDescription(27, "Esc"),
+                    new KeyDescription(113, "F2"),
+                    new KeyDescription(115, "F4"),
+                    new KeyDescription(118, "F7"),
+                    new KeyDescription(119, "F8"),
+                    new KeyDescription(120, "F9"),
+                    new KeyDescription(121, "F10"),
+                    new KeyDescription(33, "Page Up"),
+                    new KeyDescription(34, "Page Down"),
+                    new KeyDescription(36, "Home"),
+                    new KeyDescription(35, "End"),
+                    new KeyDescription(45, "Ins"),
+                    new KeyDescription(46, "Del"),
+                    new KeyDescription(8, "Backspace"),
+                    new KeyDescription(9, "Tab"),
+                    new KeyDescription(20, "Caps Lock"),
+                    new KeyDescription(13, "Enter"),
+                    new KeyDescription(16, "Shift"),
+                    new KeyDescription(17, "Ctrl"),
+                    new KeyDescription(18, "Alt"),
+                    new KeyDescription(32, "Space"),
+                    new KeyDescription(37, "Left"),
+                    new KeyDescription(38, "Up"),
+                    new KeyDescription(39, "Right"),
+                    new KeyDescription(40, "Down"),
+                    new KeyDescription(144, "Num Lock"),
+                    new KeyDescription(96, "0 (Numpad)"),
+                    new KeyDescription(97, "1 (Numpad)"),
+                    new KeyDescription(98, "2 (Numpad)"),
+                    new KeyDescription(99, "3 (Numpad)"),
+                    new KeyDescription(100, "4 (Numpad)"),
+                    new KeyDescription(101, "5 (Numpad)"),
+                    new KeyDescription(102, "6 (Numpad)"),
+                    new KeyDescription(103, "7 (Numpad)"),
+                    new KeyDescription(104, "8 (Numpad)"),
+                    new KeyDescription(105, "9 (Numpad)"),
+                    new KeyDescription(110, ". (Numpad)"),
+                    new KeyDescription(107, "+ (Numpad)"),
+                    new KeyDescription(109, "- (Numpad)"),
+                    new KeyDescription(106, "* (Numpad)"),
+                    new KeyDescription(12, "Clear"),
+                    new KeyDescription(145, "Scroll Lock"),
+                    new KeyDescription(19, "Pause")
+            }));
+        }
+        return keyDescriptions;
+    }
 
     public boolean isActive() {
         return active;

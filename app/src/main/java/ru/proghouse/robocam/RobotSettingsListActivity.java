@@ -1,19 +1,13 @@
 package ru.proghouse.robocam;
 
-import android.Manifest;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Path;
 import android.os.Build;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Xml;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,7 +20,6 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.PopupMenu;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,11 +36,7 @@ import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
-import ru.proghouse.robocam.util.IabHelper;
-import ru.proghouse.robocam.util.IabResult;
-import ru.proghouse.robocam.util.Inventory;
 
 public class RobotSettingsListActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int MI_ADD_EV3_SETTINGS = -1;
@@ -280,7 +269,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         List<String> currentSettings = new ArrayList<String>();
         for (SettingsTitle settingsTitle : settingsList)
             currentSettings.add(settingsTitle.title);
-        SpinnerHelper.initSpinner(spinnerCurrentRobotSettings, this, currentSettings,
+        SettingsActivityHelper.initSpinner(spinnerCurrentRobotSettings, this, currentSettings,
                 R.string.current_robot_settings);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         currentRobotSettings = settings.getString(ExtraKey.CURRENT_ROBOT_SETTINGS, "");

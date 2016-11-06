@@ -125,6 +125,32 @@
                 style="@style/SettingsEditText"
                 android:id="@+id/editTextDesc"/>
 
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView12"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                style="@style/SettingsCheckBox"
+                android:text="@string/show_debug_info"
+                android:id="@+id/checkBoxShowDebugInfo"
+                android:checked="false"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView13"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                style="@style/SettingsCheckBox"
+                android:text="@string/hide_joysticks_while_using_keyboard"
+                android:id="@+id/checkBoxHideJoysticks"
+                android:checked="false"/>
+
             <TextView
                 style="@style/SettingsSectionTitle"
                 android:text="@string/joystick1"
@@ -574,6 +600,49 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/linearLayoutJoystick4Ports"/>
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/key_group"
+                android:id="@+id/textViewKeyGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                style="@style/Widget.AppCompat.ActionBar"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:layout_weight="1"
+                android:gravity="right"
+                android:id="@+id/linearLayout" >
+
+                <Button
+                    style="@style/Widget.AppCompat.ActionButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/delete"
+                    android:id="@+id/buttonDeleteKeyGroup"
+                    android:focusable="false"
+                    android:onClick="onDeleteKeyGroupClick" />
+
+                <Button
+                    style="@style/Widget.AppCompat.ActionButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add"
+                    android:id="@+id/buttonAddKeyGroup"
+                    android:focusable="false"
+                    android:onClick="onAddKeyGroupButtonClick" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linearLayoutKeyGroups"/>
 
         </LinearLayout>
     </ScrollView>

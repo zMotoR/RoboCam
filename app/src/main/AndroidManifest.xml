@@ -7,11 +7,17 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.any" android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -19,42 +25,45 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden"
             android:label="@string/app_name"
-            android:launchMode="singleInstance"
-            android:configChanges="orientation|keyboardHidden">
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service
             android:name=".HttpServer"
             android:enabled="true"
-            android:exported="true" >
-        </service>
+            android:exported="true"></service>
+
         <activity
             android:name=".GlobalSettingsActivity"
-            android:label="@string/title_activity_global_settings" >
-        </activity>
+            android:label="@string/title_activity_global_settings"></activity>
         <activity
             android:name=".ServerSettingsActivity"
             android:label="@string/title_activity_server_settings"
-            android:windowSoftInputMode="stateHidden" >
-        </activity>
+            android:windowSoftInputMode="stateHidden"></activity>
         <activity
             android:name=".RobotSettingsListActivity"
             android:label="@string/title_activity_robot_settings_list"
-            android:windowSoftInputMode="">
-        </activity>
+            android:windowSoftInputMode=""></activity>
         <activity
             android:name=".EV3SettingsActivity"
             android:label="@string/title_activity_ev3_settings"
-            android:windowSoftInputMode="stateHidden"></activity>
-        <activity android:name=".ImportActivity"
-            android:label="@string/title_activity_import">
-        </activity>
+            android:windowSoftInputMode="stateHidden" />
+        <activity
+            android:name=".ImportActivity"
+            android:label="@string/title_activity_import"></activity>
+        <activity
+            android:name=".SelectKeyActivity"
+            android:label="@string/title_activity_select_key"></activity>
     </application>
 
 </manifest>

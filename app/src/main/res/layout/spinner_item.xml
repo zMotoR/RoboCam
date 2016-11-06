@@ -21,7 +21,8 @@
             android:paddingLeft="11dp"
             android:paddingTop="6dp"
             android:text="Item 1"
-            android:background="@drawable/empty" />
+            android:background="@drawable/empty"
+            android:paddingRight="11dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -30,7 +31,8 @@
             android:id="@+id/textView2"
             android:paddingLeft="11dp"
             android:paddingBottom="6dp"
-            android:text="Subitem 1" />
+            android:text="Subitem 1"
+            android:paddingRight="11dp" />
 
     </LinearLayout>
 

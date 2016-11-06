@@ -1,34 +1,22 @@
 package ru.proghouse.robocam;
 
-import android.Manifest;
-import android.app.ActionBar;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
-import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextThemeWrapper;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -44,18 +32,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -69,6 +56,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
+import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
 
 public class EV3SettingsActivity extends AppCompatActivity  implements View.OnClickListener {
@@ -77,9 +65,12 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     public static final String SETTINGS_XML = "SettingsXml";
     private String settingsFileName;
     private JoystickComponents[] joystickComponents = new JoystickComponents[4];
+    private List<KeyGroupComponents> keyGroupComponents = new ArrayList<KeyGroupComponents>();
     private int CHECKBOX_PADDING = 0;
     private EditText editTextBotName = null;
     private EditText editTextBotDesc = null;
+    private CheckBox checkBoxShowDebugInfo = null;
+    private CheckBox checkBoxHideJoysticks = null;
     private ImageButton buttonOverflow = null;
     private static final int MI_SEND_SETTINGS = -2;
     private static final int MI_EXPORT_SETTINGS = -3;
@@ -118,6 +109,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
 
         editTextBotName = (EditText)findViewById(R.id.editTextBotName);
         editTextBotDesc = (EditText)findViewById(R.id.editTextDesc);
+        checkBoxShowDebugInfo = (CheckBox)findViewById(R.id.checkBoxShowDebugInfo);
+        checkBoxHideJoysticks = (CheckBox)findViewById(R.id.checkBoxHideJoysticks);
 
         settingsFileName = this.getIntent().getStringExtra(SETTINGS_FILE_NAME);
         if (settingsFileName == null || settingsFileName.equals("")) {
@@ -183,6 +176,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             throw new Exception(getString(R.string.unknown_driver_name, newDriverName));
         editTextBotName.setText(xml.getDocumentElement().getAttribute("Name"));
         editTextBotDesc.setText(xml.getDocumentElement().getAttribute("Description"));
+        checkBoxShowDebugInfo.setChecked(StringHelper.booleanFromString(
+                xml.getDocumentElement().getAttribute("ShowDebugInfo"), true));
+        checkBoxHideJoysticks.setChecked(StringHelper.booleanFromString(
+                xml.getDocumentElement().getAttribute("HideJoysticks"), true));
         NodeList joystickNodes = xml.getElementsByTagName("Joystick");
         for (int i = 0; i < this.joystickComponents.length; i++) {
             for (int j = 0; j < this.joystickComponents[i].outputPorts.size(); j++)
@@ -449,6 +446,13 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             v.showContextMenu();
         else if (v.getId() == R.id.buttonOverflow)
             v.showContextMenu();
+        else if (KeyCodeControl.class.isAssignableFrom(v.getClass())) {
+            if (((KeyCodeControl)v).keys == null)
+                ((KeyCodeControl)v).keys = new HashSet<Integer>();
+            ((KeyCodeControl)v).keys.add(101);
+            ((KeyCodeControl)v).updateKeyString(this);
+            Toast.makeText(this, "!!!", Toast.LENGTH_LONG).show();
+        }
     }
 
     class JoystickComponents
@@ -533,7 +537,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             this.imageView1 = (ImageView) activity.findViewById(imageView1);
             this.imageView2 = (ImageView) activity.findViewById(imageView2);
             shapeSpinner = (Spinner) activity.findViewById(spinnerJoystickShape);
-            SpinnerHelper.initSpinner(shapeSpinner, activity, Arrays.asList(new String[]{
+            SettingsActivityHelper.initSpinner(shapeSpinner, activity, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_shape_vertical),
                     activity.getString(R.string.joystick_shape_horizontal),
                     activity.getString(R.string.joystick_shape_circular),
@@ -542,7 +546,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     activity.getString(R.string.joystick_shape_vertical_arrows),
                     activity.getString(R.string.joystick_shape_horizontal_arrows)}), R.string.joystick_shape);
             typeSpinner = (Spinner) activity.findViewById(spinnerJoystickType);
-            SpinnerHelper.initSpinner(typeSpinner, activity, Arrays.asList(new String[]{
+            SettingsActivityHelper.initSpinner(typeSpinner, activity, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_type_independent_motors),
                     activity.getString(R.string.joystick_type_steering),
                     activity.getString(R.string.joystick_type_steering_progressive),
@@ -557,11 +561,11 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             behavior1imageView = (ImageView) activity.findViewById(imageViewJoystickBehavior1);
             behavior2imageView = (ImageView) activity.findViewById(imageViewJoystickBehavior2);
             behavior1Spinner = (Spinner) activity.findViewById(spinnerJoystickBehavior1);
-            SpinnerHelper.initSpinner(behavior1Spinner, activity, Arrays.asList(new String[]{
+            SettingsActivityHelper.initSpinner(behavior1Spinner, activity, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_behavior_return_to_zero),
                     activity.getString(R.string.joystick_behavior_hold_position)}), R.string.joystick_behavior1);
             behavior2Spinner = (Spinner) activity.findViewById(spinnerJoystickBehavior2);
-            SpinnerHelper.initSpinner(behavior2Spinner, activity, Arrays.asList(new String[]{
+            SettingsActivityHelper.initSpinner(behavior2Spinner, activity, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_behavior_return_to_zero),
                     activity.getString(R.string.joystick_behavior_hold_position)}), R.string.joystick_behavior2);
             joystickPortsTextView = (TextView) activity.findViewById(textViewJoystickPorts);
@@ -711,7 +715,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             textViewTitle.setText(getString(R.string.joystick_n_port_n, joystickIndex + 1, portName));
             portLayout.addView(textViewTitle);
             //Joystick group
-            spinnerGroup = createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerGroup = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
                     activity.getString(joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                             ? R.string.joystick_group_horizontal : R.string.joystick_group_left),
                     activity.getString(joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
@@ -719,14 +723,14 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     group, joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                             ? R.string.joystick_group_axis : R.string.joystick_group_motor, null);
             //Separator
-            createSeparator(activity, portLayout);
+            SettingsActivityHelper.createSeparator(activity, portLayout);
             //EV3 level
-            spinnerLayer = createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerLayer = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
                     "1", "2", "3", "4"}), layer, R.string.joystick_layer, null);
             //Separator
-            createSeparator(activity, portLayout);
+            SettingsActivityHelper.createSeparator(activity, portLayout);
             //Port number
-            spinnerNumber = createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerNumber = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
                             "A", "B", "C", "D"}),
                     portName.equals("A") ? 0 : portName.equals("B") ? 1 : portName.equals("C") ? 2 : 3,
                     R.string.joystick_port_number, null);
@@ -743,37 +747,38 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 }
             });
             //Separator
-            createSeparator(activity, portLayout);
+            SettingsActivityHelper.createSeparator(activity, portLayout);
 
             //Joystick type (changeable value)
             LinearLayout[] spinnerLayout = new LinearLayout[1];
-            spinnerJoystickType = createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerJoystickType = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
                     activity.getString(R.string.joystick_type_power),
                     activity.getString(R.string.joystick_type_angle)}),
                     portJoystickType, R.string.joystick_type_cv, spinnerLayout);
             layoutJoystickType = spinnerLayout[0];
             //Separator
-            separatorJoystickType = createSeparator(activity, portLayout);
+            separatorJoystickType = SettingsActivityHelper.createSeparator(activity, portLayout);
             setTypeVisibility(joystickType != RoboCamDriver.JOYSTICK_TYPE_STEERING
                 && joystickType != RoboCamDriver.JOYSTICK_TYPE_STEERING_PROGRESSIVE);
             //Power
-            textViewPower = createTextViewTitle(activity, portLayout, R.string.joystick_power);
-            editTextPower = createEditTextInteger(activity, portLayout, power,
-                    R.string.joystick_power, false);
+            textViewPower = SettingsActivityHelper.createTextViewTitle(activity, portLayout, R.string.joystick_power);
+            editTextPower = SettingsActivityHelper.createEditTextInteger(activity, portLayout, power, 0, 0);
             //Separator
-            separatorPower = createSeparator(activity, portLayout);
+            separatorPower = SettingsActivityHelper.createSeparator(activity, portLayout);
             //Invert
-            checkBoxInvert = createCheckBox(activity, portLayout, invert, R.string.joystick_invert);
+            checkBoxInvert = SettingsActivityHelper.createCheckBox(activity,
+                    portLayout, invert, R.string.joystick_invert, CHECKBOX_PADDING);
             //Separator
-            createSeparator(activity, portLayout);
+            SettingsActivityHelper.createSeparator(activity, portLayout);
             //Brake
-            checkBoxBrake = createCheckBox(activity, portLayout, brake == EV3Driver.BRAKE,
-                    R.string.joystick_brake);
+            checkBoxBrake = SettingsActivityHelper.createCheckBox(activity,
+                    portLayout, brake == EV3Driver.BRAKE, R.string.joystick_brake,
+                    CHECKBOX_PADDING);
             //Separator
-            createSeparator(activity, portLayout);
+            SettingsActivityHelper.createSeparator(activity, portLayout);
             //Coefficient
-            editTextCoefficient = createEditTextFloat(activity, portLayout, coefficient,
-                    R.string.joystick_coefficient);
+            editTextCoefficient = SettingsActivityHelper.createEditTextFloat(activity, portLayout, coefficient,
+                    R.string.joystick_coefficient, 0);
 
             spinnerJoystickType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 public void onItemSelected(AdapterView<?> parent, View itemSelected,
@@ -806,84 +811,6 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             separatorPower.setVisibility(visibility);
         }
 
-        private ImageView createSeparator(Activity activity, LinearLayout layout) {
-            ImageView separator = new ImageView(activity);
-            separator.setImageResource(R.drawable.spacer_small);
-            layout.addView(separator);
-            return separator;
-        }
-
-        private TextView createTextViewTitle(Activity activity, LinearLayout layout, int titleId) {
-            ContextThemeWrapper newContext  = new ContextThemeWrapper(activity,
-                    R.style.SettingsSectionEditTextTitle);
-            TextView textView = new TextView(newContext, null,
-                    R.style.SettingsSectionEditTextTitle);
-            textView.setText(getString(titleId));
-            layout.addView(textView);
-            return textView;
-        }
-
-        private EditText createEditTextFloat(Activity activity, LinearLayout layout, float value,
-                                             int titleId) {
-            createTextViewTitle(activity, layout, titleId);
-            ContextThemeWrapper newContext = new ContextThemeWrapper(activity, R.style.SettingsEditTextFloat);
-            EditText editText = new EditText(newContext, null, R.style.SettingsEditTextFloat);
-            editText.setText(Float.toString(value));
-            layout.addView(editText);
-            return editText;
-        }
-
-        private EditText createEditTextInteger(Activity activity, LinearLayout layout, int value,
-                                             int titleId, boolean createTextView) {
-            if (createTextView)
-                createTextViewTitle(activity, layout, titleId);
-            ContextThemeWrapper newContext = new ContextThemeWrapper(activity, R.style.SettingsEditTextInteger);
-            EditText editText = new EditText(newContext, null, R.style.SettingsEditTextInteger);
-            editText.setText(Integer.toString(value));
-            layout.addView(editText);
-            return editText;
-        }
-
-        private CheckBox createCheckBox(Activity activity, LinearLayout layout, boolean value,
-                                        int titleId) {
-            ContextThemeWrapper newContext = new ContextThemeWrapper(activity, R.style.SettingsCheckBox);
-            CheckBox checkBox = new CheckBox(newContext, null, R.style.SettingsCheckBox);
-            checkBox.setHeight(Math.round(TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 56, getResources().getDisplayMetrics())));
-            checkBox.setChecked(value);
-            checkBox.setText(titleId);
-            //http://stackoverflow.com/questions/4037795/android-spacing-between-checkbox-and-text
-            checkBox.setPadding(CHECKBOX_PADDING, checkBox.getPaddingTop(),
-                    checkBox.getPaddingRight(), checkBox.getPaddingBottom());
-            layout.addView(checkBox);
-            return checkBox;
-        }
-
-        private Spinner createSpinner(Activity activity, LinearLayout layout, List<String> objects,
-                                      int position, int titleId, LinearLayout[] _spinnerLayout) {
-            LinearLayout spinnerLayout = new LinearLayout(activity);
-            if (_spinnerLayout != null && _spinnerLayout.length > 0)
-                _spinnerLayout[0] = spinnerLayout;
-            spinnerLayout.setOrientation(LinearLayout.HORIZONTAL);
-            spinnerLayout.setWeightSum(1);
-            layout.addView(spinnerLayout);
-
-            ContextThemeWrapper newContext  = new ContextThemeWrapper(activity, R.style.SettingsSpinner);
-            Spinner spinner = new Spinner(newContext, null, R.style.SettingsSpinner);
-            SpinnerHelper.initSpinner(spinner, activity, objects, titleId);
-            spinner.setSelection(position);
-            spinner.setLayoutParams(new LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-            spinnerLayout.addView(spinner);
-
-            ImageView triangleView = new ImageView(activity);
-            triangleView.setBackgroundResource(R.drawable.abc_spinner);
-            triangleView.setLayoutParams(new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            spinnerLayout.addView(triangleView);
-            return spinner;
-        }
-
         public void removeViews() {
             activityLayout.removeView(portLayout);
         }
@@ -913,6 +840,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         Element ev3Element = xml.getDocumentElement();
         ev3Element.setAttribute("Name", editTextBotName.getText().toString());
         ev3Element.setAttribute("Description", editTextBotDesc.getText().toString());
+        if (!checkBoxShowDebugInfo.isChecked())
+            ev3Element.setAttribute("ShowDebugInfo", "0");
+        if (!checkBoxHideJoysticks.isChecked())
+            ev3Element.setAttribute("HideJoysticks", "0");
         int index = 0;
         for (JoystickComponents joystickComponent : joystickComponents) {
             Element joystickElement = xml.createElement("Joystick");
@@ -1078,5 +1009,165 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                         e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    class KeyGroupComponents {
+        private Activity activity = null;
+        LinearLayout keyGroupLayout;
+        TextView textViewTitle;
+        CheckBox checkBoxActive;
+        LinearLayout contentLayout;
+        Spinner spinnerType;
+        LinearLayout nonMailboxLayout;
+        LinearLayout mailboxLayout;
+        EditText editTextIncX, editTextIncY, editTextDecX, editTextDecY;
+        EditText editTextStepXPause, editTextStepYPause;
+        EditText editTextMailbox;
+        KeyCodeControl upKeysControlLayout, leftKeysControlLayout, downKeysControlLayout,
+                rightKeysControlLayout, keysControlLayout;
+
+        KeyGroupComponents(EV3SettingsActivity activity, LinearLayout layout, int index, boolean active,
+                           int type, int incX, int incY, int decX, int decY,
+                           int stepXPause, int stepYPause, HashSet<Integer> upKeyCodes,
+                           HashSet<Integer> leftKeyCodes, HashSet<Integer> downKeyCodes,
+                           HashSet<Integer> rightKeyCodes, HashSet<Integer> keyCodes,
+                           String mailbox) {
+            this.activity = activity;
+            //KeyGroup layout
+            keyGroupLayout = new LinearLayout(activity);
+            keyGroupLayout.setOrientation(LinearLayout.VERTICAL);
+            layout.addView(keyGroupLayout);
+            //Title
+            ContextThemeWrapper newContext = new ContextThemeWrapper(activity,
+                    R.style.SettingsSectionTitle);
+            textViewTitle = new TextView(newContext);
+            textViewTitle.setText(getString(R.string.keygroup_n, Integer.toString(index + 1)));
+            keyGroupLayout.addView(textViewTitle);
+            //Active
+            checkBoxActive = SettingsActivityHelper.createCheckBox(activity,
+                    keyGroupLayout, active, R.string.keygroup_active, CHECKBOX_PADDING);
+            //Settings content
+            contentLayout = new LinearLayout(activity);
+            if (!active)
+                contentLayout.setVisibility(View.GONE);
+            contentLayout.setOrientation(LinearLayout.VERTICAL);
+            keyGroupLayout.addView(contentLayout);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, contentLayout);
+            //Type
+            spinnerType = SettingsActivityHelper.createSpinner(activity, contentLayout,
+                    Arrays.asList(new String[]{
+                            activity.getString(R.string.joystick_type_independent_motors),
+                            activity.getString(R.string.keygroup_type_steering),
+                            activity.getString(R.string.joystick_type_mailbox),
+                    }),
+                    type, R.string.joystick_type, null);
+            //Non mailbox layout
+            nonMailboxLayout = new LinearLayout(activity);
+            nonMailboxLayout.setVisibility(type != RoboCamDriver.JOYSTICK_TYPE_MAILBOX
+                    ? View.VISIBLE : View.GONE);
+            nonMailboxLayout.setOrientation(LinearLayout.VERTICAL);
+            contentLayout.addView(nonMailboxLayout);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            //Steps
+            editTextIncX = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    incX, R.string.inc_x, R.string.inc_x_desc);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            editTextIncY = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    incY, R.string.inc_y, R.string.inc_y_desc);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            editTextDecX = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    decX, R.string.dec_x, R.string.dec_x_desc);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            editTextDecY = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    decY, R.string.dec_y, R.string.dec_y_desc);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            editTextStepXPause = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    stepXPause, R.string.step_x_pause, 0);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            editTextStepYPause = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
+                    stepYPause, R.string.step_y_pause, 0);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            //Keys
+            upKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    upKeyCodes, R.string.up_keys);
+            upKeysControlLayout.setOnClickListener(activity);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            leftKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    leftKeyCodes, R.string.left_keys);
+            leftKeysControlLayout.setOnClickListener(activity);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            downKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    downKeyCodes, R.string.down_keys);
+            downKeysControlLayout.setOnClickListener(activity);
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            rightKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    rightKeyCodes, R.string.right_keys);
+            rightKeysControlLayout.setOnClickListener(activity);
+            /*spinnerUpKeys = SettingsActivityHelper.createSpinner(activity, nonMailboxLayout,
+                    Arrays.asList(new String[]{"1", "2", "3", "4"}), layer,
+                    R.string.joystick_layer, null);*/
+
+
+            //Mailbox layout
+            mailboxLayout = new LinearLayout(activity);
+            mailboxLayout.setVisibility(type == RoboCamDriver.JOYSTICK_TYPE_MAILBOX
+                    ? View.VISIBLE : View.GONE);
+            mailboxLayout.setOrientation(LinearLayout.VERTICAL);
+            contentLayout.addView(mailboxLayout);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, mailboxLayout);
+            //Mailbox name
+            editTextMailbox = SettingsActivityHelper.createEditText(activity, mailboxLayout,
+                    mailbox, R.string.mailbox, 0);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, mailboxLayout);
+            //Keys
+            keysControlLayout = KeyCodeControl.createKeyCodeControl(activity, mailboxLayout,
+                    keyCodes, R.string.keys);
+            keysControlLayout.setOnClickListener(activity);
+
+            checkBoxActive.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    contentLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                }
+            });
+
+            spinnerType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    nonMailboxLayout.setVisibility(position != RoboCamDriver.JOYSTICK_TYPE_MAILBOX
+                            ? View.VISIBLE : View.GONE);
+                    mailboxLayout.setVisibility(position == RoboCamDriver.JOYSTICK_TYPE_MAILBOX
+                            ? View.VISIBLE : View.GONE);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                }
+            });
+        }
+    }
+
+    public void onAddKeyGroupButtonClick(View v){
+        try {
+            keyGroupComponents.add(new KeyGroupComponents(this,
+                    (LinearLayout)findViewById(R.id.linearLayoutKeyGroups),
+                    keyGroupComponents.size(), true, RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS,
+                    0, 0, 0, 0, 100, 100, null, null, null, null, null, ""));
+            Toast.makeText(this, getString(R.string.keygroup_has_been_added),
+                    Toast.LENGTH_LONG).show();
+        } catch(Exception e) {
+            Toast.makeText(this, getString(R.string.error_while_creating_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void onDeleteKeyGroupClick(View v){
+
     }
 }

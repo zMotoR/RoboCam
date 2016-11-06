@@ -23,12 +23,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-
-import ru.proghouse.robocam.drivers.RoboCamDriver;
 
 public class ServerSettingsActivity extends AppCompatActivity {
     private Spinner spinnerCamera = null;
@@ -67,7 +64,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
         //CAMERA ID
         List<String> cameras = getCameras();
         spinnerCamera = (Spinner)findViewById(R.id.spinnerCamera);
-        SpinnerHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
+        SettingsActivityHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             camera2Id = settings.getString(ExtraKey.CAMERA2_ID, null);
@@ -259,7 +256,7 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private void setPreviewSizeAdapter(boolean first) {
         List<PreviewSize> sizes = new ArrayList<PreviewSize>();
         List<String> previewSizes = getPreviewSizes(sizes);
-        SpinnerHelper.initSpinner(spinnerPreviewSize, this, previewSizes, R.string.previewSize);
+        SettingsActivityHelper.initSpinner(spinnerPreviewSize, this, previewSizes, R.string.previewSize);
         if (first) {
             if (previewSize < 0) {
                 PreviewSize firstSize = sizes.get(0);
