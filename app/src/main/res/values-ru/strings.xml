@@ -168,4 +168,6 @@
     <string name="keys">Клавиши</string>
     <string name="mailbox">Название почтового ящика</string>
     <string name="nothing_selected">Ничего не выбрано</string>
+    <string name="done">Готово</string>
+    <string name="selected">Выбрано: %s</string>
 </resources>

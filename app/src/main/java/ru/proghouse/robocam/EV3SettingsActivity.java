@@ -75,7 +75,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private static final int MI_SEND_SETTINGS = -2;
     private static final int MI_EXPORT_SETTINGS = -3;
     private static final int MI_COPY_SETTINGS = -4;
-    private static final int REQUEST_CODE_SEND = 1;
+    public static final int KEY_CODE_REQUEST = 1;
     //private List<String> tempFileName = new ArrayList<String>();
 
     private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT = 1;
@@ -339,21 +339,26 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         }
     }
 
-    /*@Override
+    @Override
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
-        switch (requestCode) {
-            case REQUEST_CODE_SEND:
-                while (tempFileName.size() > 0) {
-                    String fileName = tempFileName.get(0);
-                    File file = new File(fileName);
-                    //if (file.exists())
-                    //    file.delete();
-                    tempFileName.remove(0);
-                }
-                break;
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case KEY_CODE_REQUEST:
+                    String keyGroupTitle = data.getStringExtra(Intent.EXTRA_REMOTE_INTENT_TOKEN);
+                    String keyCodeControlTitle = data.getStringExtra(Intent.EXTRA_TEXT);
+                    for (KeyGroupComponents components : keyGroupComponents) {
+                        if (components.getKeyCodeTitle().equals(keyGroupTitle)) {
+                            KeyCodeControl control = components.findKeyCodeControl(keyCodeControlTitle);
+                            if (control != null)
+                                control.setKeys(this, data.getIntArrayExtra(Intent.EXTRA_STREAM));
+                            break;
+                        }
+                    }
+                    break;
+            }
         }
-    }*/
+    }
 
     private void exportSettings() {
         if (Utils.requestExternalStoragePermission(this,
@@ -447,11 +452,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         else if (v.getId() == R.id.buttonOverflow)
             v.showContextMenu();
         else if (KeyCodeControl.class.isAssignableFrom(v.getClass())) {
-            if (((KeyCodeControl)v).keys == null)
-                ((KeyCodeControl)v).keys = new HashSet<Integer>();
-            ((KeyCodeControl)v).keys.add(101);
-            ((KeyCodeControl)v).updateKeyString(this);
-            Toast.makeText(this, "!!!", Toast.LENGTH_LONG).show();
+            ((KeyCodeControl)v).showKeySelector(this, KEY_CODE_REQUEST);
         }
     }
 
@@ -1023,8 +1024,11 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         EditText editTextIncX, editTextIncY, editTextDecX, editTextDecY;
         EditText editTextStepXPause, editTextStepYPause;
         EditText editTextMailbox;
-        KeyCodeControl upKeysControlLayout, leftKeysControlLayout, downKeysControlLayout,
-                rightKeysControlLayout, keysControlLayout;
+        KeyCodeControl upKeysControl, leftKeysControl, downKeysControl, rightKeysControl, keysControl;
+
+        public String getKeyCodeTitle() {
+            return textViewTitle.getText().toString();
+        }
 
         KeyGroupComponents(EV3SettingsActivity activity, LinearLayout layout, int index, boolean active,
                            int type, int incX, int incY, int decX, int decY,
@@ -1091,21 +1095,21 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             //Separator
             SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
             //Keys
-            upKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
-                    upKeyCodes, R.string.up_keys);
-            upKeysControlLayout.setOnClickListener(activity);
+            upKeysControl = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    upKeyCodes, R.string.up_keys, getKeyCodeTitle());
+            upKeysControl.setOnClickListener(activity);
             SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
-            leftKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
-                    leftKeyCodes, R.string.left_keys);
-            leftKeysControlLayout.setOnClickListener(activity);
+            leftKeysControl = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    leftKeyCodes, R.string.left_keys, getKeyCodeTitle());
+            leftKeysControl.setOnClickListener(activity);
             SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
-            downKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
-                    downKeyCodes, R.string.down_keys);
-            downKeysControlLayout.setOnClickListener(activity);
+            downKeysControl = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    downKeyCodes, R.string.down_keys, getKeyCodeTitle());
+            downKeysControl.setOnClickListener(activity);
             SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
-            rightKeysControlLayout = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
-                    rightKeyCodes, R.string.right_keys);
-            rightKeysControlLayout.setOnClickListener(activity);
+            rightKeysControl = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
+                    rightKeyCodes, R.string.right_keys, getKeyCodeTitle());
+            rightKeysControl.setOnClickListener(activity);
             /*spinnerUpKeys = SettingsActivityHelper.createSpinner(activity, nonMailboxLayout,
                     Arrays.asList(new String[]{"1", "2", "3", "4"}), layer,
                     R.string.joystick_layer, null);*/
@@ -1125,9 +1129,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             //Separator
             SettingsActivityHelper.createSeparator(activity, mailboxLayout);
             //Keys
-            keysControlLayout = KeyCodeControl.createKeyCodeControl(activity, mailboxLayout,
-                    keyCodes, R.string.keys);
-            keysControlLayout.setOnClickListener(activity);
+            keysControl = KeyCodeControl.createKeyCodeControl(activity, mailboxLayout,
+                    keyCodes, R.string.keys, getKeyCodeTitle());
+            keysControl.setOnClickListener(activity);
 
             checkBoxActive.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -1151,6 +1155,20 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 }
             });
         }
+
+        public KeyCodeControl findKeyCodeControl(String keyCodeControlTitle) {
+            if (upKeysControl.getTitle().equals(keyCodeControlTitle))
+                return upKeysControl;
+            else if (leftKeysControl.getTitle().equals(keyCodeControlTitle))
+                return leftKeysControl;
+            else if (downKeysControl.getTitle().equals(keyCodeControlTitle))
+                return downKeysControl;
+            else if (rightKeysControl.getTitle().equals(keyCodeControlTitle))
+                return rightKeysControl;
+            else if (keysControl.getTitle().equals(keyCodeControlTitle))
+                return keysControl;
+            return null;
+        }
     }
 
     public void onAddKeyGroupButtonClick(View v){
@@ -1170,4 +1188,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     public void onDeleteKeyGroupClick(View v){
 
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
 }

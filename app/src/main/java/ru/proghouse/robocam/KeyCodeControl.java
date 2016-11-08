@@ -2,13 +2,18 @@ package ru.proghouse.robocam;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
 
@@ -17,35 +22,29 @@ import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
  */
 public class KeyCodeControl extends LinearLayout {
 
+    private TextView textViewTitle;
     private TextView textViewDescription;
     HashSet<Integer> keys;
+    String keyGroupName;
 
     public KeyCodeControl(Context context) {
         super(context);
     }
 
-    private String getKeyString(Activity activity) {
-        String strKeys = "";
-        if (keys != null)
-            for (KeyDescription desc : EV3KeyGroup.getKeyDescriptions())
-                if (keys.contains(desc.getCode()))
-                    if (strKeys.isEmpty())
-                        strKeys += desc.getDesc();
-                    else
-                        strKeys += ", " + desc.getDesc();
-        if (strKeys.isEmpty())
-            strKeys = activity.getString(R.string.nothing_selected);
-        return strKeys;
+    public void updateKeyString(Activity activity) {
+        textViewDescription.setText(EV3KeyGroup.getKeyString(activity, keys));
     }
 
-    public void updateKeyString(Activity activity) {
-        textViewDescription.setText(getKeyString(activity));
+    public String getTitle() {
+        return textViewTitle.getText().toString();
     }
 
     public static KeyCodeControl createKeyCodeControl(Activity activity, LinearLayout layout,
-                                                      HashSet<Integer> keys, int titleId) {
+                                                      HashSet<Integer> keys, int titleId,
+                                                      String keyGroupName) {
         KeyCodeControl controlLayout = new KeyCodeControl(activity);
         controlLayout.keys = keys;
+        controlLayout.keyGroupName = keyGroupName;
 
         controlLayout.setOrientation(LinearLayout.HORIZONTAL);
         controlLayout.setWeightSum(1);
@@ -57,9 +56,10 @@ public class KeyCodeControl extends LinearLayout {
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         controlLayout.addView(textLayout);
 
-        SettingsActivityHelper.createTextViewTitle(activity, textLayout, titleId);
+        controlLayout.textViewTitle = SettingsActivityHelper.createTextViewTitle(
+                activity, textLayout, titleId);
         controlLayout.textViewDescription = SettingsActivityHelper.createTextViewDescBP(
-                activity, textLayout, controlLayout.getKeyString(activity));
+                activity, textLayout, EV3KeyGroup.getKeyString(activity, controlLayout.keys));
 
         RelativeLayout imageLayout = new RelativeLayout(activity);
         imageLayout.setLayoutParams(new RelativeLayout.LayoutParams(
@@ -76,6 +76,28 @@ public class KeyCodeControl extends LinearLayout {
         imageLayout.addView(overflowView);
 
         return controlLayout;
+    }
+
+    public void showKeySelector(Activity activity, int requestCode) {
+        Intent intent = new Intent(activity, SelectKeyActivity.class);
+        //id
+        intent.putExtra(Intent.EXTRA_REMOTE_INTENT_TOKEN, keyGroupName);
+        //title
+        intent.putExtra(Intent.EXTRA_TEXT, getTitle());
+        //key codes
+        intent.putExtra(Intent.EXTRA_STREAM, EV3KeyGroup.toArray(keys));
+        activity.startActivityForResult(intent, requestCode);
+    }
+
+    public void setKeys(Activity activity, int[] keys) {
+        if (keys == null)
+            this.keys = null;
+        else {
+            if (this.keys == null)
+                this.keys = new HashSet<Integer>();
+            EV3KeyGroup.fromArray(keys, this.keys);
+        }
+        updateKeyString(activity);
     }
 }
 

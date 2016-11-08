@@ -1,12 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="ru.proghouse.robocam.SelectKeyActivity">
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="ru.proghouse.robocam.GlobalSettingsActivity"
+    android:orientation="vertical"
+    android:id="@+id/ev3_settings_main_layout">
 
-</RelativeLayout>
+    <LinearLayout
+        style="@style/Widget.AppCompat.ActionBar"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:weightSum="1"
+        android:measureWithLargestChild="false" >
+
+        <LinearLayout
+            style="@style/Widget.AppCompat.ActionBar"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false" >
+
+            <ImageButton
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageButton"
+                android:src="@drawable/back"
+                android:onClick="onCancelButtonClick" />
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/Widget.AppCompat.ActionBar"
+            android:orientation="horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:layout_weight="1"
+            android:gravity="right" >
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/buttonCancel"
+                android:focusable="false"
+                android:text="@string/cancel"
+                android:onClick="onCancelButtonClick" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView8"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/done"
+                android:id="@+id/buttonSave"
+                android:onClick="onDoneButtonClick"
+                android:focusable="false" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="6dp">
+
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:id="@+id/titleTextView"
+            android:singleLine="false"
+            android:text="@string/nothing_selected"
+            android:maxLines="3"
+            android:ellipsize="end" />
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/keyListView"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
+</LinearLayout>

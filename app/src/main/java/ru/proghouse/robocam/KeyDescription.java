@@ -1,5 +1,9 @@
 package ru.proghouse.robocam;
 
+import android.app.Activity;
+
+import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
+
 /**
  * Created by Alexey Valuev on 06.11.2016.
  */
@@ -19,4 +23,5 @@ public class KeyDescription {
         this.code = code;
         this.desc = desc;
     }
+
 }

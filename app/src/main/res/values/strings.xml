@@ -169,4 +169,6 @@
     <string name="keys">Keys</string>
     <string name="mailbox">Mailbox name</string>
     <string name="nothing_selected">Nothing selected</string>
+    <string name="done">Done</string>
+    <string name="selected">Selected: %s</string>
 </resources>

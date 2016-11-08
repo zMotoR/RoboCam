@@ -1,7 +1,10 @@
 package ru.proghouse.robocam.drivers.EV3;
 
+import android.app.Activity;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -58,22 +61,52 @@ public class EV3KeyGroup extends EV3Controller {
         }
     }
 
+    public static int[] toArray(HashSet<Integer> keys) {
+        int[] buffer = new int[keys == null ? 0 : keys.size()];
+        if (keys != null) {
+            int i = 0;
+            for (Integer code : keys)
+                buffer[i++] = code;
+        }
+        return buffer;
+    }
+
+    public static void fromArray(int[] buffer, HashSet<Integer> keys) {
+        keys.clear();
+        for (int i = 0; i < buffer.length; i++)
+            keys.add(buffer[i]);
+    }
+
+    public static String getKeyString(Activity activity, HashSet<Integer> keys) {
+        String strKeys = "";
+        if (keys != null)
+            for (KeyDescription desc : EV3KeyGroup.getKeyDescriptions())
+                if (keys.contains(desc.getCode()))
+                    if (strKeys.isEmpty())
+                        strKeys += desc.getDesc();
+                    else
+                        strKeys += ", " + desc.getDesc();
+        if (strKeys.isEmpty())
+            strKeys = activity.getString(R.string.nothing_selected);
+        return strKeys;
+    }
+
     public static List<KeyDescription> getKeyDescriptions() {
         if (keyDescriptions == null) {
             keyDescriptions = new ArrayList<KeyDescription>();
             addKeyDescriptions(0x30, 0x39);
             addKeyDescriptions(0x41, 0x5a);
             keyDescriptions.addAll(Arrays.asList(new KeyDescription[]{
-                    new KeyDescription(192, "`"),
-                    new KeyDescription(189, "-"),
-                    new KeyDescription(219, "["),
-                    new KeyDescription(221, "]"),
-                    new KeyDescription(220, "\\"),
-                    new KeyDescription(186, ";"),
-                    new KeyDescription(222, "'"),
-                    new KeyDescription(188, ","),
-                    new KeyDescription(190, "."),
-                    new KeyDescription(191, "/"),
+                    new KeyDescription(192, "(`)"),
+                    new KeyDescription(189, "(-)"),
+                    new KeyDescription(219, "([)"),
+                    new KeyDescription(221, "(])"),
+                    new KeyDescription(220, "(\\)"),
+                    new KeyDescription(186, "(;)"),
+                    new KeyDescription(222, "(')"),
+                    new KeyDescription(188, "(,)"),
+                    new KeyDescription(190, "(.)"),
+                    new KeyDescription(191, "(/)"),
                     new KeyDescription(27, "Esc"),
                     new KeyDescription(113, "F2"),
                     new KeyDescription(115, "F4"),
@@ -110,10 +143,10 @@ public class EV3KeyGroup extends EV3Controller {
                     new KeyDescription(103, "7 (Numpad)"),
                     new KeyDescription(104, "8 (Numpad)"),
                     new KeyDescription(105, "9 (Numpad)"),
-                    new KeyDescription(110, ". (Numpad)"),
-                    new KeyDescription(107, "+ (Numpad)"),
-                    new KeyDescription(109, "- (Numpad)"),
-                    new KeyDescription(106, "* (Numpad)"),
+                    new KeyDescription(110, "(.) (Numpad)"),
+                    new KeyDescription(107, "(+) (Numpad)"),
+                    new KeyDescription(109, "(-) (Numpad)"),
+                    new KeyDescription(106, "(*) (Numpad)"),
                     new KeyDescription(12, "Clear"),
                     new KeyDescription(145, "Scroll Lock"),
                     new KeyDescription(19, "Pause")
