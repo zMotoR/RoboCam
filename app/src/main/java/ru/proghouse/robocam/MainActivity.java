@@ -9,6 +9,7 @@ package ru.proghouse.robocam;
 //TODO: Smiles.
 //TODO: Button to focus and to take a picture.
 //TODO: Export and import settings.
+//TODO: Throw away overflow image from resource.
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;

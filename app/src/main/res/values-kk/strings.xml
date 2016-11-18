@@ -150,12 +150,12 @@
     <string name="keygroup_active">Активность</string>
     <string name="hide_joysticks_while_using_keyboard">Скрывать джойстики при использовании клавиатуры</string>
     <string name="keygroup_type_steering">Рульдеу</string>
-    <string name="inc_x">Увеличение X</string>
-    <string name="inc_y">Увеличение Y</string>
-    <string name="dec_x">Уменьшение X</string>
-    <string name="dec_y">Уменьшение Y</string>
-    <string name="step_x_pause">Пауза между увеличениями/уменьшениями X</string>
-    <string name="step_y_pause">Пауза между увеличениями/уменьшениями Y</string>
+    <string name="inc_x">Увеличение по вертикали</string>
+    <string name="inc_y">Увеличение по горизонтали</string>
+    <string name="dec_x">Уменьшение по вертикали</string>
+    <string name="dec_y">Уменьшение по горизонтали</string>
+    <string name="step_x_pause">Пауза между горизонтальными увеличениями/уменьшениями</string>
+    <string name="step_y_pause">Пауза между вертикальными увеличениями/уменьшениями </string>
     <string name="inc_x_desc">Значение изменяющее мощность и угол за единицу времени. Допустимые значения 0-200</string>
     <string name="inc_y_desc">Значение изменяющее мощность и угол за единицу времени. Допустимые значения 0-200</string>
     <string name="dec_x_desc">Значение изменяющее мощность и угол за единицу времени. Допустимые значения 0-200</string>
@@ -170,4 +170,8 @@
     <string name="nothing_selected">Ничего не выбрано</string>
     <string name="done">Готово</string>
     <string name="selected">Выбрано: %s</string>
+    <string name="keygroup_behavior1">Окончание нажатия (для клавиш влево/вправо)</string>
+    <string name="keygroup_behavior2">Окончание нажатия (для клавиш вверх/вниз)</string>
+    <string name="keygroup_n_port_n" formatted="false">Группа клавиш %d порт %s</string>
+    <string name="keygroup_ports">Порты группы клавиш %d</string>
 </resources>

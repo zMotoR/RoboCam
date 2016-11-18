@@ -397,13 +397,12 @@ public class EV3Driver extends RoboCamDriver {
             keyGroup.setDecY(StringHelper.intFromString(keyGroupNode.getAttribute("DecY"), 0));
             keyGroup.setStepXPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepXPause"), 100));
             keyGroup.setStepYPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepYPause"), 100));
-            if (keyGroup.getType() != JOYSTICK_TYPE_MAILBOX)
-                loadOutputPorts(keyGroupNode, keyGroup);
             loadKeys(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
             loadKeys(keyGroupNode, keyGroup.getLeftKeyCodes(), "LeftKey");
             loadKeys(keyGroupNode, keyGroup.getDownKeyCodes(), "DownKey");
             loadKeys(keyGroupNode, keyGroup.getRightKeyCodes(), "RightKey");
             loadKeys(keyGroupNode, keyGroup.getKeyCodes(), "Key");
+            loadOutputPorts(keyGroupNode, keyGroup);
             keyGroups.add(keyGroup);
         }
     }

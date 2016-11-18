@@ -75,11 +75,10 @@
                 android:paddingBottom="4dp" />
 
             <ImageButton
-                style="@style/Widget.AppCompat.ActionButton"
+                style="@style/Widget.AppCompat.ActionButton.Overflow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/buttonOverflow"
-                android:src="@drawable/overflow" />
+                android:id="@+id/buttonOverflow" />
 
         </LinearLayout>
     </LinearLayout>

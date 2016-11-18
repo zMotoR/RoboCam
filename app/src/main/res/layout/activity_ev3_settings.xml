@@ -35,10 +35,10 @@
             android:orientation="horizontal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            style="@style/Widget.AppCompat.ActionBar"
             android:baselineAligned="false"
             android:layout_weight="1"
-            android:gravity="right">
+            android:gravity="right"
+            style="@style/Widget.AppCompat.ActionBar">
         <Button
             style="@style/Widget.AppCompat.ActionButton"
             android:layout_width="wrap_content"
@@ -76,11 +76,10 @@
                 android:paddingBottom="4dp" />
 
             <ImageButton
-                style="@style/Widget.AppCompat.ActionButton"
+                style="@style/Widget.AppCompat.ActionButton.Overflow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/buttonOverflow"
-                android:src="@drawable/overflow" />
+                android:id="@+id/buttonOverflow" />
 
         </LinearLayout>
     </LinearLayout>
@@ -246,6 +245,15 @@
                     android:focusable="false"
                     android:onClick="onDeletePortButtonClick" />
 
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageView14"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/spacer_small"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
+
                 <Button
                     style="@style/Widget.AppCompat.ActionButton"
                     android:layout_width="wrap_content"
@@ -358,6 +366,15 @@
                     android:id="@+id/buttonDeletePortJoystick2"
                     android:focusable="false"
                     android:onClick="onDeletePortButtonClick" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageView15"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/spacer_small"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
 
                 <Button
                     style="@style/Widget.AppCompat.ActionButton"
@@ -472,6 +489,15 @@
                     android:focusable="false"
                     android:onClick="onDeletePortButtonClick" />
 
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageView16"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/spacer_small"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
+
                 <Button
                     style="@style/Widget.AppCompat.ActionButton"
                     android:layout_width="wrap_content"
@@ -585,6 +611,15 @@
                     android:focusable="false"
                     android:onClick="onDeletePortButtonClick" />
 
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageView17"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/spacer_small"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
+
                 <Button
                     style="@style/Widget.AppCompat.ActionButton"
                     android:layout_width="wrap_content"
@@ -626,6 +661,15 @@
                     android:id="@+id/buttonDeleteKeyGroup"
                     android:focusable="false"
                     android:onClick="onDeleteKeyGroupClick" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageView18"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/spacer_small"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
 
                 <Button
                     style="@style/Widget.AppCompat.ActionButton"

@@ -4,12 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
+import android.support.v7.widget.AppCompatButton;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -18,6 +20,7 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
+//import android.support.v7.appcompat.R;
 
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -148,6 +151,17 @@ public class SettingsActivityHelper {
         return separator;
     }
 
+    public static ImageView createVerticalSeparator(Activity activity, LinearLayout layout) {
+        ContextThemeWrapper newContext  = new ContextThemeWrapper(activity,
+                R.style.VerticalSeparator);
+        ImageView separator = new ImageView(newContext, null, R.style.VerticalSeparator);
+        //separator.setImageResource(R.drawable.spacer_small);
+        separator.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        layout.addView(separator);
+        return separator;
+    }
+
     public static TextView createTextViewTitle(Activity activity, LinearLayout layout, int titleId) {
         ContextThemeWrapper newContext  = new ContextThemeWrapper(activity,
                 R.style.SettingsSectionEditTextTitle);
@@ -215,6 +229,21 @@ public class SettingsActivityHelper {
         editText.setText(value);
         layout.addView(editText);
         return editText;
+    }
+
+    public static Button createButton(Activity activity, LinearLayout layout, int textId) {
+        //ContextThemeWrapper newContext = new ContextThemeWrapper(activity, R.style.SettingsActionButton);
+        ContextThemeWrapper newContext = new ContextThemeWrapper(activity,
+                R.style.SettingsActionButton);
+        //Button button = new Button(newContext, null, R.style.SettingsActionButton);
+        Button button = new AppCompatButton(newContext, null,
+                R.style.SettingsActionButton);
+        //Button button = new Button(newContext, null,
+        //        android.support.v7.widget.AppCompatButton android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton);
+        button.setText(activity.getString(textId));
+        button.setFocusable(false);
+        layout.addView(button);
+        return button;
     }
 
 }

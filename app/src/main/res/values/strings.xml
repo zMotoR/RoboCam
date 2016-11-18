@@ -151,12 +151,12 @@
     <string name="keygroup_active">Active</string>
     <string name="hide_joysticks_while_using_keyboard">Hide joysticks while using a keyboard</string>
     <string name="keygroup_type_steering">Steering</string>
-    <string name="inc_x">X increment</string>
-    <string name="inc_y">Y increment</string>
-    <string name="dec_x">X decrement</string>
-    <string name="dec_y">Y decrement</string>
-    <string name="step_x_pause">Pause between X increments/decrements</string>
-    <string name="step_y_pause">Pause between Y increments/decrements</string>
+    <string name="inc_x">Horizontal increment</string>
+    <string name="inc_y">Vertical increment</string>
+    <string name="dec_x">Horizontal decrement</string>
+    <string name="dec_y">Vertical decrement</string>
+    <string name="step_x_pause">Pause between horizontal increments/decrements</string>
+    <string name="step_y_pause">Pause between vertical increments/decrements</string>
     <string name="inc_x_desc">The value that changes a power and an angle per time. Must be 0-200</string>
     <string name="inc_y_desc">The value that changes a power and an angle per time. Must be 0-200</string>
     <string name="dec_x_desc">The value that changes a power and an angle per time. Must be 0-200</string>
@@ -171,4 +171,8 @@
     <string name="nothing_selected">Nothing selected</string>
     <string name="done">Done</string>
     <string name="selected">Selected: %s</string>
+    <string name="keygroup_behavior1">End of pressing (for left/right keys)</string>
+    <string name="keygroup_behavior2">End of pressing (for up/down keys)</string>
+    <string name="keygroup_n_port_n" formatted="false">Key group %d port %s</string>
+    <string name="keygroup_ports">Ports of the key group %d</string>
 </resources>

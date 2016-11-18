@@ -7,11 +7,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextThemeWrapper;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -248,7 +250,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                             joystickComponents.outputPorts.add(new OutputPortComponents(this,
                                     joystickComponents.joystickPortsLinearLayout, joystickIndex,
                                     group, layer, portName, joystickType, power, invert, coefficient,
-                                    brake, indexToJoystickTypes[joystickComponents.typeSpinner.getSelectedItemPosition()]));
+                                    brake, indexToJoystickTypes[joystickComponents.typeSpinner.getSelectedItemPosition()],
+                                    true));
 
                         }
                         catch(Exception e) {
@@ -257,6 +260,21 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     }
                 }
             }
+        }
+        NodeList keyGroupNodes = xml.getElementsByTagName("KeyGroup");
+        for (int i = 0; i < keyGroupNodes.getLength(); i++) {
+            Element keyGroupNode = (Element) keyGroupNodes.item(i);
+            /*keyGroupComponents.add(new KeyGroupComponents(
+                    this, (LinearLayout)findViewById(R.id.linearLayoutKeyGroups),
+                    keyGroupComponents.size(),
+                    StringHelper.booleanFromString(keyGroupNode.getAttribute("Active"), false),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("Type"),
+                            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS),
+                    int incX, int incY, int decX, int decY,
+                    int stepXPause, int stepYPause, HashSet<Integer> upKeyCodes,
+                    HashSet<Integer> leftKeyCodes, HashSet<Integer> downKeyCodes,
+                    HashSet<Integer> rightKeyCodes, HashSet<Integer> keyCodes,
+                    String mailbox));*/
         }
     }
 
@@ -681,7 +699,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     }
 
     class OutputPortComponents {
-        int joystickIndex;
+        int ownerIndex;
+        boolean forJoystick;
         LinearLayout activityLayout;
         LinearLayout portLayout;
         TextView textViewTitle;
@@ -698,11 +717,12 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         ImageView separatorJoystickType;
         LinearLayout layoutJoystickType;
 
-        public OutputPortComponents(Activity activity, LinearLayout layout, int joystickIndex,
+        public OutputPortComponents(Activity activity, LinearLayout layout, int ownerIndex,
                                     int group, int layer, String portName, int portJoystickType, int power,
-                                    boolean invert, float coefficient, int brake, int joystickType) {
-
-            this.joystickIndex = joystickIndex;
+                                    boolean invert, float coefficient, int brake, int joystickType,
+                                    boolean forJoystick) {
+            this.forJoystick = forJoystick;
+            this.ownerIndex = ownerIndex;
             activityLayout = layout;
 
             //OutputPort layout
@@ -713,7 +733,10 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             ContextThemeWrapper newContext  = new ContextThemeWrapper(activity,
                     R.style.SettingsSectionTitle);
             textViewTitle = new TextView(newContext);
-            textViewTitle.setText(getString(R.string.joystick_n_port_n, joystickIndex + 1, portName));
+            if (forJoystick)
+                textViewTitle.setText(getString(R.string.joystick_n_port_n, ownerIndex + 1, portName));
+            else
+                textViewTitle.setText(getString(R.string.keygroup_n_port_n, ownerIndex + 1, portName));
             portLayout.addView(textViewTitle);
             //Joystick group
             spinnerGroup = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
@@ -726,12 +749,14 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             //Separator
             SettingsActivityHelper.createSeparator(activity, portLayout);
             //EV3 level
-            spinnerLayer = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerLayer = SettingsActivityHelper.createSpinner(activity, portLayout,
+                    Arrays.asList(new String[]{
                     "1", "2", "3", "4"}), layer, R.string.joystick_layer, null);
             //Separator
             SettingsActivityHelper.createSeparator(activity, portLayout);
             //Port number
-            spinnerNumber = SettingsActivityHelper.createSpinner(activity, portLayout, Arrays.asList(new String[]{
+            spinnerNumber = SettingsActivityHelper.createSpinner(activity, portLayout,
+                    Arrays.asList(new String[]{
                             "A", "B", "C", "D"}),
                     portName.equals("A") ? 0 : portName.equals("B") ? 1 : portName.equals("C") ? 2 : 3,
                     R.string.joystick_port_number, null);
@@ -739,7 +764,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
 
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    updateTitle();
+                    updateTitle(-1);
                 }
 
                 @Override
@@ -800,9 +825,15 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             separatorJoystickType.setVisibility(visibility);
         }
 
-        private void updateTitle() {
-            textViewTitle.setText(getString(R.string.joystick_n_port_n, joystickIndex + 1,
-                    new String[]{"A", "B", "C", "D"}[spinnerNumber.getSelectedItemPosition()]));
+        private void updateTitle(int newOwnerIndex) {
+            if (newOwnerIndex >= 0)
+                ownerIndex = newOwnerIndex;
+            if (forJoystick)
+                textViewTitle.setText(getString(R.string.joystick_n_port_n, ownerIndex + 1,
+                        new String[]{"A", "B", "C", "D"}[spinnerNumber.getSelectedItemPosition()]));
+            else
+                textViewTitle.setText(getString(R.string.keygroup_n_port_n, ownerIndex + 1,
+                        new String[]{"A", "B", "C", "D"}[spinnerNumber.getSelectedItemPosition()]));
         }
 
         private void updateEditTextPower() {
@@ -1002,7 +1033,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 joystickComponents[joystickIndex].outputPorts.add(new OutputPortComponents(this,
                         joystickComponents[joystickIndex].joystickPortsLinearLayout, joystickIndex,
                         0, 0, "A", EV3Driver.JOYSTICK_TYPE_POWER, 0, false, 1, EV3Driver.BRAKE,
-                        indexToJoystickTypes[joystickComponents[joystickIndex].typeSpinner.getSelectedItemPosition()]));
+                        indexToJoystickTypes[joystickComponents[joystickIndex].typeSpinner.getSelectedItemPosition()],
+                        true));
                 Toast.makeText(this, getString(R.string.port_has_been_added),
                         Toast.LENGTH_LONG).show();
             } catch(Exception e) {
@@ -1014,28 +1046,29 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
 
     class KeyGroupComponents {
         private Activity activity = null;
-        LinearLayout keyGroupLayout;
-        TextView textViewTitle;
+        LinearLayout keyGroupLayout, portsLayout;
+        TextView textViewTitle, textViewPortsTitle;
         CheckBox checkBoxActive;
         LinearLayout contentLayout;
-        Spinner spinnerType;
+        Spinner spinnerType, spinnerBehavior1, spinnerBehavior2;
         LinearLayout nonMailboxLayout;
         LinearLayout mailboxLayout;
         EditText editTextIncX, editTextIncY, editTextDecX, editTextDecY;
         EditText editTextStepXPause, editTextStepYPause;
         EditText editTextMailbox;
         KeyCodeControl upKeysControl, leftKeysControl, downKeysControl, rightKeysControl, keysControl;
+        Button addButton, deleteButton;
 
         public String getKeyCodeTitle() {
             return textViewTitle.getText().toString();
         }
 
-        KeyGroupComponents(EV3SettingsActivity activity, LinearLayout layout, int index, boolean active,
+        KeyGroupComponents(final EV3SettingsActivity activity, LinearLayout layout, int index, boolean active,
                            int type, int incX, int incY, int decX, int decY,
                            int stepXPause, int stepYPause, HashSet<Integer> upKeyCodes,
                            HashSet<Integer> leftKeyCodes, HashSet<Integer> downKeyCodes,
                            HashSet<Integer> rightKeyCodes, HashSet<Integer> keyCodes,
-                           String mailbox) {
+                           String mailbox, int behavior1, int behavior2) {
             this.activity = activity;
             //KeyGroup layout
             keyGroupLayout = new LinearLayout(activity);
@@ -1074,6 +1107,24 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             contentLayout.addView(nonMailboxLayout);
             //Separator
             SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            //Behavior1
+            spinnerBehavior1 = SettingsActivityHelper.createSpinner(activity, nonMailboxLayout,
+                    Arrays.asList(new String[]{
+                            activity.getString(R.string.joystick_behavior_return_to_zero),
+                            activity.getString(R.string.joystick_behavior_hold_position)
+                    }),
+                    behavior1, R.string.keygroup_behavior1, null);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
+            //Behavior2
+            spinnerBehavior2 = SettingsActivityHelper.createSpinner(activity, nonMailboxLayout,
+                    Arrays.asList(new String[]{
+                            activity.getString(R.string.joystick_behavior_return_to_zero),
+                            activity.getString(R.string.joystick_behavior_hold_position)
+                    }),
+                    behavior2, R.string.keygroup_behavior2, null);
+            //Separator
+            SettingsActivityHelper.createSeparator(activity, nonMailboxLayout);
             //Steps
             editTextIncX = SettingsActivityHelper.createEditTextInteger(activity, nonMailboxLayout,
                     incX, R.string.inc_x, R.string.inc_x_desc);
@@ -1110,9 +1161,37 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             rightKeysControl = KeyCodeControl.createKeyCodeControl(activity, nonMailboxLayout,
                     rightKeyCodes, R.string.right_keys, getKeyCodeTitle());
             rightKeysControl.setOnClickListener(activity);
-            /*spinnerUpKeys = SettingsActivityHelper.createSpinner(activity, nonMailboxLayout,
-                    Arrays.asList(new String[]{"1", "2", "3", "4"}), layer,
-                    R.string.joystick_layer, null);*/
+            //Ports title
+            newContext = new ContextThemeWrapper(activity, R.style.SettingsSectionTitle);
+            textViewPortsTitle = new TextView(newContext);
+            textViewPortsTitle.setText(getString(R.string.keygroup_ports, index + 1));
+            nonMailboxLayout.addView(textViewPortsTitle);
+
+            //Ports buttons
+            portsLayout = new LinearLayout(activity);
+            portsLayout.setOrientation(LinearLayout.HORIZONTAL);
+            portsLayout.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            portsLayout.setBaselineAligned(false);
+            portsLayout.setGravity(Gravity.RIGHT);
+            nonMailboxLayout.addView(portsLayout);
+
+            deleteButton = SettingsActivityHelper.createButton(activity, portsLayout, R.string.delete);
+            SettingsActivityHelper.createVerticalSeparator(activity, portsLayout);
+            addButton = SettingsActivityHelper.createButton(activity, portsLayout, R.string.add);
+            deleteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                }
+            });
+            addButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Toast.makeText(activity, "Add", Toast.LENGTH_LONG).show();
+                }
+            });
 
 
             //Mailbox layout
@@ -1176,7 +1255,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             keyGroupComponents.add(new KeyGroupComponents(this,
                     (LinearLayout)findViewById(R.id.linearLayoutKeyGroups),
                     keyGroupComponents.size(), true, RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS,
-                    0, 0, 0, 0, 100, 100, null, null, null, null, null, ""));
+                    0, 0, 0, 0, 100, 100, null, null, null, null, null, "",
+                    RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO,
+                    RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
             Toast.makeText(this, getString(R.string.keygroup_has_been_added),
                     Toast.LENGTH_LONG).show();
         } catch(Exception e) {
