@@ -118,7 +118,7 @@
     <string name="cannot_delete_settings_file">Не удалось удалить настройки</string>
     <string name="cannot_delete_current_settings_file">Нельзя удалять текущие настройки</string>
     <string name="settings_were_deleted">Настройки удалены</string>
-    <string name="port_was_deleted">Порт был удалён</string>
+    <string name="port_was_deleted">Порт удалён</string>
     <string name="joystick_group_left">Левый</string>
     <string name="joystick_group_right">Правый</string>
     <string name="using_of_the_settings_is_not_available_without_a_subscription">Использование настроек невозможно без оформленной подписки!</string>
@@ -174,4 +174,5 @@
     <string name="keygroup_behavior2">Окончание нажатия (для клавиш вверх/вниз)</string>
     <string name="keygroup_n_port_n" formatted="false">Группа клавиш %d порт %s</string>
     <string name="keygroup_ports">Порты группы клавиш %d</string>
+    <string name="keygroup_was_deleted">Группа клавиш удалена</string>
 </resources>

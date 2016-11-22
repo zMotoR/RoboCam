@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.AppCompatButton;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextThemeWrapper;
@@ -88,6 +89,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private Button buttonDeletePortJoystick3 = null;
     private Button buttonDeletePortJoystick4 = null;
 
+    private Button buttonDeleteKeyGroup = null;
+
     private int[] indexToJoystickTypes = {
             RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS,
             RoboCamDriver.JOYSTICK_TYPE_STEERING,
@@ -103,6 +106,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         buttonOverflow = (ImageButton)findViewById(R.id.buttonOverflow);
         buttonOverflow.setOnClickListener(this);
         registerForContextMenu(buttonOverflow);
+
+        buttonDeleteKeyGroup = (Button)findViewById(R.id.buttonDeleteKeyGroup);
+        registerForContextMenu(buttonDeleteKeyGroup);
 
         if (Build.VERSION.SDK_INT < 17) {
             CheckBox rb = new CheckBox(this);
@@ -308,6 +314,17 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             for (int i = 0; i < joystickComponents[joystickIndex].outputPorts.size(); i++)
                 menu.add(Menu.NONE, (joystickIndex + 1) * 1000000 + i + 1, i + 1,
                         joystickComponents[joystickIndex].outputPorts.get(i).textViewTitle.getText());
+        else if (v.getTag() != null && ButtonTag.class.isAssignableFrom(v.getTag().getClass())) {
+            ButtonTag buttonTag = (ButtonTag)v.getTag();
+            for (int i = 0; i < buttonTag.keyGroupComponents.outputPorts.size(); i++)
+                menu.add(Menu.NONE, (buttonTag.keyGroupComponents.index + 1) * 10000000 + i + 1, i + 1,
+                        buttonTag.keyGroupComponents.outputPorts.get(i).textViewTitle.getText());
+        }
+        else if (v.getId() == R.id.buttonDeleteKeyGroup) {
+            for (int i = 0; i < keyGroupComponents.size(); i++)
+                menu.add(Menu.NONE, (i + 11) * -1, i + 1,
+                        keyGroupComponents.get(i).textViewTitle.getText());
+        }
         else {
             menu.add(Menu.NONE, MI_SEND_SETTINGS, Menu.NONE, R.string.action_send_robot_settings);
             menu.add(Menu.NONE, MI_EXPORT_SETTINGS, Menu.NONE, R.string.action_export_robot_settings_to_file);
@@ -323,6 +340,23 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             joystickComponents[joystickIndex].outputPorts.get(portIndex).removeViews();
             joystickComponents[joystickIndex].outputPorts.remove(portIndex);
             Toast.makeText(this, R.string.port_was_deleted, Toast.LENGTH_LONG).show();
+            return true;
+        }
+        else if (item.getItemId() > 10000000) {
+            int keyGroupIndex = (int) (item.getItemId() / 10000000) - 1;
+            int portIndex = item.getItemId() - (keyGroupIndex + 1) * 10000000 - 1;
+            keyGroupComponents.get(keyGroupIndex).outputPorts.get(portIndex).removeViews();
+            keyGroupComponents.get(keyGroupIndex).outputPorts.remove(portIndex);
+            Toast.makeText(this, R.string.port_was_deleted, Toast.LENGTH_LONG).show();
+            return true;
+        }
+        else if (item.getItemId() < -10) {
+            int keyGroupIndex = (item.getItemId() * -1) - 11;
+            keyGroupComponents.get(keyGroupIndex).removeViews();
+            keyGroupComponents.remove(keyGroupIndex);
+            for (int i = 0; i < keyGroupComponents.size(); i++)
+                keyGroupComponents.get(i).updateIndex(i);
+            Toast.makeText(this, R.string.keygroup_was_deleted, Toast.LENGTH_LONG).show();
             return true;
         }
         else if (item.getItemId() == MI_SEND_SETTINGS)
@@ -471,6 +505,25 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             v.showContextMenu();
         else if (KeyCodeControl.class.isAssignableFrom(v.getClass())) {
             ((KeyCodeControl)v).showKeySelector(this, KEY_CODE_REQUEST);
+        }
+        else if (v.getTag() != null && ButtonTag.class.isAssignableFrom(v.getTag().getClass())) {
+            try {
+                ButtonTag buttonTag = (ButtonTag)v.getTag();
+                if (buttonTag.addButton) {
+                    buttonTag.keyGroupComponents.outputPorts.add(new OutputPortComponents(this,
+                            buttonTag.keyGroupComponents.portsLayout, buttonTag.keyGroupComponents.index, 0, 0, "A",
+                            EV3Driver.JOYSTICK_TYPE_POWER, 0, false, 1, EV3Driver.BRAKE,
+                            indexToJoystickTypes[buttonTag.keyGroupComponents.spinnerType.getSelectedItemPosition()],
+                            false));
+                    Toast.makeText(this, getString(R.string.port_has_been_added),
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    v.showContextMenu();
+                }
+            } catch(Exception e) {
+                Toast.makeText(this, getString(R.string.error_while_creating_settings_xml,
+                        e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -1044,9 +1097,19 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         }
     }
 
+    class ButtonTag {
+        KeyGroupComponents keyGroupComponents = null;
+        boolean addButton = false;
+        ButtonTag(KeyGroupComponents keyGroupComponents, boolean addButton) {
+            this.keyGroupComponents = keyGroupComponents;
+            this.addButton = addButton;
+        }
+    }
+
     class KeyGroupComponents {
+        int index;
         private Activity activity = null;
-        LinearLayout keyGroupLayout, portsLayout;
+        LinearLayout keyGroupLayout, portPanelLayout, portsLayout, activityLayout;
         TextView textViewTitle, textViewPortsTitle;
         CheckBox checkBoxActive;
         LinearLayout contentLayout;
@@ -1059,6 +1122,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         KeyCodeControl upKeysControl, leftKeysControl, downKeysControl, rightKeysControl, keysControl;
         Button addButton, deleteButton;
 
+        public List<OutputPortComponents> outputPorts = new ArrayList<OutputPortComponents>();
+
         public String getKeyCodeTitle() {
             return textViewTitle.getText().toString();
         }
@@ -1070,6 +1135,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                            HashSet<Integer> rightKeyCodes, HashSet<Integer> keyCodes,
                            String mailbox, int behavior1, int behavior2) {
             this.activity = activity;
+            this.index = index;
+            this.activityLayout = layout;
             //KeyGroup layout
             keyGroupLayout = new LinearLayout(activity);
             keyGroupLayout.setOrientation(LinearLayout.VERTICAL);
@@ -1168,31 +1235,30 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             nonMailboxLayout.addView(textViewPortsTitle);
 
             //Ports buttons
+            portPanelLayout = new LinearLayout(activity);
+            portPanelLayout.setOrientation(LinearLayout.HORIZONTAL);
+            portPanelLayout.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            portPanelLayout.setBaselineAligned(false);
+            portPanelLayout.setGravity(Gravity.RIGHT);
+            nonMailboxLayout.addView(portPanelLayout);
+
+            deleteButton = SettingsActivityHelper.createButton(activity, portPanelLayout, R.string.delete);
+            deleteButton.setTag(new ButtonTag(this, false));
+            deleteButton.setOnClickListener(activity);
+            registerForContextMenu(deleteButton);
+            SettingsActivityHelper.createVerticalSeparator(activity, portPanelLayout);
+            addButton = SettingsActivityHelper.createButton(activity, portPanelLayout, R.string.add);
+            addButton.setTag(new ButtonTag(this, true));
+            addButton.setOnClickListener(activity);
+
             portsLayout = new LinearLayout(activity);
-            portsLayout.setOrientation(LinearLayout.HORIZONTAL);
             portsLayout.setLayoutParams(new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT));
-            portsLayout.setBaselineAligned(false);
-            portsLayout.setGravity(Gravity.RIGHT);
+            portsLayout.setOrientation(LinearLayout.VERTICAL);
             nonMailboxLayout.addView(portsLayout);
-
-            deleteButton = SettingsActivityHelper.createButton(activity, portsLayout, R.string.delete);
-            SettingsActivityHelper.createVerticalSeparator(activity, portsLayout);
-            addButton = SettingsActivityHelper.createButton(activity, portsLayout, R.string.add);
-            deleteButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-
-                }
-            });
-            addButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Toast.makeText(activity, "Add", Toast.LENGTH_LONG).show();
-                }
-            });
-
 
             //Mailbox layout
             mailboxLayout = new LinearLayout(activity);
@@ -1248,6 +1314,18 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 return keysControl;
             return null;
         }
+
+        public void removeViews() {
+            activityLayout.removeView(keyGroupLayout);
+        }
+
+        public void updateIndex(int index) {
+            this.index = index;
+            textViewTitle.setText(getString(R.string.keygroup_n, Integer.toString(index + 1)));
+            textViewPortsTitle.setText(getString(R.string.keygroup_ports, index + 1));
+            for (int i = 0; i < outputPorts.size(); i++)
+                outputPorts.get(i).updateTitle(index);
+        }
     }
 
     public void onAddKeyGroupButtonClick(View v){
@@ -1267,7 +1345,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     }
 
     public void onDeleteKeyGroupClick(View v){
-
+        v.showContextMenu();
     }
 
     @Override

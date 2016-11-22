@@ -175,4 +175,5 @@
     <string name="keygroup_behavior2">End of pressing (for up/down keys)</string>
     <string name="keygroup_n_port_n" formatted="false">Key group %d port %s</string>
     <string name="keygroup_ports">Ports of the key group %d</string>
+    <string name="keygroup_was_deleted">The key group was deleted</string>
 </resources>

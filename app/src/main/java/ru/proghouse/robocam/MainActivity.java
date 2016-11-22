@@ -1,6 +1,5 @@
 package ru.proghouse.robocam;
 
-//TODO: Create embedded localized ads and ability to show my own online localized ads instead google ads.
 /*Ad formats for tablet PCs
         728 x 90
         300 x 250

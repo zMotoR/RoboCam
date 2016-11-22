@@ -1,8 +1,12 @@
 package ru.proghouse.robocam;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
+import android.util.AttributeSet;
+import android.view.ContextThemeWrapper;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -27,6 +31,11 @@ public class KeyCodeControl extends LinearLayout {
     HashSet<Integer> keys;
     String keyGroupName;
 
+    @TargetApi(11)
+    public KeyCodeControl(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+    }
+
     public KeyCodeControl(Context context) {
         super(context);
     }
@@ -42,9 +51,16 @@ public class KeyCodeControl extends LinearLayout {
     public static KeyCodeControl createKeyCodeControl(Activity activity, LinearLayout layout,
                                                       HashSet<Integer> keys, int titleId,
                                                       String keyGroupName) {
-        KeyCodeControl controlLayout = new KeyCodeControl(activity);
+        KeyCodeControl controlLayout;
+        if (Build.VERSION.SDK_INT >= 11) {
+            ContextThemeWrapper newContext = new ContextThemeWrapper(activity, R.style.KeyCodeControl);
+            controlLayout = new KeyCodeControl(newContext, null, R.style.KeyCodeControl);
+        }
+        else
+            controlLayout = new KeyCodeControl(activity);
         controlLayout.keys = keys;
         controlLayout.keyGroupName = keyGroupName;
+        controlLayout.setPadding(0, 0, 0, 0);
 
         controlLayout.setOrientation(LinearLayout.HORIZONTAL);
         controlLayout.setWeightSum(1);
