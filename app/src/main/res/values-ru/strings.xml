@@ -150,10 +150,10 @@
     <string name="keygroup_active">Активность</string>
     <string name="hide_joysticks_while_using_keyboard">Скрывать джойстики при использовании клавиатуры</string>
     <string name="keygroup_type_steering">Руление</string>
-    <string name="inc_x">Увеличение по вертикали</string>
-    <string name="inc_y">Увеличение по горизонтали</string>
-    <string name="dec_x">Уменьшение по вертикали</string>
-    <string name="dec_y">Уменьшение по горизонтали</string>
+    <string name="inc_x">Увеличение по горизонтали</string>
+    <string name="inc_y">Увеличение по вертикали</string>
+    <string name="dec_x">Уменьшение по горизонтали</string>
+    <string name="dec_y">Уменьшение по вертикали</string>
     <string name="step_x_pause">Пауза между горизонтальными увеличениями/уменьшениями</string>
     <string name="step_y_pause">Пауза между вертикальными увеличениями/уменьшениями </string>
     <string name="inc_y_desc">Значение изменяющее мощность и угол за единицу времени. Допустимые значения 0-200</string>

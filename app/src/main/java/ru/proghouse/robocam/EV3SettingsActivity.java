@@ -58,6 +58,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import ru.proghouse.robocam.drivers.EV3.EV3Controller;
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
@@ -177,6 +178,50 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         return new File(robotDir, settingsFileName);
     }
 
+    private void loadOutputPorts(Element parentNode, List<OutputPortComponents> outputPorts,
+                                 Spinner typeSpinner, LinearLayout portLayout, int ownerIndex,
+                                 boolean forJoystick) {
+        NodeList outputPortNodes = parentNode.getElementsByTagName("OutputPort");
+        for (int j = 0; j < outputPortNodes.getLength(); j++) {
+            Element outputPortNode = (Element) outputPortNodes.item(j);
+            int group = StringHelper.intFromString(outputPortNode.getAttribute("Group"), -1);
+            int layer = StringHelper.intFromString(outputPortNode.getAttribute("Layer"), -1);
+            String portName = StringHelper.stringFromString(outputPortNode.getAttribute("Number"), "");
+            int number = -1;
+            if (portName.equals("A"))
+                number = EV3Driver.OUTPUT_PORT_A;
+            else if (portName.equals("B"))
+                number = EV3Driver.OUTPUT_PORT_B;
+            else if (portName.equals("C"))
+                number = EV3Driver.OUTPUT_PORT_C;
+            else if (portName.equals("D"))
+                number = EV3Driver.OUTPUT_PORT_D;
+            if (group >= 0 && group <= 1 && layer >= 0 && layer < 4 && number >= 0) {
+                try {
+                    int joystickType = StringHelper.intFromString(
+                            outputPortNode.getAttribute("JoystickType"),
+                            EV3Driver.JOYSTICK_TYPE_POWER);
+                    int power = StringHelper.intFromString(
+                            outputPortNode.getAttribute("Power"), 0);
+                    boolean invert = StringHelper.booleanFromString(
+                            outputPortNode.getAttribute("Invert"), false);
+                    float coefficient = StringHelper.floatFromString(
+                            outputPortNode.getAttribute("Coefficient"), 1);
+                    int brake = StringHelper.intFromString(
+                            outputPortNode.getAttribute("Brake"), EV3Driver.BRAKE);
+                    outputPorts.add(new OutputPortComponents(this,
+                            portLayout, ownerIndex,
+                            group, layer, portName, joystickType, power, invert, coefficient,
+                            brake, indexToJoystickTypes[typeSpinner.getSelectedItemPosition()],
+                            forJoystick));
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     private void loadSettingsFromXml(Document xml) throws Exception {
         xml.getDocumentElement().normalize();
         String newDriverName = xml.getDocumentElement().getNodeName();
@@ -225,63 +270,60 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 joystickComponents.behavior2Spinner.setSelection(StringHelper.intFromString(
                         joystickNode.getAttribute("Behavior1"),
                         RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
-                NodeList outputPortNodes = joystickNode.getElementsByTagName("OutputPort");
-                for (int j = 0; j < outputPortNodes.getLength(); j++) {
-                    Element outputPortNode = (Element) outputPortNodes.item(j);
-                    int group = StringHelper.intFromString(outputPortNode.getAttribute("Group"), -1);
-                    int layer = StringHelper.intFromString(outputPortNode.getAttribute("Layer"), -1);
-                    String portName = StringHelper.stringFromString(outputPortNode.getAttribute("Number"), "");
-                    int number = -1;
-                    if (portName.equals("A"))
-                        number = EV3Driver.OUTPUT_PORT_A;
-                    else if (portName.equals("B"))
-                        number = EV3Driver.OUTPUT_PORT_B;
-                    else if (portName.equals("C"))
-                        number = EV3Driver.OUTPUT_PORT_C;
-                    else if (portName.equals("D"))
-                        number = EV3Driver.OUTPUT_PORT_D;
-                    if (group >= 0 && group <= 1 && layer >= 0 && layer < 4 && number >= 0) {
-                        try {
-                            int joystickType = StringHelper.intFromString(
-                                    outputPortNode.getAttribute("JoystickType"),
-                                    EV3Driver.JOYSTICK_TYPE_POWER);
-                            int power = StringHelper.intFromString(
-                                    outputPortNode.getAttribute("Power"), 0);
-                            boolean invert = StringHelper.booleanFromString(
-                                    outputPortNode.getAttribute("Invert"), false);
-                            float coefficient = StringHelper.floatFromString(
-                                    outputPortNode.getAttribute("Coefficient"), 1);
-                            int brake = StringHelper.intFromString(
-                                    outputPortNode.getAttribute("Brake"), EV3Driver.BRAKE);
-                            joystickComponents.outputPorts.add(new OutputPortComponents(this,
-                                    joystickComponents.joystickPortsLinearLayout, joystickIndex,
-                                    group, layer, portName, joystickType, power, invert, coefficient,
-                                    brake, indexToJoystickTypes[joystickComponents.typeSpinner.getSelectedItemPosition()],
-                                    true));
-
-                        }
-                        catch(Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+                loadOutputPorts(joystickNode,
+                        joystickComponents.outputPorts,
+                        joystickComponents.typeSpinner,
+                        joystickComponents.joystickPortsLinearLayout,
+                        joystickIndex,
+                        true);
             }
         }
         NodeList keyGroupNodes = xml.getElementsByTagName("KeyGroup");
         for (int i = 0; i < keyGroupNodes.getLength(); i++) {
             Element keyGroupNode = (Element) keyGroupNodes.item(i);
-            /*keyGroupComponents.add(new KeyGroupComponents(
+            this.keyGroupComponents.add(new KeyGroupComponents(
                     this, (LinearLayout)findViewById(R.id.linearLayoutKeyGroups),
-                    keyGroupComponents.size(),
+                    this.keyGroupComponents.size(),
                     StringHelper.booleanFromString(keyGroupNode.getAttribute("Active"), false),
-                    StringHelper.intFromString(keyGroupNode.getAttribute("Type"),
-                            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS),
-                    int incX, int incY, int decX, int decY,
-                    int stepXPause, int stepYPause, HashSet<Integer> upKeyCodes,
-                    HashSet<Integer> leftKeyCodes, HashSet<Integer> downKeyCodes,
-                    HashSet<Integer> rightKeyCodes, HashSet<Integer> keyCodes,
-                    String mailbox));*/
+                    indexToJoystickTypes[StringHelper.intFromString(keyGroupNode.getAttribute("Type"),
+                            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS)],
+                    StringHelper.intFromString(keyGroupNode.getAttribute("IncX"), 0),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("IncY"), 0),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("DecX"), 0),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("DecY"), 0),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("StepXPause"), 100),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("StepYPause"), 100),
+                    loadKeys(keyGroupNode, "UpKey"),
+                    loadKeys(keyGroupNode, "LeftKey"),
+                    loadKeys(keyGroupNode, "DownKey"),
+                    loadKeys(keyGroupNode, "RightKey"),
+                    loadKeys(keyGroupNode, "Key"),
+                    StringHelper.stringFromString(keyGroupNode.getAttribute("Mailbox"), ""),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("Behavior0"),
+                            RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO),
+                    StringHelper.intFromString(keyGroupNode.getAttribute("Behavior1"),
+                            RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO)));
+            KeyGroupComponents keyGroupComponents = this.keyGroupComponents.get(this.keyGroupComponents.size() - 1);
+            loadOutputPorts(keyGroupNode,
+                    keyGroupComponents.outputPorts,
+                    keyGroupComponents.spinnerType,
+                    keyGroupComponents.portsLayout,
+                    this.keyGroupComponents.size() - 1,
+                    false);
         }
+    }
+
+    private HashSet<Integer> loadKeys(Element parentNode, String nodeName) {
+        HashSet<Integer> keyCodes = new HashSet<Integer>();
+        NodeList keyCodeNodes = parentNode.getElementsByTagName(nodeName);
+        for (int j = 0; j < keyCodeNodes.getLength(); j++) {
+            Element keyCodeNode = (Element) keyCodeNodes.item(j);
+            String strValue = keyCodeNode.getTextContent();
+            Integer value = Integer.valueOf(strValue);
+            if (value > 0 && value <= 255)
+                keyCodes.add(value);
+        }
+        return keyCodes;
     }
 
     private void loadSettings(File settingsFile) throws Exception {
@@ -960,7 +1002,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     joystickElement.setAttribute("Shape", RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS);
                     break;
             }
-            if (indexToJoystickTypes[joystickComponent.typeSpinner.getSelectedItemPosition()] != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
+            if (indexToJoystickTypes[joystickComponent.typeSpinner.getSelectedItemPosition()]
+                    != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                     || joystickComponent.visibilityCheckBox.isChecked())
                 joystickElement.setAttribute("Type",
                         Integer.toString(indexToJoystickTypes[joystickComponent.typeSpinner.getSelectedItemPosition()]));
@@ -970,30 +1013,93 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             if (joystickComponent.behavior2Spinner.getSelectedItemPosition() != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO)
                 joystickElement.setAttribute("Behavior1",
                         Integer.toString(joystickComponent.behavior2Spinner.getSelectedItemPosition()));
-            for (OutputPortComponents outputPortComponent : joystickComponent.outputPorts) {
-                Element portElement = xml.createElement("OutputPort");
-                joystickElement.appendChild(portElement);
-                portElement.setAttribute("Group",
-                        Integer.toString(outputPortComponent.spinnerGroup.getSelectedItemPosition()));
-                portElement.setAttribute("Layer",
-                        Integer.toString(outputPortComponent.spinnerLayer.getSelectedItemPosition()));
-                portElement.setAttribute("Number",
-                        new String[]{"A", "B", "C", "D"}[outputPortComponent.spinnerNumber.getSelectedItemPosition()]);
-                if (outputPortComponent.spinnerJoystickType.getSelectedItemPosition() != EV3Driver.JOYSTICK_TYPE_POWER)
-                    portElement.setAttribute("JoystickType",
-                            Integer.toString(outputPortComponent.spinnerJoystickType.getSelectedItemPosition()));
-                if (!outputPortComponent.editTextPower.getText().toString().equals("0"))
-                    portElement.setAttribute("Power", outputPortComponent.editTextPower.getText().toString());
-                if (outputPortComponent.checkBoxInvert.isChecked())
-                    portElement.setAttribute("Invert", "1");
-                if (!outputPortComponent.editTextCoefficient.getText().toString().equals("1"))
-                    portElement.setAttribute("Coefficient", outputPortComponent.editTextCoefficient.getText().toString());
-                if (!outputPortComponent.checkBoxBrake.isChecked())
-                    portElement.setAttribute("Brake", "0");
-            }
+            addOutputPorts(xml, joystickElement, joystickComponent.outputPorts);
             index++;
         }
+        for (KeyGroupComponents keyGroupComponents : this.keyGroupComponents) {
+            Element keyGroupElement = xml.createElement("KeyGroup");
+            ev3Element.appendChild(keyGroupElement);
+            if (keyGroupComponents.spinnerType.getSelectedItemPosition()
+                    != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS)
+                keyGroupElement.setAttribute("Type",
+                        Integer.toString(indexToJoystickTypes[keyGroupComponents.spinnerType.getSelectedItemPosition()]));
+            if (keyGroupComponents.checkBoxActive.isChecked())
+                keyGroupElement.setAttribute("Active", "1");
+            if (!"".equals(keyGroupComponents.editTextMailbox.getText().toString()))
+                keyGroupElement.setAttribute("Mailbox",
+                        keyGroupComponents.editTextMailbox.getText().toString());
+            if (keyGroupComponents.spinnerBehavior1.getSelectedItemPosition()
+                    != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO)
+                keyGroupElement.setAttribute("Behavior0",
+                        Integer.toString(keyGroupComponents.spinnerBehavior1.getSelectedItemPosition()));
+            if (keyGroupComponents.spinnerBehavior2.getSelectedItemPosition()
+                    != RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO)
+                keyGroupElement.setAttribute("Behavior1",
+                        Integer.toString(keyGroupComponents.spinnerBehavior2.getSelectedItemPosition()));
+            if ((!"0".equals(keyGroupComponents.editTextIncX.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextIncX.getText().toString())))
+                keyGroupElement.setAttribute("IncX",
+                        keyGroupComponents.editTextIncX.getText().toString());
+            if ((!"0".equals(keyGroupComponents.editTextIncY.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextIncY.getText().toString())))
+                keyGroupElement.setAttribute("IncY",
+                        keyGroupComponents.editTextIncY.getText().toString());
+            if ((!"0".equals(keyGroupComponents.editTextDecX.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextDecX.getText().toString())))
+                keyGroupElement.setAttribute("DecX",
+                        keyGroupComponents.editTextDecX.getText().toString());
+            if ((!"0".equals(keyGroupComponents.editTextDecY.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextDecY.getText().toString())))
+                keyGroupElement.setAttribute("DecY",
+                        keyGroupComponents.editTextDecY.getText().toString());
+            if ((!"100".equals(keyGroupComponents.editTextStepXPause.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextStepXPause.getText().toString())))
+                keyGroupElement.setAttribute("StepXPause",
+                        keyGroupComponents.editTextStepXPause.getText().toString());
+            if ((!"100".equals(keyGroupComponents.editTextStepYPause.getText().toString()))
+                    && (!"".equals(keyGroupComponents.editTextStepYPause.getText().toString())))
+                keyGroupElement.setAttribute("StepYPause",
+                        keyGroupComponents.editTextStepYPause.getText().toString());
+            addKeys(xml, keyGroupElement, keyGroupComponents.upKeysControl, "UpKey");
+            addKeys(xml, keyGroupElement, keyGroupComponents.leftKeysControl, "LeftKey");
+            addKeys(xml, keyGroupElement, keyGroupComponents.downKeysControl, "DownKey");
+            addKeys(xml, keyGroupElement, keyGroupComponents.rightKeysControl, "RightKey");
+            addKeys(xml, keyGroupElement, keyGroupComponents.keysControl, "Key");
+            addOutputPorts(xml, keyGroupElement, keyGroupComponents.outputPorts);
+        }
         return xml;
+    }
+
+    private void addOutputPorts(Document xml, Element parentElement, List<OutputPortComponents> outputPorts) {
+        for (OutputPortComponents outputPortComponent : outputPorts) {
+            Element portElement = xml.createElement("OutputPort");
+            parentElement.appendChild(portElement);
+            portElement.setAttribute("Group",
+                    Integer.toString(outputPortComponent.spinnerGroup.getSelectedItemPosition()));
+            portElement.setAttribute("Layer",
+                    Integer.toString(outputPortComponent.spinnerLayer.getSelectedItemPosition()));
+            portElement.setAttribute("Number",
+                    new String[]{"A", "B", "C", "D"}[outputPortComponent.spinnerNumber.getSelectedItemPosition()]);
+            if (outputPortComponent.spinnerJoystickType.getSelectedItemPosition() != EV3Driver.JOYSTICK_TYPE_POWER)
+                portElement.setAttribute("JoystickType",
+                        Integer.toString(outputPortComponent.spinnerJoystickType.getSelectedItemPosition()));
+            if (!outputPortComponent.editTextPower.getText().toString().equals("0"))
+                portElement.setAttribute("Power", outputPortComponent.editTextPower.getText().toString());
+            if (outputPortComponent.checkBoxInvert.isChecked())
+                portElement.setAttribute("Invert", "1");
+            if (!outputPortComponent.editTextCoefficient.getText().toString().equals("1.0"))
+                portElement.setAttribute("Coefficient", outputPortComponent.editTextCoefficient.getText().toString());
+            if (!outputPortComponent.checkBoxBrake.isChecked())
+                portElement.setAttribute("Brake", "0");
+        }
+    }
+
+    private void addKeys(Document xml, Element keyGroupElement, KeyCodeControl keysControl, String nodeName) {
+        for (Integer keyCode : keysControl.keys) {
+            Element keyCodeElement = xml.createElement(nodeName);
+            keyGroupElement.appendChild(keyCodeElement);
+            keyCodeElement.setTextContent(keyCode.toString());
+        }
     }
 
     private String getCurrentSettingsXml() {
