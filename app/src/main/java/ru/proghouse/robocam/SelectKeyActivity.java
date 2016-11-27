@@ -1,5 +1,7 @@
 package ru.proghouse.robocam;
 
+//TODO: Enter key codes directly from the keyboard.
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Environment;

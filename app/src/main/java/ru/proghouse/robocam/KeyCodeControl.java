@@ -28,7 +28,7 @@ public class KeyCodeControl extends LinearLayout {
 
     private TextView textViewTitle;
     private TextView textViewDescription;
-    HashSet<Integer> keys;
+    HashSet<Integer> keys = null;
     String keyGroupName;
 
     @TargetApi(11)

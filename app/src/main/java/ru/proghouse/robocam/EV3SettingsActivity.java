@@ -285,8 +285,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                     this, (LinearLayout)findViewById(R.id.linearLayoutKeyGroups),
                     this.keyGroupComponents.size(),
                     StringHelper.booleanFromString(keyGroupNode.getAttribute("Active"), false),
-                    indexToJoystickTypes[StringHelper.intFromString(keyGroupNode.getAttribute("Type"),
-                            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS)],
+                    StringHelper.intFromString(keyGroupNode.getAttribute("Type"),
+                            RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS),
                     StringHelper.intFromString(keyGroupNode.getAttribute("IncX"), 0),
                     StringHelper.intFromString(keyGroupNode.getAttribute("IncY"), 0),
                     StringHelper.intFromString(keyGroupNode.getAttribute("DecX"), 0),
@@ -1022,7 +1022,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             if (keyGroupComponents.spinnerType.getSelectedItemPosition()
                     != RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS)
                 keyGroupElement.setAttribute("Type",
-                        Integer.toString(indexToJoystickTypes[keyGroupComponents.spinnerType.getSelectedItemPosition()]));
+                        Integer.toString(keyGroupComponents.spinnerType.getSelectedItemPosition()));
             if (keyGroupComponents.checkBoxActive.isChecked())
                 keyGroupElement.setAttribute("Active", "1");
             if (!"".equals(keyGroupComponents.editTextMailbox.getText().toString()))
@@ -1095,11 +1095,12 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     }
 
     private void addKeys(Document xml, Element keyGroupElement, KeyCodeControl keysControl, String nodeName) {
-        for (Integer keyCode : keysControl.keys) {
-            Element keyCodeElement = xml.createElement(nodeName);
-            keyGroupElement.appendChild(keyCodeElement);
-            keyCodeElement.setTextContent(keyCode.toString());
-        }
+        if (keysControl.keys != null)
+            for (Integer keyCode : keysControl.keys) {
+                Element keyCodeElement = xml.createElement(nodeName);
+                keyGroupElement.appendChild(keyCodeElement);
+                keyCodeElement.setTextContent(keyCode.toString());
+            }
     }
 
     private String getCurrentSettingsXml() {
@@ -1271,7 +1272,7 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                             activity.getString(R.string.keygroup_type_steering),
                             activity.getString(R.string.joystick_type_mailbox),
                     }),
-                    type, R.string.joystick_type, null);
+                    type > 2 ? 2 : type, R.string.joystick_type, null);
             //Non mailbox layout
             nonMailboxLayout = new LinearLayout(activity);
             nonMailboxLayout.setVisibility(type != RoboCamDriver.JOYSTICK_TYPE_MAILBOX

@@ -397,12 +397,15 @@ public class EV3Driver extends RoboCamDriver {
             keyGroup.setDecY(StringHelper.intFromString(keyGroupNode.getAttribute("DecY"), 0));
             keyGroup.setStepXPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepXPause"), 100));
             keyGroup.setStepYPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepYPause"), 100));
-            loadKeys(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
-            loadKeys(keyGroupNode, keyGroup.getLeftKeyCodes(), "LeftKey");
-            loadKeys(keyGroupNode, keyGroup.getDownKeyCodes(), "DownKey");
-            loadKeys(keyGroupNode, keyGroup.getRightKeyCodes(), "RightKey");
-            loadKeys(keyGroupNode, keyGroup.getKeyCodes(), "Key");
-            loadOutputPorts(keyGroupNode, keyGroup);
+            if (keyGroup.getType() != JOYSTICK_TYPE_MAILBOX) {
+                loadKeys(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
+                loadKeys(keyGroupNode, keyGroup.getLeftKeyCodes(), "LeftKey");
+                loadKeys(keyGroupNode, keyGroup.getDownKeyCodes(), "DownKey");
+                loadKeys(keyGroupNode, keyGroup.getRightKeyCodes(), "RightKey");
+                loadOutputPorts(keyGroupNode, keyGroup);
+            }
+            else
+                loadKeys(keyGroupNode, keyGroup.getKeyCodes(), "Key");
             keyGroups.add(keyGroup);
         }
     }
@@ -1306,6 +1309,9 @@ public class EV3Driver extends RoboCamDriver {
                 //    runBrickPrograms();
                 if (socketState != SOCKET_ABORTED) {
                     if (errorId == 0) {
+                        storeJoystickCoordinates();
+                        for (EV3KeyGroup keyGroup : keyGroups)
+                            keyGroup.clearStoredData();
                         startReadingInputPorts();
                         startReadingControllerValues();
                         showConnected();
@@ -1438,19 +1444,21 @@ public class EV3Driver extends RoboCamDriver {
                             }
                     }
                     for (EV3KeyGroup keyGroup : keyGroups) {
-                        if (newPressedKeys != null)
-                            finished = keyGroup.setPressedKeys(newPressedKeys) && finished;
-                        else
-                            finished = keyGroup.gotoNextStep() && finished;
-                        //Calculating sum of port values
-                        for (int j = 0; j < 2; j++)
-                            for (EV3OutputPort port : keyGroup.getOutputPorts(j)) {
-                                String portId = port.getId();
-                                if (!ports.containsKey(portId))
-                                    ports.put(portId, port.getPreparedPort());
-                                else
-                                    ports.get(portId).addPort(port);
-                            }
+                        if (keyGroup.isActive() && keyGroup.getType() != JOYSTICK_TYPE_MAILBOX) {
+                            if (newPressedKeys != null)
+                                finished = keyGroup.setPressedKeys(newPressedKeys) && finished;
+                            else
+                                finished = keyGroup.gotoNextStep() && finished;
+                            //Calculating sum of port values
+                            for (int j = 0; j < 2; j++)
+                                for (EV3OutputPort port : keyGroup.getOutputPorts(j)) {
+                                    String portId = port.getId();
+                                    if (!ports.containsKey(portId))
+                                        ports.put(portId, port.getPreparedPort());
+                                    else
+                                        ports.get(portId).addPort(port);
+                                }
+                        }
                     }
                     //Searching for changes
                     List<String> portsToDelete = new ArrayList<String>();
@@ -1590,14 +1598,22 @@ public class EV3Driver extends RoboCamDriver {
                         if (joysticks.get(i).getType() == RoboCamDriver.JOYSTICK_TYPE_MAILBOX) {
                             if (joystickCoordinates[i * 2] != joysticks.get(i).getX()) {
                                 //Have to send coordinate
-                                SendJoystickCoordinateToMailbox(axisNames[i * 2], joysticks.get(i).getX());
+                                SendIntegerToMailbox(axisNames[i * 2], joysticks.get(i).getX());
                                 joystickCoordinates[i * 2] = joysticks.get(i).getX();
                             }
                             if (joystickCoordinates[i * 2 + 1] != joysticks.get(i).getY()) {
                                 //Have to send coordinate
-                                SendJoystickCoordinateToMailbox(axisNames[i * 2 + 1], joysticks.get(i).getY());
+                                SendIntegerToMailbox(axisNames[i * 2 + 1], joysticks.get(i).getY());
                                 joystickCoordinates[i * 2 + 1] = joysticks.get(i).getY();
                             }
+                        }
+                    }
+                    for (EV3KeyGroup keyGroup : keyGroups) {
+                        if (keyGroup.isActive() && keyGroup.getType() == JOYSTICK_TYPE_MAILBOX
+                                && keyGroup.hasKeyCodeCodeToSend(newPressedKeys)) {
+                            int lastPressedKey = keyGroup.getKeyCodeToSend(newPressedKeys);
+                            SendIntegerToMailbox(keyGroup.getMailbox(), lastPressedKey);
+                            keyGroup.saveSentPressedKeys(lastPressedKey, newPressedKeys);
                         }
                     }
 
@@ -1609,18 +1625,18 @@ public class EV3Driver extends RoboCamDriver {
             return finished;
         }
 
-        private void SendJoystickCoordinateToMailbox(String axisName, int value) {
+        private void SendIntegerToMailbox(String mailbox, int value) {
             try {
                 EV3ByteCodes s = new EV3ByteCodes();
-                s.messageHeader(SYSTEM_COMMAND_NO_REPLY, EV3ByteCodes.WRITEMAILBOX);
                 //bbbb = bytes in the message
                 //mmmm = message counter
                 //tt = type of message
                 //ss = system command
+                s.messageHeader(SYSTEM_COMMAND_NO_REPLY, EV3ByteCodes.WRITEMAILBOX);
                 //ll = name Length
-                s.writeUByte(axisName.length() + 1);
+                s.writeUByte(mailbox.length() + 1);
                 //aaa... = name
-                s.writeString(axisName);
+                s.writeString(mailbox);
                 //LLLL = payload length
                 s.writeUShort(4);
                 //ppp... = payload

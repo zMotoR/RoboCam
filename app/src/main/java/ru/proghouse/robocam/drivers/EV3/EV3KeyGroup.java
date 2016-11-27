@@ -51,6 +51,9 @@ public class EV3KeyGroup extends EV3Controller {
     private int behavior0 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
     private int behavior1 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
 
+    HashSet<Integer> oldMailboxPressedKeys = new HashSet<Integer>();
+    int lastPressedKey = 0;
+
     private static List<KeyDescription> keyDescriptions = null;
 
     private static void addKeyDescriptions(int code1, int code2) {
@@ -65,7 +68,7 @@ public class EV3KeyGroup extends EV3Controller {
         int[] buffer = new int[keys == null ? 0 : keys.size()];
         if (keys != null) {
             int i = 0;
-            for (Integer code : keys)
+            for (int code : keys)
                 buffer[i++] = code;
         }
         return buffer;
@@ -291,6 +294,49 @@ public class EV3KeyGroup extends EV3Controller {
         return isFinished;
     }
 
+    public void clearStoredData() {
+        oldMailboxPressedKeys.clear();
+        lastPressedKey = 0;
+    }
+
+    public boolean hasKeyCodeCodeToSend(HashSet<Integer> newPressedKeys) {
+        if (lastPressedKey != 0
+                && (newPressedKeys == null || !newPressedKeys.contains(lastPressedKey)))
+            return true;
+        if (newPressedKeys != null)
+            for (int newPressedKey : newPressedKeys)
+                if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+                    return true;
+        return false;
+    }
+
+    public int getKeyCodeToSend(HashSet<Integer> newPressedKeys) {
+        if (newPressedKeys != null)
+            for (int newPressedKey : newPressedKeys)
+                if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+                    return newPressedKey;
+        return 0;
+    }
+
+    public void saveSentPressedKeys(int lastPressedKey, HashSet<Integer> newPressedKeys) {
+        oldMailboxPressedKeys.clear();
+        if (newPressedKeys != null)
+            for (int newPressedKey : newPressedKeys)
+                if (keyCodes.contains(newPressedKey))
+                    oldMailboxPressedKeys.add(newPressedKey);
+        this.lastPressedKey = lastPressedKey;
+    }
+
+    public boolean mailboxPressedKeysAreEqual(HashSet<Integer> newPressedKeys) {
+        for (int newPressedKey : newPressedKeys)
+            if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+                return false;
+        for (int oldPressedKey : oldMailboxPressedKeys)
+            if (!newPressedKeys.contains(oldPressedKey))
+                return false;
+        return true;
+    }
+
     public boolean setPressedKeys(HashSet<Integer> pressedKeys) {
         String keysHash = "";
         for (Integer pressedKey : pressedKeys)
@@ -324,7 +370,7 @@ public class EV3KeyGroup extends EV3Controller {
             if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                     || type == EV3Driver.JOYSTICK_TYPE_STEERING
                     || type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
-                for (Integer pressedKey : pressedKeys) {
+                for (int pressedKey : pressedKeys) {
                     if (upKeyCodes.contains(pressedKey)) {
                         newY += 100;
                         vertPressed = true;
@@ -412,5 +458,4 @@ public class EV3KeyGroup extends EV3Controller {
         }
         isFinished = finished;
     }
-
 }
