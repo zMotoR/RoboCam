@@ -119,6 +119,9 @@ public class EV3Driver extends RoboCamDriver {
     private boolean pressedKeysChanged = false;
     private HashSet<Integer> pressedKeys = new HashSet<Integer>();
 
+    private boolean startUserProgram = false;
+    private String userProgram = "";
+
     public EV3Driver() {
         joysticks.add(new EV3Joystick());
         joysticks.add(new EV3Joystick());
@@ -354,6 +357,8 @@ public class EV3Driver extends RoboCamDriver {
             throw new Exception(context.getString(R.string.unknown_driver_name,
                     xml.getDocumentElement().getNodeName()));
         settingsName = xml.getDocumentElement().getAttribute("Name");
+        userProgram = StringHelper.stringFromString(xml.getDocumentElement().getAttribute("UserProgram"), "");
+        startUserProgram = StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("StartUserProgram"), false);
         hideJoysticks = StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("HideJoysticks"), true);
         setShowDebugInfo(StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("ShowDebugInfo"), true));
         settingsFileName = file.getName();
@@ -536,6 +541,21 @@ public class EV3Driver extends RoboCamDriver {
             doOnDisconnected(resId);
     }
 
+    private void writeStartUserProgram(EV3ByteCodes c) throws IOException {
+        if ((!isStartUserProgram()) || getUserProgram() == null || "".equals(getUserProgram()))
+            return;
+        c.opFile(EV3ByteCodes.LOAD_IMAGE);
+        c.LC2(EV3ByteCodes.USER_SLOT);
+        c.LCS(getUserProgram());//"../prjs/RoboCamMailboxTest/RoboCamMailboxTest.rbf");
+        c.LV0(0);
+        c.LV0(4);
+        c.opPROGRAM_START();
+        c.LC2(EV3ByteCodes.USER_SLOT);
+        c.LV0(0);
+        c.LV0(4);
+        c.LC0(EV3ByteCodes.DEBUG_MODE_NORMAL);
+    }
+
     @Override
     public void stop() {
         if (socket != null) {
@@ -549,7 +569,7 @@ public class EV3Driver extends RoboCamDriver {
                             angleTypeCount++;
                     }
                     c.messageHeader(DIRECT_COMMAND_NO_REPLY, 0, angleTypeCount * 8);
-                    //First we have to stop our brick supporting program
+                    //First we have to stop our brick user program
                     c.opProgram_Stop();
                     c.LC2(EV3ByteCodes.USER_SLOT);
                     //Closing mailbox
@@ -619,6 +639,11 @@ public class EV3Driver extends RoboCamDriver {
                     //Stopping output program
                     c.opOutput_Prg_Stop();
                     //writeOutputPrgStop(byteArrayOutputStream);
+                    writeStartUserProgram(c);
+                    //Turns the light to the red pulse
+                    c.opUI_WRITE(LED);
+                    c.LC0(EV3ByteCodes.LED_RED_PULSE);
+
                     sendMessage(c);
                     /*byte[] replyBytes = sendMessageAndReadReply(c, 1000);
                     ByteBuffer byteBuffer = ByteBuffer.wrap(replyBytes);
@@ -641,6 +666,10 @@ public class EV3Driver extends RoboCamDriver {
             try {
                 EV3ByteCodes c = new EV3ByteCodes();
                 c.messageHeader(DIRECT_COMMAND_NO_REPLY, 0, 0);
+                //First we have to stop our brick user program
+                c.opProgram_Stop();
+                c.LC2(EV3ByteCodes.USER_SLOT);
+                c.opOutput_Prg_Stop();
                 c.opUI_WRITE(LED);
                 c.LC0(EV3ByteCodes.LED_GREEN);
                 sendMessage(c);
@@ -703,6 +732,14 @@ public class EV3Driver extends RoboCamDriver {
                 fileOutputStream.close();
             }
         }
+    }
+
+    public boolean isStartUserProgram() {
+        return startUserProgram;
+    }
+
+    public String getUserProgram() {
+        return userProgram;
     }
 
     class EV3Runnable implements Runnable{
@@ -1312,6 +1349,7 @@ public class EV3Driver extends RoboCamDriver {
                         storeJoystickCoordinates();
                         for (EV3KeyGroup keyGroup : keyGroups)
                             keyGroup.clearStoredData();
+                        startUserProgram();
                         startReadingInputPorts();
                         startReadingControllerValues();
                         showConnected();
@@ -1335,6 +1373,27 @@ public class EV3Driver extends RoboCamDriver {
                     //driver.doOnConnectionError(e.getLocalizedMessage());
                     driver.close();
                 }
+            }
+        }
+
+        private void startUserProgram() {
+            if ((!driver.isStartUserProgram())
+                    || driver.getUserProgram() == null
+                    || "".equals(driver.getUserProgram()))
+                return;
+            try {
+                EV3ByteCodes c = new EV3ByteCodes();
+                c.messageHeader(DIRECT_COMMAND_REPLY, 0, 8);
+                driver.writeStartUserProgram(c);
+                byte[] replyBytes = sendMessageAndReadReply(c, 1000);
+                /*if (replyBytes != null && replyBytes.length >= 3 && replyBytes[2] == DIRECT_REPLY)
+                    return;
+                else {
+                    errorId = R.string.ev3_error_could_not_start_supporting_program;
+                    return;
+                }*/
+            } catch(Exception e) {
+                e.printStackTrace();
             }
         }
 

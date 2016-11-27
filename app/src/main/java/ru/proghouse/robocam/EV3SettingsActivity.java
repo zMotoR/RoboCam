@@ -76,6 +76,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private CheckBox checkBoxShowDebugInfo = null;
     private CheckBox checkBoxHideJoysticks = null;
     private ImageButton buttonOverflow = null;
+    CheckBox checkBoxStartUserProgram = null;
+    EditText editTextUserProgram = null;
     private static final int MI_SEND_SETTINGS = -2;
     private static final int MI_EXPORT_SETTINGS = -3;
     private static final int MI_COPY_SETTINGS = -4;
@@ -120,6 +122,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
         editTextBotDesc = (EditText)findViewById(R.id.editTextDesc);
         checkBoxShowDebugInfo = (CheckBox)findViewById(R.id.checkBoxShowDebugInfo);
         checkBoxHideJoysticks = (CheckBox)findViewById(R.id.checkBoxHideJoysticks);
+        checkBoxStartUserProgram = (CheckBox)findViewById(R.id.checkBoxStartUserProgram);
+        editTextUserProgram = (EditText)findViewById(R.id.editTextUserProgram);
 
         settingsFileName = this.getIntent().getStringExtra(SETTINGS_FILE_NAME);
         if (settingsFileName == null || settingsFileName.equals("")) {
@@ -233,6 +237,9 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                 xml.getDocumentElement().getAttribute("ShowDebugInfo"), true));
         checkBoxHideJoysticks.setChecked(StringHelper.booleanFromString(
                 xml.getDocumentElement().getAttribute("HideJoysticks"), true));
+        checkBoxStartUserProgram.setChecked(StringHelper.booleanFromString(
+                xml.getDocumentElement().getAttribute("StartUserProgram"), false));
+        editTextUserProgram.setText(xml.getDocumentElement().getAttribute("UserProgram"));
         NodeList joystickNodes = xml.getElementsByTagName("Joystick");
         for (int i = 0; i < this.joystickComponents.length; i++) {
             for (int j = 0; j < this.joystickComponents[i].outputPorts.size(); j++)
@@ -971,6 +978,11 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             ev3Element.setAttribute("ShowDebugInfo", "0");
         if (!checkBoxHideJoysticks.isChecked())
             ev3Element.setAttribute("HideJoysticks", "0");
+        if (checkBoxStartUserProgram.isChecked())
+            ev3Element.setAttribute("StartUserProgram", "1");
+        if (editTextUserProgram.getText().toString() != null
+                && (!editTextUserProgram.getText().toString().equals("")))
+            ev3Element.setAttribute("UserProgram", editTextUserProgram.getText().toString());
         int index = 0;
         for (JoystickComponents joystickComponent : joystickComponents) {
             Element joystickElement = xml.createElement("Joystick");

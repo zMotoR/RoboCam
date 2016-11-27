@@ -175,4 +175,5 @@
     <string name="keygroup_n_port_n" formatted="false">Группа клавиш %d порт %s</string>
     <string name="keygroup_ports">Порты группы клавиш %d</string>
     <string name="keygroup_was_deleted">Группа клавиш удалена</string>
+    <string name="start_user_program">Запускать программу</string>
 </resources>
