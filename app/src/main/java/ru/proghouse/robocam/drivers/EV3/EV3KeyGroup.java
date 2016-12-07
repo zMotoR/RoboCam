@@ -55,6 +55,7 @@ public class EV3KeyGroup extends EV3Controller {
     int lastPressedKey = 0;
 
     private static List<KeyDescription> keyDescriptions = null;
+    private static HashSet<Integer> validKeyCodes = null;
 
     private static void addKeyDescriptions(int code1, int code2) {
         byte[] buf = new byte[1];
@@ -92,6 +93,22 @@ public class EV3KeyGroup extends EV3Controller {
         if (strKeys.isEmpty())
             strKeys = activity.getString(R.string.nothing_selected);
         return strKeys;
+    }
+
+    public static boolean isKeyCodeValid(int keyCode) {
+        if (validKeyCodes == null) {
+            validKeyCodes = new HashSet<Integer>();
+            for (KeyDescription keyDescription : keyDescriptions )
+                validKeyCodes.add(keyDescription.getCode());
+        }
+        return validKeyCodes.contains(keyCode);
+    }
+
+    public static int getIndexOfValidKeyCode(int keyCode) {
+        for (int i = 0; i < keyDescriptions.size(); i++)
+            if (keyDescriptions.get(i).getCode() == keyCode)
+                return i;
+        return -1;
     }
 
     public static List<KeyDescription> getKeyDescriptions() {

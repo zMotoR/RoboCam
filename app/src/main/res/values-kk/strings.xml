@@ -176,4 +176,7 @@
     <string name="keygroup_ports">Порты группы клавиш %d</string>
     <string name="keygroup_was_deleted">Группа клавиш удалена</string>
     <string name="start_user_program">Запускать программу</string>
+    <string name="keyboard_group_axis">Клавиши</string>
+    <string name="keygroup_horizontal">Влево/вправо</string>
+    <string name="keygroup_vertical">Вверх/вниз</string>
 </resources>

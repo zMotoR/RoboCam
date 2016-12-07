@@ -4,19 +4,20 @@ package ru.proghouse.robocam;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Environment;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import java.io.File;
 import java.util.HashSet;
 
 import ru.proghouse.robocam.drivers.EV3.EV3KeyGroup;
@@ -57,7 +58,6 @@ public class SelectKeyActivity extends AppCompatActivity {
                 checkBox.setTag(new Integer(keyDesc.getCode()));
                 checkBox.setChecked(keys.contains(keyDesc.getCode()));
                 checkBox.setOnClickListener(new View.OnClickListener() {
-
                     @Override
                     public void onClick(View view) {
                         CheckBox checkBox = (CheckBox) view;
@@ -111,4 +111,98 @@ public class SelectKeyActivity extends AppCompatActivity {
         EV3KeyGroup.fromArray(savedInstanceState.getIntArray(SETTINGS_KEYS), keys);
     }
 
+    @Override
+    public boolean onKeyDown (int keyCode, KeyEvent event) {
+        int ascii = 0;
+        if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
+            ascii = keyCode - KeyEvent.KEYCODE_A + 'A';
+        else if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
+            ascii = keyCode - KeyEvent.KEYCODE_0 + '0';
+        else if (keyCode == KeyEvent.KEYCODE_FORWARD_DEL) //Del
+            ascii = 46;
+        else if (keyCode == KeyEvent.KEYCODE_DEL) //Backspace
+            ascii = 8;
+        else if (keyCode == KeyEvent.KEYCODE_INSERT)
+            ascii = 45;
+        else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT)
+            ascii = 16;
+        else if (keyCode == KeyEvent.KEYCODE_CTRL_LEFT || keyCode == KeyEvent.KEYCODE_CTRL_RIGHT)
+            ascii = 17;
+        else if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT)
+            ascii = 18;
+        else if (keyCode == KeyEvent.KEYCODE_NUM_LOCK)
+            ascii = 144;
+        else if (keyCode == KeyEvent.KEYCODE_SCROLL_LOCK)
+            ascii = 145;
+        else if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9)
+            ascii = keyCode - KeyEvent.KEYCODE_NUMPAD_0 + 96;
+        else if (keyCode == KeyEvent.KEYCODE_BREAK)
+            ascii = 19;
+        else if (keyCode == KeyEvent.KEYCODE_GRAVE)
+            ascii = 192;
+        else if (keyCode == KeyEvent.KEYCODE_MINUS)
+            ascii = 189;
+        else if (keyCode == KeyEvent.KEYCODE_LEFT_BRACKET)
+            ascii = 219;
+        else if (keyCode == KeyEvent.KEYCODE_RIGHT_BRACKET)
+            ascii = 221;
+        else if (keyCode == KeyEvent.KEYCODE_BACKSLASH)
+            ascii = 220;
+        else if (keyCode == KeyEvent.KEYCODE_SEMICOLON)
+            ascii = 186;
+        else if (keyCode == KeyEvent.KEYCODE_APOSTROPHE)
+            ascii = 222;
+        else if (keyCode == KeyEvent.KEYCODE_COMMA)
+            ascii = 188;
+        else if (keyCode == KeyEvent.KEYCODE_PERIOD)
+            ascii = 190;
+        else if (keyCode == KeyEvent.KEYCODE_SLASH)
+            ascii = 191;
+        else if (keyCode == KeyEvent.KEYCODE_F2)
+            ascii = 113;
+        else if (keyCode == KeyEvent.KEYCODE_F4)
+            ascii = 115;
+        else if (keyCode == KeyEvent.KEYCODE_F7)
+            ascii = 118;
+        else if (keyCode == KeyEvent.KEYCODE_F8)
+            ascii = 119;
+        else if (keyCode == KeyEvent.KEYCODE_F9)
+            ascii = 120;
+        else if (keyCode == KeyEvent.KEYCODE_F10)
+            ascii = 121;
+        //else if (keyCode == KeyEvent.KEYCODE_MOVE_END)
+        //    ascii = 35;
+        //else if (keyCode == KeyEvent.KEYCODE_MOVE_HOME)
+        //    ascii = 36;
+        //else if (keyCode == KeyEvent.KEYCODE_PAGE_DOWN)
+        //    ascii = 34;
+        //else if (keyCode == KeyEvent.KEYCODE_PAGE_UP)
+        //    ascii = 33;
+        //else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
+        //    ascii = 40;
+        /*if (ascii == 0) {
+            if (event.isAltPressed())
+                ascii = 18;
+            else if (Build.VERSION.SDK_INT >= 11 && event.isCtrlPressed())
+                ascii = 17;
+        }*/
+        //KeyCharacterMap keyCharacterMap = KeyCharacterMap.load(event.getDeviceId());
+        //keyCharacterMap.getDisplayLabel(keyCode);
+        //Toast.makeText(this, Integer.toString(keyCode), Toast.LENGTH_LONG).show();
+        /*Toast.makeText(this, "ASCII = " + Integer.toString(ascii) + " keyCode = " + Integer.toString(event.getKeyCode())
+                + " unicode = " + Integer.toString(event.getUnicodeChar()),
+                Toast.LENGTH_SHORT).show();
+                */
+        if (EV3KeyGroup.isKeyCodeValid(ascii)) {
+            if (keys.contains(ascii))
+                keys.remove(ascii);
+            else
+                keys.add(ascii);
+            ArrayAdapter<KeyDescription> adapter = (ArrayAdapter<KeyDescription>)keyListView.getAdapter();
+            adapter.notifyDataSetChanged();
+            updateTitle();
+            return true;
+        } else
+            return super.onKeyDown(keyCode, event);
+    }
 }

@@ -953,13 +953,13 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
             int position = spinnerGroup.getSelectedItemPosition();
             CustomAdapter adapter = (CustomAdapter)spinnerGroup.getAdapter();
             adapter.setTitleResId(joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
-                    ? R.string.joystick_group_axis : R.string.joystick_group_motor);
+                    ? (forJoystick ? R.string.joystick_group_axis : R.string.keyboard_group_axis) : R.string.joystick_group_motor);
             adapter.getObjects().set(0, adapter.getActivity().getString(
                     joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
-                            ? R.string.joystick_group_horizontal : R.string.joystick_group_left));
+                            ? (forJoystick ? R.string.joystick_group_horizontal : R.string.keygroup_horizontal) : R.string.joystick_group_left));
             adapter.getObjects().set(1, adapter.getActivity().getString(
                     joystickType == RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
-                            ? R.string.joystick_group_vertical : R.string.joystick_group_right));
+                            ? (forJoystick ? R.string.joystick_group_vertical : R.string.keygroup_vertical) : R.string.joystick_group_right));
             spinnerGroup.setAdapter(adapter);
             spinnerGroup.setSelection(position);
         }
@@ -1412,6 +1412,8 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
                             ? View.VISIBLE : View.GONE);
                     mailboxLayout.setVisibility(position == RoboCamDriver.JOYSTICK_TYPE_MAILBOX
                             ? View.VISIBLE : View.GONE);
+                    for (OutputPortComponents portComponents : outputPorts)
+                        portComponents.updateGroupSpinner(spinnerType.getSelectedItemPosition());
                 }
 
                 @Override
