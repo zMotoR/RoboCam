@@ -1362,7 +1362,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private String getServerAddress() {
         String ipAddressString = null;
-        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         try {
             Method method = wifiManager.getClass().getDeclaredMethod("getWifiApState");
             method.setAccessible(true);
@@ -1541,7 +1541,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             case HttpServer.SERVER_IS_WORKING:
                 String serverAddress = getServerAddress();
                 if (serverAddress == null){
-                    WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+                    WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
                     if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED)
                         new Thread(controlsUpdater).start();//waiting for an ip-address
                 }
