@@ -180,4 +180,6 @@
     <string name="keyboard_group_axis">Keys</string>
     <string name="keygroup_horizontal">Left/right</string>
     <string name="keygroup_vertical">Up/down</string>
+    <string name="ev3_error_unknown_device">Can\'t check the device. Is it really EV3?</string>
+    <string name="ev3_error_strange_reply">EV3 sent strange reply.</string>
 </resources>

@@ -833,6 +833,47 @@ public class EV3Driver extends RoboCamDriver {
 //            }*/
 //        }
 
+        private void checkIfEV3Connected() throws IOException {
+            //That's the minimum verification that I can do.
+            //Checking if EV3 connected. GET_FW_VERS, GET_FW_BUILD, GET_OS_BUILD ??
+            // GET_OS_VERS -> "Linux 2.6.33-rc4"
+            // GET_HW_VERS -> "V0.60"
+            // GET_FW_VERS -> "V1.09E"
+            // GET_FW_BUILD -> "1512030924"
+            // GET_OS_BUILD -> "1212131117"
+            // GET_VERSION -> "LMS2012 V1.09E(Dec  3 2015 09:24:20)"
+            EV3ByteCodes c = new EV3ByteCodes();
+            final int strLen = 255;
+            c.messageHeader(DIRECT_COMMAND_REPLY, strLen * 4, 0);
+            c.opUI_Read(EV3ByteCodes.GET_OS_VERS);
+            c.LC4(strLen);
+            c.GV(0 * strLen);
+            c.opUI_Read(EV3ByteCodes.GET_HW_VERS);
+            c.LC4(strLen);
+            c.GV(1 * strLen);
+            c.opUI_Read(EV3ByteCodes.GET_FW_VERS);
+            c.LC4(strLen);
+            c.GV(2 * strLen);
+            c.opUI_Read(EV3ByteCodes.GET_VERSION);
+            c.LC4(strLen);
+            c.GV(3 * strLen);
+            byte[] replyBytes = sendMessageAndReadReply(c, 1000);
+            if (replyBytes == null || replyBytes.length != 3 + strLen * 4 || replyBytes[2] != DIRECT_REPLY)
+                errorId = R.string.ev3_error_unknown_device; //Unknown device
+            else {
+                String osVersion = c.getStringFromByteArray(replyBytes, 3 + 0 * strLen, strLen);
+                String hwVersion = c.getStringFromByteArray(replyBytes, 3 + 1 * strLen, strLen);
+                String fwVersion = c.getStringFromByteArray(replyBytes, 3 + 2 * strLen, strLen);
+                String version = c.getStringFromByteArray(replyBytes, 3 + 3 * strLen, strLen);
+                if (osVersion == null || hwVersion == null || fwVersion == null || version == null
+                        || (!osVersion.startsWith("Linux"))
+                        || (!hwVersion.startsWith("V"))
+                        || (!fwVersion.startsWith("V"))
+                        || (!version.startsWith("LMS2012")))
+                    errorId = R.string.ev3_error_strange_reply;
+            }
+        }
+
         private void initPorts() {
             EV3ByteCodes c = new EV3ByteCodes();
             //ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -1320,24 +1361,34 @@ public class EV3Driver extends RoboCamDriver {
 
         @Override
         public void run() {
+            int counter = 0;
             try {
                 driver.socket = driver.ev3device.createRfcommSocketToServiceRecord(
                         UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-                int counter = 0;
                 while(true) {
-                    try {
-                        if (socketState == SOCKET_ABORTED)
-                            break;
-                        driver.socket.connect();
+                    boolean connected = false;
+                    if (socketState == SOCKET_ABORTED)
                         break;
+                    try {
+                        driver.socket.connect();
+                        connected = true;
                     } catch (IOException e) {
-                        if (counter >= 7 || !e.getMessage().equals("Connection refused"))
+                        driver.close();
+                        if (counter >= 7/* || !e.getMessage().equals("Connection refused")*/)
                             throw e;
-                        Thread.sleep(3000);
-                        counter++;
                     }
+                    if (connected) {
+                        errorId = 0;
+                        checkIfEV3Connected();
+                        if (counter >= 7
+                                || errorId == R.string.ev3_error_unknown_device
+                                || errorId == 0)
+                            break;
+                    }
+                    Thread.sleep(3000);
+                    counter++;
                 }
-                if (socketState != SOCKET_ABORTED)
+                if (errorId == 0 && socketState != SOCKET_ABORTED)
                     initPorts();
                 //test();
                 if (errorId == 0 && socketState != SOCKET_ABORTED)
@@ -1369,6 +1420,7 @@ public class EV3Driver extends RoboCamDriver {
             catch (Exception e) {
                 //java.io.IOException: read failed, socket might closed or timeout, read ret: -1
                 if (socketState != SOCKET_ABORTED) {
+                    e.printStackTrace();
                     driver.doOnConnectionError(R.string.robot_connection_error);
                     //driver.doOnConnectionError(e.getLocalizedMessage());
                     driver.close();

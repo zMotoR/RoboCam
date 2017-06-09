@@ -62,6 +62,14 @@ public class EV3ByteCodes {
     public static final int READY_SI = 0x1D; //CMD for opInput_Device
     public static final int READY_RAW = 0x1C; //CMD for opInput_Device
 
+    public static final int GET_OS_VERS = 0x03; //CMD for opUI_Read
+    public static final int GET_HW_VERS = 0x09; //CMD for opUI_Read
+    public static final int GET_FW_VERS = 0x0A; //CMD for opUI_Read
+    public static final int GET_FW_BUILD = 0x0B; //CMD for opUI_Read
+    public static final int GET_OS_BUILD = 0x0C; //CMD for opUI_Read
+    public static final int GET_VERSION = 0x1A; //CMD for opUI_Read
+
+
     public static final int LOAD_IMAGE = 0x08; //CMD for opFile
 
     public static final int USER_SLOT = 0x01; //Slot used for executing user projects, apps and tools
@@ -191,6 +199,15 @@ public class EV3ByteCodes {
     /*public void writeDouble(double _double) throws IOException {
         writeUInteger(Double.doubleToLongBits(_double));
     }*/
+
+    public String getStringFromByteArray(byte[] bytes, int index, int maxLength) throws UnsupportedEncodingException {
+        for (int i = index; i < Math.min(bytes.length, i + maxLength); i++)
+            if (bytes[i] == 0) {
+                maxLength = i - index;
+                break;
+            }
+        return new String(bytes, index, maxLength, "US-ASCII");
+    }
 
     public void writeStringWithout0(String _string) throws IOException {
         byte[] bytes = _string.getBytes("US-ASCII");
@@ -496,6 +513,10 @@ public class EV3ByteCodes {
 
     public void opInput_Device(int cmd) throws IOException {
         opcode(0x99, cmd);
+    }
+
+    public void opUI_Read(int cmd) throws IOException {
+        opcode(0x81, cmd);
     }
 
     public void opOutput_Stop() throws IOException {

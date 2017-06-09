@@ -179,4 +179,6 @@
     <string name="keyboard_group_axis">Клавиши</string>
     <string name="keygroup_horizontal">Влево/вправо</string>
     <string name="keygroup_vertical">Вверх/вниз</string>
+    <string name="ev3_error_unknown_device">Не удаётся проверить устройство. Это действительно EV3?</string>
+    <string name="ev3_error_strange_reply">EV3 прислал странный ответ.</string>
 </resources>
