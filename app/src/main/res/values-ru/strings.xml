@@ -23,7 +23,8 @@
     <string name="robot_is_connecting">Подключение к роботу...</string>
     <string name="robot_bonded_devices_not_found">Нет подключенных устройств. Сначала подключите робота через Bluetooth.</string>
     <string name="ev3_bonded_devices_not_found">Нет подключенных устройств. Сначала подключите EV3 через Bluetooth.</string>
-    <string name="robot_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth на EV3.</string>
+    <string name="robot_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth робота.</string>
+    <string name="ev3_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth на EV3.</string>
     <string name="robot_is_connected_to">Подключено к %s</string>
     <string name="robot_is_connecting_to">Подключение к %s...</string>
     <string name="ev3_error_motor_not_connected">Мотор не подключен к порту %s.</string>
@@ -181,4 +182,7 @@
     <string name="keygroup_vertical">Вверх/вниз</string>
     <string name="ev3_error_unknown_device">Не удаётся проверить устройство. Это действительно EV3?</string>
     <string name="ev3_error_strange_reply">EV3 прислал странный ответ.</string>
+    <string name="robot_error_unknown_device">Не удаётся проверить устройство. Это действительно робот?</string>
+    <string name="robot_error_wrong_reply">Робот прислал неправильный ответ.</string>
+    <string name="robot_error_wrong_response_on_callsign">Робот прислал неправильный ответ на позывной.</string>
 </resources>

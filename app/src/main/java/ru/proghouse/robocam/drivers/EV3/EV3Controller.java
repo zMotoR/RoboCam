@@ -5,6 +5,6 @@ import java.util.List;
 /**
  * Created by Alexey Valuev on 29.10.2016.
  */
-public abstract class EV3Controller {
-    public abstract List<EV3OutputPort> getOutputPorts(int group);
+public interface EV3Controller {
+    List<EV3OutputPort> getOutputPorts(int group);
 }

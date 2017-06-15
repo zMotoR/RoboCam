@@ -16,4 +16,5 @@ public class DefaultValue {
     public static final String TEMP_DIRECTORY = "temp";
     public static final String EV3 = "EV3";
     public static final String FRAGMENT_DIALOG = "dialog";
+    public static final String Custom = "Custom";
 }

@@ -4,18 +4,18 @@ import android.app.Activity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
 import ru.proghouse.robocam.KeyDescription;
 import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
+import ru.proghouse.robocam.drivers.RoboCamKeyGroup;
 
 /**
  * Created by Alexey Valuev on 26.10.2016.
  */
-public class EV3KeyGroup extends EV3Controller {
+public class EV3KeyGroup extends RoboCamKeyGroup implements EV3Controller {
     private int x = 0;
     private int y = 0;
     private int incX = 0; //(0 - 200) Max step that increases the power or angle value (before using the coefficient).
@@ -31,19 +31,12 @@ public class EV3KeyGroup extends EV3Controller {
     private HashSet<Integer> oldPressedKeys = null;
     //Shows how to control motors.
     private int type = RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS;
-    //Where the group is active.
-    private boolean active = false;
-    //The mailbox name that uses when group type is JOYSTICK_TYPE_MAILBOX.
-    //Has to contain 2 and more valid symbols.
-    private String mailbox = "";
     //For JOYSTICK_TYPE_INDEPENDENT_MOTORS and JOYSTICK_TYPE_STEERING
     // there is key codes for 1-4 directions like arrows.
     private HashSet<Integer> upKeyCodes = new HashSet<Integer>();
     private HashSet<Integer> leftKeyCodes = new HashSet<Integer>();
     private HashSet<Integer> downKeyCodes = new HashSet<Integer>();
     private HashSet<Integer> rightKeyCodes = new HashSet<Integer>();
-    //For JOYSTICK_TYPE_MAILBOX there are key codes that will be send to EV3.
-    private HashSet<Integer> keyCodes = new HashSet<Integer>();
     //Output ports either for a horizontal axis or for a left motor depending on the key group type.
     private List<EV3OutputPort> outputPorts0 = new ArrayList<EV3OutputPort>();
     //Output ports either for a vertical axis or for a right motor depending on the key group type.
@@ -175,21 +168,15 @@ public class EV3KeyGroup extends EV3Controller {
         return keyDescriptions;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
+    //The mailbox name that uses when group type is JOYSTICK_TYPE_MAILBOX.
+    //Has to contain 2 and more valid symbols.
     public String getMailbox() {
-        return mailbox;
+        return getName();
     }
 
     public void setMailbox(String mailbox) {
         if (mailbox == null)
-            mailbox = "";
+            setName("");
         /*else if (mailbox.toLowerCase().equals("x")
                 || mailbox.toLowerCase().equals("y")
                 || mailbox.toLowerCase().equals("w")
@@ -199,7 +186,7 @@ public class EV3KeyGroup extends EV3Controller {
                 || mailbox.toLowerCase().equals("c")
                 || mailbox.toLowerCase().equals("d"))
             throw new Exception(R.string.invalid_mailbox_name);*/
-        this.mailbox = mailbox;
+        setName(mailbox);
     }
 
     public HashSet<Integer> getUpKeyCodes() {
@@ -216,10 +203,6 @@ public class EV3KeyGroup extends EV3Controller {
 
     public HashSet<Integer> getRightKeyCodes() {
         return rightKeyCodes;
-    }
-
-    public HashSet<Integer> getKeyCodes() {
-        return keyCodes;
     }
 
     @Override
@@ -322,7 +305,7 @@ public class EV3KeyGroup extends EV3Controller {
             return true;
         if (newPressedKeys != null)
             for (int newPressedKey : newPressedKeys)
-                if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+                if (getKeyCodes().contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
                     return true;
         return false;
     }
@@ -330,7 +313,7 @@ public class EV3KeyGroup extends EV3Controller {
     public int getKeyCodeToSend(HashSet<Integer> newPressedKeys) {
         if (newPressedKeys != null)
             for (int newPressedKey : newPressedKeys)
-                if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+                if (getKeyCodes().contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
                     return newPressedKey;
         return 0;
     }
@@ -339,14 +322,14 @@ public class EV3KeyGroup extends EV3Controller {
         oldMailboxPressedKeys.clear();
         if (newPressedKeys != null)
             for (int newPressedKey : newPressedKeys)
-                if (keyCodes.contains(newPressedKey))
+                if (getKeyCodes().contains(newPressedKey))
                     oldMailboxPressedKeys.add(newPressedKey);
         this.lastPressedKey = lastPressedKey;
     }
 
     public boolean mailboxPressedKeysAreEqual(HashSet<Integer> newPressedKeys) {
         for (int newPressedKey : newPressedKeys)
-            if (keyCodes.contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
+            if (getKeyCodes().contains(newPressedKey) && !oldMailboxPressedKeys.contains(newPressedKey))
                 return false;
         for (int oldPressedKey : oldMailboxPressedKeys)
             if (!newPressedKeys.contains(oldPressedKey))
@@ -379,7 +362,7 @@ public class EV3KeyGroup extends EV3Controller {
 
     private void _setPressedKeys(HashSet<Integer> pressedKeys) {
         boolean finished = true;
-        if (active) {
+        if (isActive()) {
             int newX = 0;
             int newY = 0;
             boolean vertPressed = false;

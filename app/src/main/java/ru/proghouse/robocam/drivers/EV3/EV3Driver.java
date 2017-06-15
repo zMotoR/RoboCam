@@ -29,6 +29,8 @@ import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.StringHelper;
 import ru.proghouse.robocam.Utils;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
+import ru.proghouse.robocam.drivers.RoboCamKeyGroup;
+import ru.proghouse.robocam.drivers.StreamHelper;
 
 /**
  * Created by Alexey Valuev on 02.02.2016.
@@ -217,26 +219,39 @@ public class EV3Driver extends RoboCamDriver {
                 }
             }
             if (available > 0) {
-                int replySize = readUShort(inputStream);
-                replyBytes = new byte[replySize];
-                inputStream.read(replyBytes, 0, replySize);
-                if (outputBytes[2] != replyBytes[0] || outputBytes[3] != replyBytes[1])
-                    replyBytes = null;
+                counter = 0;
+                int replySize = StreamHelper.readUShort(inputStream);
+                if (replySize > 0) {
+                    int readBytes = 0;
+                    replyBytes = new byte[replySize];
+                    while (true) {
+                        readBytes = inputStream.read(replyBytes, readBytes, replySize);
+                        if (readBytes == replySize)
+                            break;
+                        else if (readBytes <= 0) {
+                            if (counter * 20 < timeOut) {
+                                try {
+                                    Thread.sleep(20);
+                                    counter++;
+                                    continue;
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            else {
+                                replyBytes = null;
+                                break;
+                            }
+                        }
+                        else
+                            replySize -= readBytes;
+                    }
+                    if (outputBytes[2] != replyBytes[0] || outputBytes[3] != replyBytes[1])
+                        replyBytes = null;
+                }
             }
         }
         return replyBytes;
-    }
-
-    //Reads unsigned byte.
-    private int readUByte(InputStream _stream) throws IOException {
-        byte bytes[] = new byte[1];
-        _stream.read(bytes);
-        return bytes[0] < 0 ? (int)bytes[0] + 256 : (int)bytes[0];
-    }
-
-    //Reads unsigned short.
-    private int readUShort(InputStream _stream) throws IOException {
-        return readUByte(_stream) | (readUByte(_stream) << 8);
     }
 
     @Override
@@ -308,17 +323,6 @@ public class EV3Driver extends RoboCamDriver {
         }
         synchronized (joystickMonitor) {
             joystickMonitor.notifyAll();
-        }
-    }
-
-    private void loadKeys(Element parentNode, HashSet<Integer> keyCodes, String nodeName) {
-        NodeList keyCodeNodes = parentNode.getElementsByTagName(nodeName);
-        for (int j = 0; j < keyCodeNodes.getLength(); j++) {
-            Element keyCodeNode = (Element) keyCodeNodes.item(j);
-            String strValue = keyCodeNode.getTextContent();
-            Integer value = Integer.valueOf(strValue);
-            if (value > 0 && value <= 255)
-                keyCodes.add(value);
         }
     }
 
@@ -403,14 +407,14 @@ public class EV3Driver extends RoboCamDriver {
             keyGroup.setStepXPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepXPause"), 100));
             keyGroup.setStepYPause(StringHelper.intFromString(keyGroupNode.getAttribute("StepYPause"), 100));
             if (keyGroup.getType() != JOYSTICK_TYPE_MAILBOX) {
-                loadKeys(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
-                loadKeys(keyGroupNode, keyGroup.getLeftKeyCodes(), "LeftKey");
-                loadKeys(keyGroupNode, keyGroup.getDownKeyCodes(), "DownKey");
-                loadKeys(keyGroupNode, keyGroup.getRightKeyCodes(), "RightKey");
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getUpKeyCodes(), "UpKey");
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getLeftKeyCodes(), "LeftKey");
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getDownKeyCodes(), "DownKey");
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getRightKeyCodes(), "RightKey");
                 loadOutputPorts(keyGroupNode, keyGroup);
             }
             else
-                loadKeys(keyGroupNode, keyGroup.getKeyCodes(), "Key");
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getKeyCodes(), "Key");
             keyGroups.add(keyGroup);
         }
     }
@@ -861,10 +865,10 @@ public class EV3Driver extends RoboCamDriver {
             if (replyBytes == null || replyBytes.length != 3 + strLen * 4 || replyBytes[2] != DIRECT_REPLY)
                 errorId = R.string.ev3_error_unknown_device; //Unknown device
             else {
-                String osVersion = c.getStringFromByteArray(replyBytes, 3 + 0 * strLen, strLen);
-                String hwVersion = c.getStringFromByteArray(replyBytes, 3 + 1 * strLen, strLen);
-                String fwVersion = c.getStringFromByteArray(replyBytes, 3 + 2 * strLen, strLen);
-                String version = c.getStringFromByteArray(replyBytes, 3 + 3 * strLen, strLen);
+                String osVersion = StreamHelper.getStringFromByteArray(replyBytes, 3 + 0 * strLen, strLen);
+                String hwVersion = StreamHelper.getStringFromByteArray(replyBytes, 3 + 1 * strLen, strLen);
+                String fwVersion = StreamHelper.getStringFromByteArray(replyBytes, 3 + 2 * strLen, strLen);
+                String version = StreamHelper.getStringFromByteArray(replyBytes, 3 + 3 * strLen, strLen);
                 if (osVersion == null || hwVersion == null || fwVersion == null || version == null
                         || (!osVersion.startsWith("Linux"))
                         || (!hwVersion.startsWith("V"))
@@ -1363,9 +1367,9 @@ public class EV3Driver extends RoboCamDriver {
         public void run() {
             int counter = 0;
             try {
-                driver.socket = driver.ev3device.createRfcommSocketToServiceRecord(
-                        UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
                 while(true) {
+                    driver.socket = driver.ev3device.createRfcommSocketToServiceRecord(
+                            UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
                     boolean connected = false;
                     if (socketState == SOCKET_ABORTED)
                         break;
@@ -1373,7 +1377,7 @@ public class EV3Driver extends RoboCamDriver {
                         driver.socket.connect();
                         connected = true;
                     } catch (IOException e) {
-                        driver.close();
+                        driver.socket.close();
                         if (counter >= 7/* || !e.getMessage().equals("Connection refused")*/)
                             throw e;
                     }
@@ -1421,7 +1425,7 @@ public class EV3Driver extends RoboCamDriver {
                 //java.io.IOException: read failed, socket might closed or timeout, read ret: -1
                 if (socketState != SOCKET_ABORTED) {
                     e.printStackTrace();
-                    driver.doOnConnectionError(R.string.robot_connection_error);
+                    driver.doOnConnectionError(R.string.ev3_connection_error);
                     //driver.doOnConnectionError(e.getLocalizedMessage());
                     driver.close();
                 }
@@ -1745,13 +1749,13 @@ public class EV3Driver extends RoboCamDriver {
                 //ss = system command
                 s.messageHeader(SYSTEM_COMMAND_NO_REPLY, EV3ByteCodes.WRITEMAILBOX);
                 //ll = name Length
-                s.writeUByte(mailbox.length() + 1);
+                StreamHelper.writeUByte(s.s, mailbox.length() + 1);
                 //aaa... = name
-                s.writeString(mailbox);
+                StreamHelper.writeString(s.s, mailbox);
                 //LLLL = payload length
-                s.writeUShort(4);
+                StreamHelper.writeUShort(s.s, 4);
                 //ppp... = payload
-                s.writeFloat(value);
+                StreamHelper.writeFloat(s.s, value);
                 sendMessage(s);
             } catch (Exception e) {
                 e.printStackTrace();

@@ -226,7 +226,8 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                     DocumentBuilder db = dbf.newDocumentBuilder();
                     Document xml = db.parse(file);
                     xml.getDocumentElement().normalize();
-                    if (!xml.getDocumentElement().getNodeName().equals("EV3"))
+                    if (!xml.getDocumentElement().getNodeName().equals(DefaultValue.EV3)
+                            && (!xml.getDocumentElement().getNodeName().equals(DefaultValue.Custom)))
                         throw new Exception(getString(R.string.unknown_driver_name,
                                 xml.getDocumentElement().getNodeName()));
                     settingsList.add(new SettingsTitle(xml.getDocumentElement().getNodeName(),

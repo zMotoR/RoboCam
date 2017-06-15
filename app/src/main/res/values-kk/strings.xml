@@ -181,4 +181,8 @@
     <string name="keygroup_vertical">Вверх/вниз</string>
     <string name="ev3_error_unknown_device">Не удаётся проверить устройство. Это действительно EV3?</string>
     <string name="ev3_error_strange_reply">EV3 прислал странный ответ.</string>
+    <string name="robot_error_unknown_device">Не удаётся проверить устройство. Это действительно робот?</string>
+    <string name="robot_error_wrong_reply">Робот прислал неправильный ответ.</string>
+    <string name="robot_error_wrong_response_on_callsign">Робот прислал неправильный ответ на позывной.</string>
+    <string name="ev3_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth на EV3.</string>
 </resources>

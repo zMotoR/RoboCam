@@ -8,33 +8,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ru.proghouse.robocam.drivers.RoboCamDriver;
+import ru.proghouse.robocam.drivers.RoboCamJoystick;
 
 /**
  * Created by Alexey Valuev on 13.02.2016.
  */
-public class EV3Joystick extends EV3Controller {
+public class EV3Joystick extends RoboCamJoystick implements EV3Controller {
     private int x = 0;
     private int y = 0;
     private int oldX = 0;
     private int oldY = 0;
     private boolean isFinished = true;
-    private int behavior0 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
-    private int behavior1 = RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO;
-    private String shape = RoboCamDriver.JOYSTICK_SHAPE_CIRCULAR;
     //Output ports either for a horizontal axis or for a left motor depending on the joystick type.
     private List<EV3OutputPort> outputPorts0 = new ArrayList<EV3OutputPort>();
     //Output ports either for a vertical axis or for a right motor depending on the joystick type.
     private List<EV3OutputPort> outputPorts1 = new ArrayList<EV3OutputPort>();
     private int type = RoboCamDriver.JOYSTICK_TYPE_INDEPENDENT_MOTORS;
-    private boolean visible = false;
-
-    public boolean isVisible() {
-        return visible;
-    }
-
-    public void setVisible(boolean visible) {
-        this.visible = visible;
-    }
 
     public int getX() {
         return x;
@@ -42,27 +31,6 @@ public class EV3Joystick extends EV3Controller {
 
     public int getY() {
         return y;
-    }
-
-    public void setBehavior(int group, int behavior){
-        if (group == 0)
-            behavior0 = behavior;
-        else
-            behavior1 = behavior;
-    }
-
-    public String getBehaviors(){
-        return new Integer(behavior0).toString() + new Integer(behavior1).toString();
-    }
-
-    public void setShape(String shape){
-        this.shape = shape;
-    }
-
-    public String getShape() {
-        if (!visible)
-            return RoboCamDriver.JOYSTICK_SHAPE_INVISIBLE;
-        return shape;
     }
 
     @Override
@@ -88,19 +56,19 @@ public class EV3Joystick extends EV3Controller {
             if (newY != null)
                 y = newY;
             if (x != oldX || y != oldY) {
-                if (EV3Driver.JOYSTICK_SHAPE_INVISIBLE.equals(shape)) {
+                if (EV3Driver.JOYSTICK_SHAPE_INVISIBLE.equals(getShape())) {
                     //Nothing to do
                 } else if (type == EV3Driver.JOYSTICK_TYPE_INDEPENDENT_MOTORS
                         || type == EV3Driver.JOYSTICK_TYPE_MAILBOX
-                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
-                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
-                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape)
-                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape)) {
-                    if (RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(shape)
-                            || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(shape))
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(getShape())
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(getShape())
+                        || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(getShape())
+                        || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(getShape())) {
+                    if (RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL.equals(getShape())
+                            || RoboCamDriver.JOYSTICK_SHAPE_HORIZONTAL_ARROWS.equals(getShape()))
                         y = 0;
-                    if (RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(shape)
-                            || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(shape))
+                    if (RoboCamDriver.JOYSTICK_SHAPE_VERTICAL.equals(getShape())
+                            || RoboCamDriver.JOYSTICK_SHAPE_VERTICAL_ARROWS.equals(getShape()))
                         x = 0;
                     for (EV3OutputPort outputPortX : outputPorts0)
                         if (outputPortX.getJoystickType() == EV3Driver.JOYSTICK_TYPE_POWER)
@@ -116,7 +84,7 @@ public class EV3Joystick extends EV3Controller {
                         || type == EV3Driver.JOYSTICK_TYPE_STEERING_PROGRESSIVE) {
                     int powerL = y;
                     int powerR = y;
-                    if (RoboCamDriver.JOYSTICK_SHAPE_ARROWS.equals(shape)) {
+                    if (RoboCamDriver.JOYSTICK_SHAPE_ARROWS.equals(getShape())) {
                         if (y == 0) {
                             powerL = x;
                             powerR = -x;

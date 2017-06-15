@@ -7,6 +7,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import ru.proghouse.robocam.drivers.StreamHelper;
+
 /**
  * Created by Alexey Valuev on 24.02.2016.
  */
@@ -95,7 +97,7 @@ public class EV3ByteCodes {
 
     public byte[] createMessage() {
         byte[] bytes = new byte[2 + s.size()];
-        setUShortToByteArray(bytes, 0, s.size());
+        StreamHelper.setUShortToByteArray(bytes, 0, s.size());
         System.arraycopy(s.toByteArray(), 0, bytes, 2, s.size());
         return bytes;
     }
@@ -111,118 +113,24 @@ public class EV3ByteCodes {
 
     public int messageHeader(int commandType, int globalSize, int localSize) throws IOException {
         int messageNumber = getNextMessageNumber();
-        writeUShort(messageNumber);
-        writeUByte(commandType);
+        StreamHelper.writeUShort(s, messageNumber);
+        StreamHelper.writeUByte(s, commandType);
         writeVariablesAllocation(globalSize, localSize);
         return messageNumber;
     }
 
     public int messageHeader(int commandType, int systemCommand) throws IOException {
         int messageNumber = getNextMessageNumber();
-        writeUShort(messageNumber);
-        writeUByte(commandType);
-        writeUByte(systemCommand);
+        StreamHelper.writeUShort(s, messageNumber);
+        StreamHelper.writeUByte(s, commandType);
+        StreamHelper.writeUByte(s, systemCommand);
         return messageNumber;
-    }
-
-    //Writes unsigned byte.
-    public void writeUByte(int _ubyte) throws IOException {
-        s.write(_ubyte > Byte.MAX_VALUE ? _ubyte - 256 : _ubyte);
-    }
-
-    private void setUByteToByteArray(byte[] bytes, int index, int _ubyte) {
-        bytes[index] = (byte) (_ubyte > Byte.MAX_VALUE ? _ubyte - 256 : _ubyte);
-    }
-
-    private void setUShortToByteArray(byte[] bytes, int index, int _ushort) {
-        setUByteToByteArray(bytes, index, _ushort & 0xFF);
-        setUByteToByteArray(bytes, index + 1, (_ushort >> 8) & 0xFF);
-    }
-
-    private void setUIntegerToByteArray(byte[] bytes, int index, long _uint) {
-        setUByteToByteArray(bytes, index, (int) (_uint & 0xFF));
-        setUByteToByteArray(bytes, index + 1, (int)((_uint >> 8) & 0xFF));
-        setUByteToByteArray(bytes, index + 2, (int) ((_uint >> 16) & 0xFF));
-        setUByteToByteArray(bytes, index + 3, (int)((_uint >> 24) & 0xFF));
-    }
-
-    private void setIntegerToByteArray(byte[] bytes, int index, int _int) {
-        setUByteToByteArray(bytes, index, _int & 0xFF);
-        setUByteToByteArray(bytes, index + 1, (_int >> 8) & 0xFF);
-        setUByteToByteArray(bytes, index + 2, (_int >> 16) & 0xFF);
-        setUByteToByteArray(bytes, index + 3, (_int >> 24) & 0xFF);
-    }
-
-    //Write signed byte.
-    public void writeByte(byte _byte) throws IOException {
-        s.write(_byte);
-    }
-
-    //Writes unsigned short.
-    public void writeUShort(int _ushort) throws IOException {
-        writeUByte(_ushort & 0xFF);
-        writeUByte((_ushort >> 8) & 0xFF);
-    }
-
-    //Writes signed short.
-    public void writeShort(short _short) throws IOException {
-        byte bytes[] = new byte[2];
-        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putShort(_short);
-        s.write(bytes);
-    }
-
-    public void writeUInteger(long _uint) throws IOException {
-        writeUByte((int) (_uint & 0xFF));
-        writeUByte((int) ((_uint >> 8) & 0xFF));
-        writeUByte((int) ((_uint >> 16) & 0xFF));
-        writeUByte((int) ((_uint >> 24) & 0xFF));
-    }
-
-    public void writeInteger(int _int) throws IOException {
-        writeUByte(_int & 0xFF);
-        writeUByte((_int >> 8) & 0xFF);
-        writeUByte((_int >> 16) & 0xFF);
-        writeUByte((_int >> 24) & 0xFF);
-    }
-
-    public void writeFloat(float _float) throws IOException {
-        writeInteger(Float.floatToIntBits(_float));
-        /*byte bytes[] = new byte[4];
-        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putFloat(_float);
-        s.write(bytes);*/
-    }
-
-    /*public void writeDouble(double _double) throws IOException {
-        writeUInteger(Double.doubleToLongBits(_double));
-    }*/
-
-    public String getStringFromByteArray(byte[] bytes, int index, int maxLength) throws UnsupportedEncodingException {
-        for (int i = index; i < Math.min(bytes.length, i + maxLength); i++)
-            if (bytes[i] == 0) {
-                maxLength = i - index;
-                break;
-            }
-        return new String(bytes, index, maxLength, "US-ASCII");
-    }
-
-    public void writeStringWithout0(String _string) throws IOException {
-        byte[] bytes = _string.getBytes("US-ASCII");
-        s.write(bytes);
-    }
-
-    public void writeString(String _string) throws IOException {
-        writeStringWithout0(_string);
-        s.write(0);
     }
 
     //Writes a number of bytes reserved for the global and local variables.
     private void writeVariablesAllocation(int globalSize, int localSize) throws IOException {
-        writeUByte(globalSize & 0xFF);
-        writeUByte(((globalSize >> 8) & 0x3) | ((localSize << 2) & 0xFC));
+        StreamHelper.writeUByte(s, globalSize & 0xFF);
+        StreamHelper.writeUByte(s, ((globalSize >> 8) & 0x3) | ((localSize << 2) & 0xFC));
     }
 
     //Writes an index of a global variable.
@@ -238,22 +146,22 @@ public class EV3ByteCodes {
     }
 
     public void GV0(int index) throws IOException {
-        writeUByte(index | 0x60);
+        StreamHelper.writeUByte(s, index | 0x60);
     }
 
     public void GV1(int index) throws IOException {
-        writeUByte(0xE1);
-        writeUByte(index);
+        StreamHelper.writeUByte(s, 0xE1);
+        StreamHelper.writeUByte(s, index);
     }
 
     public void GV2(int index) throws IOException {
-        writeUByte(0xE2);
-        writeUShort(index);
+        StreamHelper.writeUByte(s, 0xE2);
+        StreamHelper.writeUShort(s, index);
     }
 
     public void GV4(long index) throws IOException {
-        writeUByte(0xE3);
-        writeUInteger(index);
+        StreamHelper.writeUByte(s, 0xE3);
+        StreamHelper.writeUInteger(s, index);
         /*writeUByte(index & 0xFF);
         writeUByte((index >> 8) & 0xFF);
         writeUByte((index >> 16) & 0xFF);
@@ -272,22 +180,22 @@ public class EV3ByteCodes {
     }
 
     public void LV0(int index) throws IOException {
-        writeUByte(index | 0x40);
+        StreamHelper.writeUByte(s, index | 0x40);
     }
 
     public void LV1(int index) throws IOException {
-        writeUByte(0xC1);
-        writeUByte(index);
+        StreamHelper.writeUByte(s, 0xC1);
+        StreamHelper.writeUByte(s, index);
     }
 
     public void LV2(int index) throws IOException {
-        writeUByte(0xC2);
-        writeUShort(index);
+        StreamHelper.writeUByte(s, 0xC2);
+        StreamHelper.writeUShort(s, index);
     }
 
     public void LV4(long index) throws IOException {
-        writeUByte(0xC3);
-        writeUInteger(index);
+        StreamHelper.writeUByte(s, 0xC3);
+        StreamHelper.writeUInteger(s, index);
         /*writeUByte(index & 0xFF);
         writeUByte((index >> 8) & 0xFF);
         writeUByte((index >> 16) & 0xFF);
@@ -295,14 +203,14 @@ public class EV3ByteCodes {
     }
 
     public void LCS(String _string) throws IOException {
-        writeUByte(0x84);
-        writeString(_string);
+        StreamHelper.writeUByte(s, 0x84);
+        StreamHelper.writeString(s, _string);
     }
 
     public void LC0(int value) throws IOException {
         if (value < 0 && value > 31)
             throw new IllegalArgumentException("The value should be in the range of 0 to 31.");
-        writeUByte(value);
+        StreamHelper.writeUByte(s, value);
     }
 
     /*//Writes unsigned byte.
@@ -318,8 +226,8 @@ public class EV3ByteCodes {
         if (value < Byte.MIN_VALUE && value > Byte.MAX_VALUE)
             throw new IllegalArgumentException("The value should be in the range of "
                     + Byte.MIN_VALUE + " to " + Byte.MAX_VALUE + ".");
-        writeUByte(0x81);
-        writeByte((byte) value);
+        StreamHelper.writeUByte(s, 0x81);
+        StreamHelper.writeByte(s, (byte) value);
     }
 
     /*//Writes unsigned short.
@@ -335,17 +243,17 @@ public class EV3ByteCodes {
         if (value < Short.MIN_VALUE && value > Short.MAX_VALUE)
             throw new IllegalArgumentException("The value should be in the range of "
                     + Short.MIN_VALUE + " to " + Short.MAX_VALUE + ".");
-        writeUByte(0x82);
-        writeShort((short) value);
+        StreamHelper.writeUByte(s, 0x82);
+        StreamHelper.writeShort(s, (short) value);
     }
 
     //Writes signed int.
     public void LC4(int value) throws IOException {
-        writeUByte(0x83);
-        writeUByte(value & 0xFF);
-        writeUByte((value >> 8) & 0xFF);
-        writeUByte((value >> 16) & 0xFF);
-        writeUByte((value >> 24) & 0xFF);
+        StreamHelper.writeUByte(s, 0x83);
+        StreamHelper.writeUByte(s, value & 0xFF);
+        StreamHelper.writeUByte(s, (value >> 8) & 0xFF);
+        StreamHelper.writeUByte(s, (value >> 16) & 0xFF);
+        StreamHelper.writeUByte(s, (value >> 24) & 0xFF);
     }
 
     public void LCF(float value) throws IOException {
@@ -354,13 +262,13 @@ public class EV3ByteCodes {
 
     //Writes the command.
     private void opcode(int opCode) throws IOException {
-        writeUByte(opCode);
+        StreamHelper.writeUByte(s, opCode);
     }
 
     //Writes the command and its specific parameter.
     private void opcode(int opCode, int cmd) throws IOException {
-        writeUByte(opCode);
-        writeUByte(cmd);
+        StreamHelper.writeUByte(s, opCode);
+        StreamHelper.writeUByte(s, cmd);
     }
 
     public void opProgram_Stop() throws IOException {
@@ -581,39 +489,39 @@ public class EV3ByteCodes {
         //                  'L','E','G','O',LONGToBytes(0),WORDToBytes((UWORD)(BYTECODE_VERSION * 100.0)),WORDToBytes(NumberOfObjects),LONGToBytes(GlobalBytes)
         if (s.size() == 0)
             hasProgramHeader = true;
-        writeStringWithout0("LEGO");
-        writeUInteger(0);
-        writeUShort((int) (versionInfo * 100.0));
-        writeUShort(numberOfObjects);
-        writeUInteger(globalBytes);
+        StreamHelper.writeStringWithout0(s, "LEGO");
+        StreamHelper.writeUInteger(s, 0);
+        StreamHelper.writeUShort(s, (int) (versionInfo * 100.0));
+        StreamHelper.writeUShort(s, numberOfObjects);
+        StreamHelper.writeUInteger(s, globalBytes);
     }
 
     public void VMTHREADHeader(long offsetToInstructions, long localBytes) throws IOException {
         //#define   VMTHREADHeader(OffsetToInstructions,LocalBytes)\
         //                  LONGToBytes(OffsetToInstructions),0,0,0,0,LONGToBytes(LocalBytes)
-        writeUInteger(offsetToInstructions);
-        writeUInteger(0);
-        writeUInteger(localBytes);
+        StreamHelper.writeUInteger(s, offsetToInstructions);
+        StreamHelper.writeUInteger(s, 0);
+        StreamHelper.writeUInteger(s, localBytes);
     }
 
     public void SUBCALLHeader(long offsetToInstructions, long localBytes) throws IOException {
         //#define   SUBCALLHeader(OffsetToInstructions,LocalBytes)\
         //                  LONGToBytes(OffsetToInstructions),0,0,1,0,LONGToBytes(LocalBytes)
-        writeUInteger(offsetToInstructions);
-        writeUByte(0);
-        writeUByte(0);
-        writeUByte(1);
-        writeUByte(0);
-        writeUInteger(localBytes);
+        StreamHelper.writeUInteger(s, offsetToInstructions);
+        StreamHelper.writeUByte(s, 0);
+        StreamHelper.writeUByte(s, 0);
+        StreamHelper.writeUByte(s, 1);
+        StreamHelper.writeUByte(s, 0);
+        StreamHelper.writeUInteger(s, localBytes);
     }
 
     public void BLOCKHeader(long offsetToInstructions, int ownerObjectId, int triggerCount) throws IOException {
         //#define   BLOCKHeader(OffsetToInstructions,OwnerObjectId,TriggerCount)\
         //                  LONGToBytes(OffsetToInstructions),WORDToBytes(OwnerObjectId),WORDToBytes(TriggerCount),LONGToBytes(0)
-        writeUInteger(offsetToInstructions);
-        writeUShort(ownerObjectId);
-        writeUShort(triggerCount);
-        writeUInteger(0);
+        StreamHelper.writeUInteger(s, offsetToInstructions);
+        StreamHelper.writeUShort(s, ownerObjectId);
+        StreamHelper.writeUShort(s, triggerCount);
+        StreamHelper.writeUInteger(s, 0);
     }
 
     public void writeByteCodes(EV3ByteCodes prg) throws IOException {
@@ -624,7 +532,7 @@ public class EV3ByteCodes {
     private void calcImageSize() throws IOException {
         if (hasProgramHeader) {
             byte[] bytes = s.toByteArray();
-            setIntegerToByteArray(bytes, 4, s.size());
+            StreamHelper.setIntegerToByteArray(bytes, 4, s.size());
             s.reset();
             s.write(bytes);
         }
@@ -632,14 +540,14 @@ public class EV3ByteCodes {
 
     public void changeUInteger(int index, long _uint) throws IOException {
         byte[] bytes = s.toByteArray();
-        setUIntegerToByteArray(bytes, index, _uint);
+        StreamHelper.setUIntegerToByteArray(bytes, index, _uint);
         s.reset();
         s.write(bytes);
     }
 
     public void changeInteger(int index, int _int) throws IOException {
         byte[] bytes = s.toByteArray();
-        setIntegerToByteArray(bytes, index, _int);
+        StreamHelper.setIntegerToByteArray(bytes, index, _int);
         s.reset();
         s.write(bytes);
     }
