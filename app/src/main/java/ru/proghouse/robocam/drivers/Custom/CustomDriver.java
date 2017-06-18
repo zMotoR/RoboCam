@@ -37,8 +37,12 @@ import ru.proghouse.robocam.drivers.StreamHelper;
 
 public class CustomDriver extends RoboCamDriver {
 
+    private static final int MAX_SUPPORTED_PROTOCOL_VERSION = 1;
+    private volatile int currentProtocolVersion = 1; //Protocol version for the current connection.
+
     private static final int CMD_STOP = 255;
-    private static final int CMD_CALLSIGN = 0;
+    private static final int CMD_START = 0;
+    private static final int CMD_CALLSIGN = 1;
 
     static {RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);};
 
@@ -51,6 +55,7 @@ public class CustomDriver extends RoboCamDriver {
     private volatile String settingsFileName = "";
     private volatile String callsign = "";
     private volatile String response = "";
+    private volatile String charsetName = "US-ASCII";
     private List<RoboCamJoystick> joysticks = new ArrayList<RoboCamJoystick>();
     private List<RoboCamKeyGroup> keyGroups = new ArrayList<RoboCamKeyGroup>();
     private volatile long lastModified = 0;
@@ -157,6 +162,11 @@ public class CustomDriver extends RoboCamDriver {
         settingsName = xml.getDocumentElement().getAttribute("Name");
         callsign = xml.getDocumentElement().getAttribute("Callsign");
         response = xml.getDocumentElement().getAttribute("Response");
+        int charset = StringHelper.intFromString(xml.getDocumentElement().getAttribute("Charset"), 0);
+        if (charset == 1)
+            charsetName = "UTF-8";
+        else
+            charsetName = "US-ASCII";
         hideJoysticks = StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("HideJoysticks"), true);
         setShowDebugInfo(StringHelper.booleanFromString(xml.getDocumentElement().getAttribute("ShowDebugInfo"), true));
         clearJoysticks();
@@ -372,9 +382,15 @@ public class CustomDriver extends RoboCamDriver {
                     if (connected) {
                         errorId = 0;
                         checkIfOurRobotConnected();
+                        if (errorId == 0 && callsign != null && (!callsign.equals(""))
+                                && response != null && (!response.equals("")))
+                            checkCallsign();
                         if (counter >= 7
                                 || errorId == R.string.robot_error_unknown_device
+                                || errorId == R.string.robot_error_internal_error
                                 || errorId == R.string.robot_error_wrong_reply
+                                || errorId == R.string.robot_error_usupported_protocol
+                                || errorId == R.string.robot_error_usupported_charset
                                 || errorId == R.string.robot_error_wrong_response_on_callsign
                                 || errorId == 0)
                             break;
@@ -409,30 +425,71 @@ public class CustomDriver extends RoboCamDriver {
 
         private void checkIfOurRobotConnected() throws IOException {
             ByteArrayOutputStream s = new ByteArrayOutputStream();
-            StreamHelper.writeUByte(s, CMD_CALLSIGN);
+            StreamHelper.writeUByte(s, CMD_START);
             Random r = new Random();
             int testByte = r.nextInt(254);
-            StreamHelper.writeUByte(s, testByte);
-            StreamHelper.writeString(s, driver.callsign == null ? "" : driver.callsign);
+            StreamHelper.writeUByte(s, testByte); //Test byte.
+            StreamHelper.writeUByte(s, MAX_SUPPORTED_PROTOCOL_VERSION); //Max supported protocol version.
             byte[] replyBytes = sendMessageAndReadReply(s, 1000);
-            if (replyBytes == null || replyBytes.length < 2) {
+            if (replyBytes == null || replyBytes.length != 4) {
                 errorId = R.string.robot_error_unknown_device;
                 return;
             }
-            int replyByte = StreamHelper.getUByteFromByteArray(replyBytes, 0);
+            int replyCode = StreamHelper.getUByteFromByteArray(replyBytes, 0);
+            if (replyCode != 0 && replyCode != 1) {
+                errorId = R.string.robot_error_wrong_reply;
+                return;
+            }
+            if (replyCode == 1) {
+                errorId = R.string.robot_error_internal_error;
+                return;
+            }
+            int replyByte = StreamHelper.getUByteFromByteArray(replyBytes, 1);
             if (replyByte != testByte + 1) {
                 errorId = R.string.robot_error_wrong_reply;
                 return;
             }
-            String response = StreamHelper.getStringFromByteArray(replyBytes, 1, replyBytes.length - 1);
-            if (response == null)
-                response = "";
-            String expectedResponse = driver.response;
-            if (expectedResponse == null)
-                expectedResponse = "";
-            if (!response.equals(expectedResponse)) {
-                errorId = R.string.robot_error_wrong_response_on_callsign;
+            int version = StreamHelper.getUByteFromByteArray(replyBytes, 2);
+            if (version < 1 || version > MAX_SUPPORTED_PROTOCOL_VERSION) {
+                errorId = R.string.robot_error_usupported_protocol;
                 return;
+            }
+            int charset = StreamHelper.getUByteFromByteArray(replyBytes, 3);
+            if (charset != 0 && charset != 1) {
+                errorId = R.string.robot_error_usupported_charset;
+                return;
+            }
+            currentProtocolVersion = version;
+            charsetName = charset == 1 ? "UTF-8" : "US-ASCII";
+        }
+
+        private void checkCallsign() throws IOException {
+            if (callsign != null && (!callsign.equals(""))
+                    && response != null && (!response.equals(""))) {
+                ByteArrayOutputStream s = new ByteArrayOutputStream();
+                StreamHelper.writeUByte(s, CMD_CALLSIGN);
+                StreamHelper.writeString(s, driver.callsign == null ? "" : driver.callsign, charsetName);
+                byte[] replyBytes = sendMessageAndReadReply(s, 1000);
+                if (replyBytes == null || replyBytes.length < 2) {
+                    errorId = R.string.robot_error_wrong_reply;
+                    return;
+                }
+                int replyCode = StreamHelper.getUByteFromByteArray(replyBytes, 0);
+                if (replyCode != 0 && replyCode != 1) {
+                    errorId = R.string.robot_error_wrong_reply;
+                    return;
+                }
+                if (replyCode == 1) {
+                    errorId = R.string.robot_error_internal_error;
+                    return;
+                }
+                String robotResponse = StreamHelper.getStringFromByteArray(replyBytes, 1, replyBytes.length - 1, charsetName);
+                if (robotResponse == null)
+                    robotResponse = "";
+                if (!robotResponse.equals(response)) {
+                    errorId = R.string.robot_error_wrong_response_on_callsign;
+                    return;
+                }
             }
         }
     }

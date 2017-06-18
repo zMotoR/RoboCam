@@ -185,4 +185,7 @@
     <string name="robot_error_wrong_reply">Робот прислал неправильный ответ.</string>
     <string name="robot_error_wrong_response_on_callsign">Робот прислал неправильный ответ на позывной.</string>
     <string name="ev3_connection_error">Подключение не удалось. Проверьте, включен ли Bluetooth на EV3.</string>
+    <string name="robot_error_usupported_charset">Робот запросил неподдерживаемую кодировку.</string>
+    <string name="robot_error_usupported_protocol">Робот запросил неподдерживаемую версию протокола.</string>
+    <string name="robot_error_internal_error">Внутренняя ошибка робота.</string>
 </resources>

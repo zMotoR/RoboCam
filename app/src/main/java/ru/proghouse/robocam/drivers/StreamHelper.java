@@ -30,6 +30,17 @@ public class StreamHelper {
         return new String(bytes, index, maxLength, "US-ASCII");
     }
 
+    static public String getStringFromByteArray(byte[] bytes, int index, int maxLength, String charsetName) throws UnsupportedEncodingException {
+        if ("US-ASCII".equals(charsetName))
+            return getStringFromByteArray(bytes, index, maxLength);
+        for (int i = index; i < Math.min(bytes.length, i + maxLength); i++)
+            if (bytes[i] == 0 && i + 1 < bytes.length && bytes[i + 1] == 0) {
+                maxLength = i - index;
+                break;
+            }
+        return new String(bytes, index, maxLength, charsetName);
+    }
+
     static public void setUByteToByteArray(byte[] bytes, int index, int _ubyte) {
         bytes[index] = (byte) (_ubyte > Byte.MAX_VALUE ? _ubyte - 256 : _ubyte);
     }
@@ -125,6 +136,18 @@ public class StreamHelper {
     static public void writeString(OutputStream s, String _string) throws IOException {
         writeStringWithout0(s, _string);
         s.write(0);
+    }
+
+    static public void writeStringWithout0(OutputStream s, String _string, String charsetName) throws IOException {
+        byte[] bytes = _string.getBytes(charsetName);
+        s.write(bytes);
+    }
+
+    static public void writeString(OutputStream s, String _string, String charsetName) throws IOException {
+        writeStringWithout0(s, _string, charsetName);
+        s.write(0);
+        if (!"US-ASCII".equals(charsetName))
+            s.write(0);
     }
 
 }
