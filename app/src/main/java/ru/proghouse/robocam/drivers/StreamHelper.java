@@ -31,10 +31,8 @@ public class StreamHelper {
     }
 
     static public String getStringFromByteArray(byte[] bytes, int index, int maxLength, String charsetName) throws UnsupportedEncodingException {
-        if ("US-ASCII".equals(charsetName))
-            return getStringFromByteArray(bytes, index, maxLength);
         for (int i = index; i < Math.min(bytes.length, i + maxLength); i++)
-            if (bytes[i] == 0 && i + 1 < bytes.length && bytes[i + 1] == 0) {
+            if (bytes[i] == 0) {
                 maxLength = i - index;
                 break;
             }
@@ -146,8 +144,6 @@ public class StreamHelper {
     static public void writeString(OutputStream s, String _string, String charsetName) throws IOException {
         writeStringWithout0(s, _string, charsetName);
         s.write(0);
-        if (!"US-ASCII".equals(charsetName))
-            s.write(0);
     }
 
 }

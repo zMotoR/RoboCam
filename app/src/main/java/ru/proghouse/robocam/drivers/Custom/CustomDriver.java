@@ -3,6 +3,7 @@ package ru.proghouse.robocam.drivers.Custom;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.util.Log;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -43,6 +45,7 @@ public class CustomDriver extends RoboCamDriver {
     private static final int CMD_STOP = 255;
     private static final int CMD_START = 0;
     private static final int CMD_CALLSIGN = 1;
+    private static final int CMD_CTRL = 2;
 
     static {RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);};
 
@@ -65,13 +68,28 @@ public class CustomDriver extends RoboCamDriver {
     private volatile BluetoothSocket socket = null;
     private volatile BluetoothDevice device = null;
 
-    private Object socketSyncObject = new Object();
+    private final Object socketSyncObject = new Object();
+    private final Object joystickMonitor = new Object();
+    private final Object joystickSyncObject = new Object();
+    private boolean pressedKeysChanged = false;
+
+    private Hashtable<String, Integer> joystickValues = new Hashtable<String, Integer>();
+    private HashSet<Integer> pressedKeys = new HashSet<Integer>();
+
+    static final String[] axisNames = new String[]{"x", "y", "w", "z", "a", "b", "c", "d"};
+    private int[] joystickCoordinates = new int[4 * 2];
 
     public CustomDriver() {
         joysticks.add(new RoboCamJoystick());
         joysticks.add(new RoboCamJoystick());
         joysticks.add(new RoboCamJoystick());
         joysticks.add(new RoboCamJoystick());
+        clearJoystickCoordinates();
+    }
+
+    private void clearJoystickCoordinates() {
+        for (int i = 0; i < joystickCoordinates.length; i++)
+            joystickCoordinates[i] = 0;
     }
 
     private void clearJoysticks() {
@@ -124,17 +142,38 @@ public class CustomDriver extends RoboCamDriver {
 
     @Override
     public String getJoystickBehaviors() {
-        return null;
+        String result = "";
+        for (RoboCamJoystick joystick : joysticks)
+            result += joystick.getBehaviors();
+        return result;
     }
 
     @Override
     public String getJoystickShapes() {
-        return null;
+        String result = "";
+        for (RoboCamJoystick joystick : joysticks)
+            result += joystick.getShape();
+        return result;
     }
 
     @Override
     public String getUsedKeys() {
-        return null;
+        HashSet<Integer> keys = new HashSet<Integer>();
+        for (RoboCamKeyGroup keyGroup : keyGroups) {
+            if (keyGroup.isActive())
+                keys.addAll(keyGroup.getKeyCodes());
+        }
+        String usedKeys = "";
+        if (keys.size() > 0) {
+            char[] zeroChar = new char[]{'0'};
+            for (Integer key : keys) {
+                String keyCode = key.toString();
+                if (keyCode.length() < 3)
+                    keyCode = new String(zeroChar, 0, 3 - keyCode.length()) + keyCode;
+                usedKeys += keyCode;
+            }
+        }
+        return usedKeys;
     }
 
     @Override
@@ -143,13 +182,27 @@ public class CustomDriver extends RoboCamDriver {
     }
 
     @Override
-    public void setJoystickValues(Hashtable<String, Integer> joystickValues) {
-
+    public void setJoystickValues(Hashtable<String, Integer> newJoystickValues) {
+        synchronized (joystickSyncObject) {
+            for (Enumeration<String> enumerator = newJoystickValues.keys(); enumerator.hasMoreElements(); ) {
+                String key = enumerator.nextElement();
+                joystickValues.put(key, newJoystickValues.get(key));
+            }
+        }
+        synchronized (joystickMonitor) {
+            joystickMonitor.notifyAll();
+        }
     }
 
     @Override
     public void setPressedKeys(HashSet<Integer> pressedKeys) {
-
+        synchronized (joystickSyncObject) {
+            this.pressedKeys = pressedKeys;
+            pressedKeysChanged = true;
+        }
+        synchronized (joystickMonitor) {
+            joystickMonitor.notifyAll();
+        }
     }
 
     @Override
@@ -214,12 +267,12 @@ public class CustomDriver extends RoboCamDriver {
 
     @Override
     public boolean isDisconnected() {
-        return false;
+        return socketState == SOCKET_DISCONNECTED;
     }
 
     @Override
     public boolean isConnected() {
-        return false;
+        return socketState == SOCKET_CONNECTED;
     }
 
     @Override
@@ -261,7 +314,12 @@ public class CustomDriver extends RoboCamDriver {
 
     @Override
     public void stop() {
-
+        if (socket != null)
+            try {
+                sendCommand(CMD_STOP);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 
     private void close() {
@@ -400,6 +458,8 @@ public class CustomDriver extends RoboCamDriver {
                 }
                 if (socketState != SOCKET_ABORTED) {
                     if (errorId == 0) {
+                        clearJoystickCoordinates();
+                        startReadingControllerValues();
                         driver.doOnConnected();
                         socketState = SOCKET_CONNECTED;
                         HttpServer.updateJoysticks();
@@ -493,4 +553,97 @@ public class CustomDriver extends RoboCamDriver {
             }
         }
     }
+
+    private void startReadingControllerValues() {
+        new Thread(new CustomDriver.ControllerValuesReader()).start();
+    }
+
+    private class ControllerValuesReader implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    synchronized (joystickMonitor) {
+                        if (socketState == SOCKET_ABORTED || socket == null)
+                            break;
+                        joystickMonitor.wait(100);
+                        if (socketState == SOCKET_ABORTED || socket == null)
+                            break;
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                setControllerValues();
+            }
+        }
+
+        public void setControllerValues() {
+            while (true) {
+                if (socketState == SOCKET_ABORTED || socket == null)
+                    break;
+                Hashtable<String, Integer> newJoystickValues = null;
+                HashSet<Integer> newPressedKeys = null;
+                synchronized (joystickSyncObject) {
+                    if (joystickValues.size() > 0) {
+                        newJoystickValues = (Hashtable<String, Integer>) joystickValues.clone();
+                        joystickValues.clear();
+                    }
+                    if (pressedKeysChanged) {
+                        newPressedKeys = (HashSet<Integer>)pressedKeys.clone();
+                        pressedKeysChanged = false;
+                    }
+                }
+                setControllerValues(newJoystickValues, newPressedKeys);
+            }
+        }
+
+        public void setControllerValues(Hashtable<String, Integer> newJoystickValues,
+                                           HashSet<Integer> newPressedKeys) {
+            if (socketState == SOCKET_ABORTED)
+                return;
+            if (socket != null) {
+                try {
+                    ByteArrayOutputStream s = null;
+                    if (newJoystickValues != null)
+                        for (int i = 0; i < 4; i++)
+                            if (newJoystickValues.containsKey(axisNames[i * 2])
+                                    || newJoystickValues.containsKey(axisNames[i * 2 + 1])) {
+                                int newX = newJoystickValues.containsKey(axisNames[i * 2])
+                                        ? newJoystickValues.get(axisNames[i * 2]) : joystickCoordinates[i * 2];
+                                int newY = newJoystickValues.containsKey(axisNames[i * 2 + 1])
+                                        ? newJoystickValues.get(axisNames[i * 2 + 1]) : joystickCoordinates[i * 2 + 1];
+                                if (newX != joystickCoordinates[i * 2]) {
+                                    if (s == null) {
+                                        s = new ByteArrayOutputStream();
+                                        StreamHelper.writeUByte(s, CMD_CTRL);
+                                    }
+                                    StreamHelper.writeUByte(s, i * 2);
+                                    StreamHelper.writeByte(s, (byte)newX);
+                                    joystickCoordinates[i * 2] = newX;
+                                }
+                                if (newY != joystickCoordinates[i * 2 + 1]) {
+                                    if (s == null) {
+                                        s = new ByteArrayOutputStream();
+                                        StreamHelper.writeUByte(s, CMD_CTRL);
+                                    }
+                                    StreamHelper.writeUByte(s, i * 2 + 1);
+                                    StreamHelper.writeByte(s, (byte)newY);
+                                    joystickCoordinates[i * 2 + 1] = newY;
+                                }
+                            }
+                    if (s != null) {
+                        byte[] replyBytes = sendMessageAndReadReply(s, 1000);
+                        if (replyBytes != null) {
+                            Log.d("RoboCam", "Mesage is sent");
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
 }
