@@ -47,6 +47,9 @@ public class CustomDriver extends RoboCamDriver {
     private static final int CMD_CALLSIGN = 1;
     private static final int CMD_CTRL = 2;
 
+    private static final int KEY_PRESSED = 255;
+    private static final int KEY_RELEASED = 254;
+
     static {RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);};
 
     private static final int SOCKET_DISCONNECTED = 0;
@@ -60,7 +63,8 @@ public class CustomDriver extends RoboCamDriver {
     private volatile String response = "";
     private volatile String charsetName = "US-ASCII";
     private List<RoboCamJoystick> joysticks = new ArrayList<RoboCamJoystick>();
-    private List<RoboCamKeyGroup> keyGroups = new ArrayList<RoboCamKeyGroup>();
+    private volatile boolean keyGroupIsActive = false;
+    private HashSet<Integer> keyCodes = new HashSet<Integer>();
     private volatile long lastModified = 0;
     private volatile boolean hideJoysticks = true;
     private volatile int socketState = SOCKET_DISCONNECTED;
@@ -75,6 +79,7 @@ public class CustomDriver extends RoboCamDriver {
 
     private Hashtable<String, Integer> joystickValues = new Hashtable<String, Integer>();
     private HashSet<Integer> pressedKeys = new HashSet<Integer>();
+    private HashSet<Integer> currentPressedKeys = new HashSet<Integer>();
 
     static final String[] axisNames = new String[]{"x", "y", "w", "z", "a", "b", "c", "d"};
     private int[] joystickCoordinates = new int[4 * 2];
@@ -111,19 +116,17 @@ public class CustomDriver extends RoboCamDriver {
                                 + ">"
                                 + "<Joystick Index=\"0\" Visible=\"1\" Shape=\"c\" />"
                                 + "<Joystick Index=\"1\" Visible=\"1\" Shape=\"v\" Behavior1=\"1\" />"
-                                + "<KeyGroup Active=\"1\" Name=\"wheels\">"
-                                + "<UpKey>87</UpKey>"
-                                + "<UpKey>38</UpKey>"
-                                + "<LeftKey>65</LeftKey>"
-                                + "<LeftKey>37</LeftKey>"
-                                + "<DownKey>83</DownKey>"
-                                + "<DownKey>40</DownKey>"
-                                + "<RightKey>68</RightKey>"
-                                + "<RightKey>39</RightKey>"
-                                + "</KeyGroup>"
-                                + "<KeyGroup Active=\"1\" Name=\"holder\">"
-                                + "<UpKey>89</UpKey>"
-                                + "<DownKey>72</DownKey>"
+                                + "<KeyGroup Active=\"1\">"
+                                + "<Key>87</Key>"
+                                + "<Key>38</Key>"
+                                + "<Key>65</Key>"
+                                + "<Key>37</Key>"
+                                + "<Key>83</Key>"
+                                + "<Key>40</Key>"
+                                + "<Key>68</Key>"
+                                + "<Key>39</Key>"
+                                + "<Key>89</Key>"
+                                + "<Key>72</Key>"
                                 + "</KeyGroup>"
                                 + "</Custom>"
                 ).getBytes("UTF-8"));
@@ -159,10 +162,10 @@ public class CustomDriver extends RoboCamDriver {
     @Override
     public String getUsedKeys() {
         HashSet<Integer> keys = new HashSet<Integer>();
-        for (RoboCamKeyGroup keyGroup : keyGroups) {
-            if (keyGroup.isActive())
-                keys.addAll(keyGroup.getKeyCodes());
-        }
+        if (keyGroupIsActive)
+            synchronized (keyCodes) {
+                keys.addAll(keyCodes);
+            }
         String usedKeys = "";
         if (keys.size() > 0) {
             char[] zeroChar = new char[]{'0'};
@@ -238,15 +241,15 @@ public class CustomDriver extends RoboCamDriver {
                         RoboCamDriver.JOYSTICK_BEHAVIOR_RETURN_TO_ZERO));
             }
         }
-        keyGroups.clear();
-        NodeList keyGroupNodes = xml.getElementsByTagName("KeyGroup");
-        for (int i = 0; i < keyGroupNodes.getLength(); i++) {
-            Element keyGroupNode = (Element) keyGroupNodes.item(i);
-            RoboCamKeyGroup keyGroup = new RoboCamKeyGroup();
-            keyGroup.setActive(StringHelper.booleanFromString(keyGroupNode.getAttribute("Active"), false));
-            keyGroup.setName(StringHelper.stringFromString(keyGroupNode.getAttribute("Name"), ""));
-            RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyGroup.getKeyCodes(), "Key");
-            keyGroups.add(keyGroup);
+        synchronized (keyCodes) {
+            keyGroupIsActive = false;
+            keyCodes.clear();
+            NodeList keyGroupNodes = xml.getElementsByTagName("KeyGroup");
+            for (int i = 0; i < keyGroupNodes.getLength(); i++) {
+                Element keyGroupNode = (Element) keyGroupNodes.item(i);
+                keyGroupIsActive = StringHelper.booleanFromString(keyGroupNode.getAttribute("Active"), false);
+                RoboCamKeyGroup.loadKeysFromXml(keyGroupNode, keyCodes, "Key");
+            }
         }
     }
 
@@ -335,13 +338,9 @@ public class CustomDriver extends RoboCamDriver {
     }
 
     private void sendCommand(int cmd) throws IOException {
-        OutputStream outputStream = socket.getOutputStream();
-        byte[] bytes = new byte[3];
-        StreamHelper.setUShortToByteArray(bytes, 0, 1);
-        StreamHelper.setUByteToByteArray(bytes, 2, cmd);
-        synchronized (socketSyncObject) {
-            outputStream.write(bytes);
-        }
+        ByteArrayOutputStream s = new ByteArrayOutputStream();
+        StreamHelper.writeUByte(s, cmd);
+        sendMessageAndReadReply(s, 1000);
     }
 
     private void sendMessage(ByteArrayOutputStream s) throws IOException {
@@ -458,6 +457,9 @@ public class CustomDriver extends RoboCamDriver {
                 }
                 if (socketState != SOCKET_ABORTED) {
                     if (errorId == 0) {
+                        synchronized (keyCodes) {
+                            currentPressedKeys.clear();
+                        }
                         clearJoystickCoordinates();
                         startReadingControllerValues();
                         driver.doOnConnected();
@@ -619,7 +621,7 @@ public class CustomDriver extends RoboCamDriver {
                                         StreamHelper.writeUByte(s, CMD_CTRL);
                                     }
                                     StreamHelper.writeUByte(s, i * 2);
-                                    StreamHelper.writeByte(s, (byte)newX);
+                                    StreamHelper.writeByte(s, (byte) newX);
                                     joystickCoordinates[i * 2] = newX;
                                 }
                                 if (newY != joystickCoordinates[i * 2 + 1]) {
@@ -628,14 +630,46 @@ public class CustomDriver extends RoboCamDriver {
                                         StreamHelper.writeUByte(s, CMD_CTRL);
                                     }
                                     StreamHelper.writeUByte(s, i * 2 + 1);
-                                    StreamHelper.writeByte(s, (byte)newY);
+                                    StreamHelper.writeByte(s, (byte) newY);
                                     joystickCoordinates[i * 2 + 1] = newY;
                                 }
                             }
+                    if (newPressedKeys != null) {
+                        HashSet<Integer> keys0 = new HashSet<Integer>();
+                        HashSet<Integer> keys1 = new HashSet<Integer>();
+                        synchronized (keyCodes) {
+                            for (Integer key : newPressedKeys) {
+                                if (keyCodes.contains(key)) {
+                                    if (!currentPressedKeys.contains(key))
+                                        keys1.add(key);
+                                }
+                            }
+                            for (Integer key : currentPressedKeys) {
+                                if (!newPressedKeys.contains(key))
+                                    keys0.add(key);
+                            }
+                            currentPressedKeys.clear();
+                            currentPressedKeys.addAll(newPressedKeys);
+                        }
+                        if (keys0.size() > 0 || keys1.size() > 0) {
+                            if (s == null) {
+                                s = new ByteArrayOutputStream();
+                                StreamHelper.writeUByte(s, CMD_CTRL);
+                            }
+                            for (Integer key : keys1) {
+                                StreamHelper.writeUByte(s, KEY_PRESSED);
+                                StreamHelper.writeUByte(s, key);
+                            }
+                            for (Integer key : keys0) {
+                                StreamHelper.writeUByte(s, KEY_RELEASED);
+                                StreamHelper.writeUByte(s, key);
+                            }
+                        }
+                    }
                     if (s != null) {
                         byte[] replyBytes = sendMessageAndReadReply(s, 1000);
                         if (replyBytes != null) {
-                            Log.d("RoboCam", "Mesage is sent");
+                            //Log.d("RoboCam", "Mesage is sent");
                         }
                     }
                 } catch (IOException e) {
