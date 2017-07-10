@@ -109,8 +109,8 @@ public class CustomDriver extends RoboCamDriver {
             FileOutputStream fileOutputStream = new FileOutputStream(testSettingsFile);
             try {
                 fileOutputStream.write(new String(
-                        "<Custom Name=\"Test\""
-                                + " Description=\"Custom robot\""
+                        "<Custom Name=\"Arduino\""
+                                + " Description=\"Arduino researcher\""
                                 + " Callsign=\"RoboCam\""
                                 + " Response=\"Researcher\""
                                 + ">"
@@ -305,10 +305,8 @@ public class CustomDriver extends RoboCamDriver {
     public void disconnect(int resId) {
         socketState = SOCKET_ABORTED;
         HttpServer.updateJoysticks();
-        if (socket != null) {
-            stop();
+        if (socket != null)
             close();
-        }
         if (resId == 0)
             doOnDisconnected();
         else
@@ -319,20 +317,27 @@ public class CustomDriver extends RoboCamDriver {
     public void stop() {
         if (socket != null)
             try {
-                sendCommand(CMD_STOP);
-            } catch (IOException e) {
+                if (socketState == SOCKET_CONNECTED)
+                    sendCommand(CMD_STOP);
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
     }
 
     private void close() {
-        if (socket != null)
+        if (socket != null) {
             try {
-                sendCommand(CMD_STOP);
-                socket.close();
-            } catch (IOException e) {
+                if (socketState == SOCKET_CONNECTED)
+                    sendCommand(CMD_STOP);
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
+            try {
+                socket.close();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
         socket = null;
         socketState = SOCKET_DISCONNECTED;
     }

@@ -19,30 +19,21 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Movie;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
-import android.net.DhcpInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
-import android.os.Environment;
 import android.os.LocaleList;
 import android.os.PowerManager;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -50,13 +41,10 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.webkit.WebView;
-import android.widget.AbsoluteLayout;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
@@ -77,15 +65,12 @@ import org.w3c.dom.NodeList;
 
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -99,13 +84,10 @@ import java.util.Locale;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
+import ru.proghouse.robocam.drivers.Custom.CustomDriver;
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
-import ru.proghouse.robocam.util.IabHelper;
-import ru.proghouse.robocam.util.IabResult;
-import ru.proghouse.robocam.util.Inventory;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback,
         RoboCamBroker.RoboCamBrokerListener, RoboCamDriver.DriverListener {
@@ -187,6 +169,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             getSupportActionBar().hide();
             mainActivity = this;
             thisActivity = this;
+
+            /*int test = 64250;
+            byte[] bytes = new byte[2];
+            StreamHelper.setUShortToByteArray(bytes, 0, test);
+            int test2 = StreamHelper.getUShortFromByteArray(bytes, 0);*/
 
             SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
             if (savedInstanceState != null)
@@ -328,6 +315,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Toast.makeText(this, R.string.error_while_creating_default_ev3_settings_file, Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
+            CustomDriver.createTestSettings(this);
 
             /*String base64EncodedPublicKey = "";
             mHelper = new IabHelper(this, base64EncodedPublicKey);
@@ -608,7 +596,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         Utils.copy(newVersionFile, localizedVersionFile);
                         newVersionFile.renameTo(versionFile);
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     String s = e.getMessage();
                     e.printStackTrace();
                 }
@@ -758,33 +746,51 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             e.printStackTrace();
         }
         if (showAdView) {
-            banner.setVisibility(View.GONE);
-            adView.setVisibility(View.VISIBLE);
-            AdRequest adRequest = new AdRequest.Builder().build();
-            adView.setAdListener(new AdListener(){
-                @Override
-                public void onAdFailedToLoad(int var1) {
-                    if (bannerType.equals("offline")) {
-                        bannerShowOffline = true;
-                        loadedAds = false;
-                        loadAds();
+            try {
+                banner.setVisibility(View.GONE);
+                adView.setVisibility(View.VISIBLE);
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(int var1) {
+                        try {
+                            if (bannerType.equals("offline")) {
+                                bannerShowOffline = true;
+                                loadedAds = false;
+                                loadAds();
+                            }
+                            //Toast.makeText(thisActivity, "Ad error", Toast.LENGTH_LONG).show();
+                        } catch(Throwable e) {
+                            e.printStackTrace();
+                        }
                     }
-                    //Toast.makeText(thisActivity, "Ad error", Toast.LENGTH_LONG).show();
-                }
-                @Override
-                public void onAdLoaded() {
-                    banner.setVisibility(View.GONE);
-                    adView.setVisibility(View.VISIBLE);
-                    //Toast.makeText(thisActivity, "Ad loaded", Toast.LENGTH_LONG).show();
-                }
-                @Override
-                public void onAdOpened() {
-                    banner.setVisibility(View.GONE);
-                    adView.setVisibility(View.VISIBLE);
-                    //Toast.makeText(thisActivity, "Ad opened", Toast.LENGTH_LONG).show();
-                }
-            });
-            adView.loadAd(adRequest);
+
+                    @Override
+                    public void onAdLoaded() {
+                        try {
+                            banner.setVisibility(View.GONE);
+                            adView.setVisibility(View.VISIBLE);
+                            //Toast.makeText(thisActivity, "Ad loaded", Toast.LENGTH_LONG).show();
+                        } catch(Throwable e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onAdOpened() {
+                        try {
+                            banner.setVisibility(View.GONE);
+                            adView.setVisibility(View.VISIBLE);
+                            //Toast.makeText(thisActivity, "Ad opened", Toast.LENGTH_LONG).show();
+                        } catch(Throwable e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                adView.loadAd(adRequest);
+            } catch(Throwable e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -930,39 +936,41 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }*/
 
     public void onConnectToRobot(View v) {
-        if (robotState == ROBOT_STATE_DISCONNECTED
-                || robotState == ROBOT_STATE_DEVICES_NOT_FOUND
-                || robotState == ROBOT_STATE_CONNECTION_ERROR) {
-            RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
-            if (driver.needBluetooth()) {
-                if (BluetoothAdapter.getDefaultAdapter() == null) {
-                    showRobotMessageError(getString(R.string.bluetooth_is_not_supported));
-                    return;
+        try {
+            if (robotState == ROBOT_STATE_DISCONNECTED
+                    || robotState == ROBOT_STATE_DEVICES_NOT_FOUND
+                    || robotState == ROBOT_STATE_CONNECTION_ERROR) {
+                RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
+                if (driver.needBluetooth()) {
+                    if (BluetoothAdapter.getDefaultAdapter() == null) {
+                        showRobotMessageError(getString(R.string.bluetooth_is_not_supported));
+                        return;
+                    }
+                    if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+                        robotStateError = null;
+                        robotState = ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH;
+                        updateControls();
+                        Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        startActivityForResult(enableBluetooth, REQUEST_ENABLE_BT);
+                        robotThreadRunnable = new RobotThreadRunnable(this);
+                        new Thread(robotThreadRunnable).start();
+                    } else {
+                        robotStateError = null;
+                        robotState = ROBOT_STATE_SELECTING;
+                        updateControls();
+                    }
                 }
-                if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-                    robotStateError = null;
-                    robotState = ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH;
-                    updateControls();
-                    Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBluetooth, REQUEST_ENABLE_BT);
-                    robotThreadRunnable = new RobotThreadRunnable(this);
-                    new Thread(robotThreadRunnable).start();
-                } else {
-                    robotStateError = null;
-                    robotState = ROBOT_STATE_SELECTING;
-                    updateControls();
-                }
+            } else if (robotState == ROBOT_STATE_SELECTING) {
+                robotState = ROBOT_STATE_DISCONNECTED;
+                updateControls();
+            } else if (robotState == ROBOT_STATE_CONNECTING
+                    || robotState == ROBOT_STATE_CONNECTED) {
+                robotState = ROBOT_STATE_DISCONNECTED;
+                RoboCamDriver.getCurrentDriver().disconnect();
+                updateControls();
             }
-        }
-        else if (robotState == ROBOT_STATE_SELECTING){
-            robotState = ROBOT_STATE_DISCONNECTED;
-            updateControls();
-        }
-        else if (robotState == ROBOT_STATE_CONNECTING
-                || robotState == ROBOT_STATE_CONNECTED){
-            robotState = ROBOT_STATE_DISCONNECTED;
-            RoboCamDriver.getCurrentDriver().disconnect();
-            updateControls();
+        } catch(Throwable e) {
+            e.printStackTrace();
         }
     }
 
@@ -1519,123 +1527,135 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }*/
 
     private void postUpdateControls(){
-        parentLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                thisActivity.updateControls();
-            }
-        });
+        try {
+            parentLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        thisActivity.updateControls();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch(Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     public void updateControls(){
-        int serverState = HttpServer.getServerState();
-        switch (serverState) {
-            case HttpServer.SERVER_IS_OFF:
-                showServerMessage(R.string.server_is_off);
-                btnServer.clearAnimation();
-                btnServer.setBackgroundResource(R.drawable.start_server_bg);
-                break;
-            case HttpServer.SERVER_IS_INITIALIZING:
-                showServerMessage(R.string.server_is_initializing);
-                break;
-            case HttpServer.SERVER_IS_WORKING:
-                String serverAddress = getServerAddress();
-                if (serverAddress == null){
-                    WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-                    if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED)
-                        new Thread(controlsUpdater).start();//waiting for an ip-address
-                }
-                showServerMessage(getString(R.string.server_is_working)
-                        + (serverAddress == null ? "" : (":\r\n" + serverAddress)));
-                btnServer.clearAnimation();
-                btnServer.setBackgroundResource(R.drawable.server_started_bg);
-                break;
-            case HttpServer.SERVER_IS_STOPPING:
-                showServerMessage(R.string.server_is_stopping);
-                break;
+        try {
+            int serverState = HttpServer.getServerState();
+            switch (serverState) {
+                case HttpServer.SERVER_IS_OFF:
+                    showServerMessage(R.string.server_is_off);
+                    btnServer.clearAnimation();
+                    btnServer.setBackgroundResource(R.drawable.start_server_bg);
+                    break;
+                case HttpServer.SERVER_IS_INITIALIZING:
+                    showServerMessage(R.string.server_is_initializing);
+                    break;
+                case HttpServer.SERVER_IS_WORKING:
+                    String serverAddress = getServerAddress();
+                    if (serverAddress == null) {
+                        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+                        if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED)
+                            new Thread(controlsUpdater).start();//waiting for an ip-address
+                    }
+                    showServerMessage(getString(R.string.server_is_working)
+                            + (serverAddress == null ? "" : (":\r\n" + serverAddress)));
+                    btnServer.clearAnimation();
+                    btnServer.setBackgroundResource(R.drawable.server_started_bg);
+                    break;
+                case HttpServer.SERVER_IS_STOPPING:
+                    showServerMessage(R.string.server_is_stopping);
+                    break;
+            }
+            RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
+            //ERROR WHEN DISCONNECTING FROM ROBOT!!!
+            if (driver.isDisconnected() && robotState == ROBOT_STATE_CONNECTED)
+                robotState = ROBOT_STATE_DISCONNECTED;
+            switch (robotState) {
+                case ROBOT_STATE_DISCONNECTED:
+                    btnRobot.clearAnimation();
+                    btnRobot.setBackgroundResource(R.drawable.connect_robot);
+                    showRobotMessage(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_DISCONNECTED))
+                            + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
+                    );
+                    break;
+                case ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH:
+                    btnRobot.startAnimation(animationConnectRobot);
+                    showRobotMessage(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTING));
+                    break;
+                case ROBOT_STATE_SELECTING:
+                    btnRobot.startAnimation(animationConnectRobot);
+                    hideRobotMessage();
+                    List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>(
+                            BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+                    if (devices.size() > 0) {
+                        Collections.sort(devices, new Comparator<BluetoothDevice>() {
+                            @Override
+                            public int compare(BluetoothDevice lhs, BluetoothDevice rhs) {
+                                if (lhs.getName().equals(lastBluetoothDevice)
+                                        && rhs.getName().equals(lastBluetoothDevice))
+                                    return 0;
+                                else if (lhs.getName().equals(lastBluetoothDevice))
+                                    return -1;
+                                else if (rhs.getName().equals(lastBluetoothDevice))
+                                    return 1;
+                                else
+                                    return lhs.getName().compareTo(rhs.getName());
+                            }
+                        });
+                        ArrayAdapter<BluetoothDevice> adapter = new ArrayAdapter<BluetoothDevice>(this,
+                                android.R.layout.simple_list_item_1, devices) {
+                            @Override
+                            public View getView(int position, View convertView, ViewGroup parent) {
+                                View view = super.getView(position, convertView, parent);
+                                final BluetoothDevice device = getItem(position);
+                                ((TextView) view.findViewById(android.R.id.text1)).setText(
+                                        device.getName());
+                                return view;
+                            }
+                        };
+                        robotListView.setAdapter(adapter);
+                        robotMessageConnector.setVisibility(View.VISIBLE);
+                        robotListView.setVisibility(View.VISIBLE);
+                    } else {
+                        robotState = ROBOT_STATE_DEVICES_NOT_FOUND;
+                        updateControls();
+                    }
+                    break;
+                case ROBOT_STATE_DEVICES_NOT_FOUND:
+                    btnRobot.clearAnimation();
+                    showRobotMessageError(driver.getStringResId(RoboCamDriver.ROBOT_IS_NOT_FOUND_VIA_BLUETOOTH));
+                    break;
+                case ROBOT_STATE_CONNECTING:
+                    btnRobot.startAnimation(animationConnectRobot);
+                    showRobotMessage(
+                            String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTING_TO)),
+                                    driver.getRobotName())
+                                    + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
+                    );
+                    break;
+                case ROBOT_STATE_CONNECTED:
+                    btnRobot.clearAnimation();
+                    btnRobot.setBackgroundResource(R.drawable.robot_connected_bg);
+                    showRobotMessage(
+                            String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTED_TO)),
+                                    driver.getRobotName())
+                                    + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
+                    );
+                    break;
+                case ROBOT_STATE_CONNECTION_ERROR:
+                    btnRobot.clearAnimation();
+                    btnRobot.setBackgroundResource(R.drawable.connect_robot);
+                    showRobotMessageError(robotStateError);
+                    break;
+            }
         }
-        RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
-        //ERROR WHEN DISCONNECTING FROM ROBOT!!!
-        if (driver.isDisconnected() && robotState == ROBOT_STATE_CONNECTED)
-            robotState = ROBOT_STATE_DISCONNECTED;
-        switch (robotState){
-            case ROBOT_STATE_DISCONNECTED:
-                btnRobot.clearAnimation();
-                btnRobot.setBackgroundResource(R.drawable.connect_robot);
-                showRobotMessage(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_DISCONNECTED))
-                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
-                );
-                break;
-            case ROBOT_STATE_REQUEST_ENABLE_BLUETOOTH:
-                btnRobot.startAnimation(animationConnectRobot);
-                showRobotMessage(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTING));
-                break;
-            case ROBOT_STATE_SELECTING:
-                btnRobot.startAnimation(animationConnectRobot);
-                hideRobotMessage();
-                List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>(
-                        BluetoothAdapter.getDefaultAdapter().getBondedDevices());
-                if (devices.size() > 0) {
-                    Collections.sort(devices, new Comparator<BluetoothDevice>() {
-                        @Override
-                        public int compare(BluetoothDevice lhs, BluetoothDevice rhs) {
-                            if (lhs.getName().equals(lastBluetoothDevice)
-                                    && rhs.getName().equals(lastBluetoothDevice))
-                                return 0;
-                            else if (lhs.getName().equals(lastBluetoothDevice))
-                                return -1;
-                            else if (rhs.getName().equals(lastBluetoothDevice))
-                                return 1;
-                            else
-                                return lhs.getName().compareTo(rhs.getName());
-                        }
-                    });
-                    ArrayAdapter<BluetoothDevice> adapter = new ArrayAdapter<BluetoothDevice>(this,
-                            android.R.layout.simple_list_item_1, devices) {
-                        @Override
-                        public View getView(int position, View convertView, ViewGroup parent){
-                            View view = super.getView(position, convertView, parent);
-                            final BluetoothDevice device = getItem(position);
-                            ((TextView) view.findViewById(android.R.id.text1)).setText(
-                                    device.getName());
-                            return view;
-                        }
-                    };
-                    robotListView.setAdapter(adapter);
-                    robotMessageConnector.setVisibility(View.VISIBLE);
-                    robotListView.setVisibility(View.VISIBLE);
-                }
-                else{
-                    robotState = ROBOT_STATE_DEVICES_NOT_FOUND;
-                    updateControls();
-                }
-                break;
-            case ROBOT_STATE_DEVICES_NOT_FOUND:
-                btnRobot.clearAnimation();
-                showRobotMessageError(driver.getStringResId(RoboCamDriver.ROBOT_IS_NOT_FOUND_VIA_BLUETOOTH));
-                break;
-            case ROBOT_STATE_CONNECTING:
-                btnRobot.startAnimation(animationConnectRobot);
-                showRobotMessage(
-                        String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTING_TO)),
-                                driver.getRobotName())
-                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
-                );
-                break;
-            case ROBOT_STATE_CONNECTED:
-                btnRobot.clearAnimation();
-                btnRobot.setBackgroundResource(R.drawable.robot_connected_bg);
-                showRobotMessage(
-                        String.format(getString(driver.getStringResId(RoboCamDriver.ROBOT_IS_CONNECTED_TO)),
-                                driver.getRobotName())
-                                + ("".equals(driver.getSettingsName()) ? "" : ":\r\n" + driver.getSettingsName())
-                );
-                break;
-            case ROBOT_STATE_CONNECTION_ERROR:
-                btnRobot.clearAnimation();
-                btnRobot.setBackgroundResource(R.drawable.connect_robot);
-                showRobotMessageError(robotStateError);
-                break;
+        catch (Throwable e) {
+            e.printStackTrace();
         }
     }
 }

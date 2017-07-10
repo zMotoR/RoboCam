@@ -103,12 +103,12 @@
         android:layout_centerHorizontal="true" />
 
     <ImageButton
+        android:id="@+id/btnRobot"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/btnRobot"
-        android:background="@drawable/connect_robot_bg"
-        android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:background="@drawable/connect_robot_bg"
         android:onClick="onConnectToRobot" />
 
     <ImageButton
