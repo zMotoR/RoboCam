@@ -66,7 +66,7 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
 public class EV3SettingsActivity extends AppCompatActivity  implements View.OnClickListener {
 
     public static final String SETTINGS_FILE_NAME = "SettingsFileName";
-    public static final String SETTINGS_XML = "SettingsXml";
+    private static final String SETTINGS_XML = "SettingsXml";
     private String settingsFileName;
     private JoystickComponents[] joystickComponents = new JoystickComponents[4];
     private List<KeyGroupComponents> keyGroupComponents = new ArrayList<KeyGroupComponents>();
@@ -76,12 +76,12 @@ public class EV3SettingsActivity extends AppCompatActivity  implements View.OnCl
     private CheckBox checkBoxShowDebugInfo = null;
     private CheckBox checkBoxHideJoysticks = null;
     private ImageButton buttonOverflow = null;
-    CheckBox checkBoxStartUserProgram = null;
-    EditText editTextUserProgram = null;
+    private CheckBox checkBoxStartUserProgram = null;
+    private EditText editTextUserProgram = null;
     private static final int MI_SEND_SETTINGS = -2;
     private static final int MI_EXPORT_SETTINGS = -3;
     private static final int MI_COPY_SETTINGS = -4;
-    public static final int KEY_CODE_REQUEST = 1;
+    private static final int KEY_CODE_REQUEST = 1;
     //private List<String> tempFileName = new ArrayList<String>();
 
     private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT = 1;

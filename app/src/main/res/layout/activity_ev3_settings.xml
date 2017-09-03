@@ -204,12 +204,12 @@
                 android:src="@drawable/spacer_small" />
 
             <Spinner
+                android:id="@+id/spinnerJoystickType1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/spinnerJoystickType1"
-                android:visibility="visible"
+                android:focusable="false"
                 android:spinnerMode="dialog"
-                android:focusable="false" />
+                android:visibility="visible" />
 
             <ImageView
                 android:layout_width="match_parent"

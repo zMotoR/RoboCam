@@ -41,6 +41,7 @@ import ru.proghouse.robocam.drivers.RoboCamDriver;
 public class RobotSettingsListActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int MI_ADD_EV3_SETTINGS = -1;
     private static final int MI_IMPORT_SETTINGS = -2;
+    private static final int MI_ADD_CUSTOM_SETTINGS = -3;
     private Button buttonAdd = null;
     private Button buttonDelete = null;
     private ImageButton buttonOverflow = null;
@@ -104,7 +105,8 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
                 SettingsTitle selectedSettings = (SettingsTitle) settingsListView.getAdapter().getItem(position);
-                Intent intent = new Intent(thisContext, EV3SettingsActivity.class);
+                Intent intent = new Intent(thisContext,
+                        selectedSettings.name.equals("EV3") ? EV3SettingsActivity.class : CustomSettingsActivity.class);
                 intent.putExtra(EV3SettingsActivity.SETTINGS_FILE_NAME, selectedSettings.file.getName());
                 startActivity(intent);
             }
@@ -230,10 +232,13 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                             && (!xml.getDocumentElement().getNodeName().equals(DefaultValue.Custom)))
                         throw new Exception(getString(R.string.unknown_driver_name,
                                 xml.getDocumentElement().getNodeName()));
+                    String localName = xml.getDocumentElement().getNodeName();
+                    if (DefaultValue.Custom.equals(localName))
+                        localName = getString(R.string.custom_driver_desc);
                     settingsList.add(new SettingsTitle(xml.getDocumentElement().getNodeName(),
                             xml.getDocumentElement().getAttribute("Name"),
                             xml.getDocumentElement().getAttribute("Description"),
-                            file));
+                            file, localName));
                 } catch (Throwable e) {
                     Toast.makeText(this, getString(R.string.error_while_opening_settings_file,
                             file.getName(), e.getMessage()), Toast.LENGTH_LONG).show();
@@ -259,7 +264,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 ((TextView) convertView.findViewById(R.id.textView1)).setText(
                         settingsTitle.title);
                 ((TextView) convertView.findViewById(R.id.textView2)).setText(
-                        settingsTitle.driverName + ": " + settingsTitle.desc);
+                        settingsTitle.localName + ": " + settingsTitle.desc);
                 return convertView;
             }
         };
@@ -302,16 +307,18 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     }
 
     class SettingsTitle {
-        public String driverName;
+        public String name;
         public String title;
         public String desc;
         public File file;
+        public String localName;
 
-        public SettingsTitle(String driverName, String title, String desc, File file) {
-            this.driverName = driverName;
+        public SettingsTitle(String name, String title, String desc, File file, String localName) {
+            this.name = name;
             this.title = title;
             this.desc = desc;
             this.file = file;
+            this.localName = localName;
         }
     }
 
@@ -340,8 +347,10 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        if (v.getId() == R.id.buttonAdd)
+        if (v.getId() == R.id.buttonAdd) {
             menu.add(Menu.NONE, MI_ADD_EV3_SETTINGS, Menu.NONE, R.string.action_add_ev3_settings);
+            menu.add(Menu.NONE, MI_ADD_CUSTOM_SETTINGS, Menu.NONE, R.string.action_add_custom_settings);
+        }
         else if (v.getId() == R.id.buttonDelete) {
             for (int i = 0; i < settingsListView.getAdapter().getCount(); i++) {
                 SettingsTitle selectedSettings = (SettingsTitle) settingsListView.getAdapter().getItem(i);
@@ -379,6 +388,9 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
         switch (item.getItemId()) {
             case MI_ADD_EV3_SETTINGS:
                 startActivity(new Intent(this, EV3SettingsActivity.class));
+                break;
+            case MI_ADD_CUSTOM_SETTINGS:
+                startActivity(new Intent(this, CustomSettingsActivity.class));
                 break;
             case MI_IMPORT_SETTINGS:
                 importSettings();

@@ -105,6 +105,11 @@ public class KeyCodeControl extends LinearLayout {
         activity.startActivityForResult(intent, requestCode);
     }
 
+    public void clear(Activity activity) {
+        keys = null;
+        updateKeyString(activity);
+    }
+
     public void setKeys(Activity activity, int[] keys) {
         if (keys == null)
             this.keys = null;
@@ -112,6 +117,19 @@ public class KeyCodeControl extends LinearLayout {
             if (this.keys == null)
                 this.keys = new HashSet<Integer>();
             EV3KeyGroup.fromArray(keys, this.keys);
+        }
+        updateKeyString(activity);
+    }
+
+    public void setKeys(Activity activity, HashSet<Integer> keys) {
+        if (keys == null)
+            this.keys = null;
+        else {
+            if (this.keys == null)
+                this.keys = new HashSet<Integer>();
+            else
+                this.keys.clear();
+            this.keys.addAll(keys);
         }
         updateKeyString(activity);
     }

@@ -41,29 +41,33 @@
         <service
             android:name=".HttpServer"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
 
         <activity
             android:name=".GlobalSettingsActivity"
-            android:label="@string/title_activity_global_settings"></activity>
+            android:label="@string/title_activity_global_settings" />
         <activity
             android:name=".ServerSettingsActivity"
             android:label="@string/title_activity_server_settings"
-            android:windowSoftInputMode="stateHidden"></activity>
+            android:windowSoftInputMode="stateHidden" />
         <activity
             android:name=".RobotSettingsListActivity"
             android:label="@string/title_activity_robot_settings_list"
-            android:windowSoftInputMode=""></activity>
+            android:windowSoftInputMode="" />
         <activity
             android:name=".EV3SettingsActivity"
             android:label="@string/title_activity_ev3_settings"
             android:windowSoftInputMode="stateHidden" />
         <activity
             android:name=".ImportActivity"
-            android:label="@string/title_activity_import"></activity>
+            android:label="@string/title_activity_import" />
         <activity
             android:name=".SelectKeyActivity"
-            android:label="@string/title_activity_select_key"></activity>
+            android:label="@string/title_activity_select_key" />
+        <activity
+            android:name=".CustomSettingsActivity"
+            android:label="@string/title_activity_custom_settings"
+            android:windowSoftInputMode="stateHidden"/>
     </application>
 
 </manifest>

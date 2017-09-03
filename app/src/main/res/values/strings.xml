@@ -56,6 +56,7 @@
     <string name="add">Add</string>
     <string name="delete">Delete</string>
     <string name="title_activity_ev3_settings">EV3 Settings</string>
+    <string name="title_activity_custom_settings">Custom Settings</string>
     <string name="ev3_researcher">EV3 Researcher</string>
     <string name="error_while_creating_default_ev3_settings_file">Error while creating default EV3 settings</string>
     <string name="error_while_opening_settings_file" formatted="false">Error while opening the settings file %s. %s</string>
@@ -189,4 +190,9 @@
     <string name="robot_error_usupported_protocol">The robot requested the unsupported version of the protocol.</string>
     <string name="robot_error_usupported_charset">The robot requested the unsupported charset.</string>
     <string name="robot_error_internal_error">An internal robot error.</string>
+    <string name="action_add_custom_settings">Custom settings</string>
+    <string name="custom_driver_desc">Custom</string>
+    <string name="callsign_response_settings">Callsign/Response</string>
+    <string name="callsign">Callsign</string>
+    <string name="response">Response</string>
 </resources>

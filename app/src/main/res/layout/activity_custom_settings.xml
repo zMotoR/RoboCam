@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:id="@+id/ev3_settings_main_layout">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.ActionBar"
+        android:baselineAligned="false"
+        android:weightSum="1"
+        android:measureWithLargestChild="false">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.AppCompat.ActionBar"
+            android:baselineAligned="false">
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageButtonBack"
+                android:src="@drawable/back"
+                style="@style/Widget.AppCompat.ActionButton"
+                android:onClick="onCancelButtonClick" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:layout_weight="1"
+            android:gravity="right"
+            style="@style/Widget.AppCompat.ActionBar">
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel"
+                android:id="@+id/buttonCancel"
+                android:onClick="onCancelButtonClick"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView8"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <Button
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:id="@+id/buttonSave"
+                android:onClick="onSaveButtonClick"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView9"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <ImageButton
+                style="@style/Widget.AppCompat.ActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/buttonOverflow"
+                android:src="@drawable/overflow" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/scrollView">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="6dp">
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/general_information"
+                android:id="@+id/textView6"/>
+
+            <TextView
+                style="@style/SettingsSectionEditTextTitle"
+                android:text="@string/robot_name"
+                android:id="@+id/textViewBotName"/>
+
+            <EditText
+                style="@style/SettingsEditText"
+                android:id="@+id/editTextBotName"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView19"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <TextView
+                style="@style/SettingsSectionEditTextTitle"
+                android:text="@string/robot_description"
+                android:id="@+id/textViewDesc"/>
+
+            <EditText
+                style="@style/SettingsEditText"
+                android:id="@+id/editTextDesc"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView12"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                style="@style/SettingsCheckBox"
+                android:text="@string/show_debug_info"
+                android:id="@+id/checkBoxShowDebugInfo"
+                android:checked="false"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView13"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <CheckBox
+                style="@style/SettingsCheckBox"
+                android:text="@string/hide_joysticks_while_using_keyboard"
+                android:id="@+id/checkBoxHideJoysticks"
+                android:checked="false"/>
+
+            <TextView
+                android:id="@+id/textView7"
+                style="@style/SettingsSectionTitle"
+                android:text="@string/callsign_response_settings" />
+
+            <TextView
+                android:id="@+id/textViewCallsign"
+                style="@style/SettingsSectionEditTextTitle"
+                android:text="@string/callsign" />
+
+            <EditText
+                style="@style/SettingsEditText"
+                android:id="@+id/editTextCallsign"/>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView20"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <TextView
+                android:id="@+id/textViewResponse"
+                style="@style/SettingsSectionEditTextTitle"
+                android:text="@string/response" />
+
+            <EditText
+                style="@style/SettingsEditText"
+                android:id="@+id/editTextResponse"/>
+
+
+            <!-- Joysticks -->
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/joystick1"
+                android:id="@+id/textViewJoystick1" />
+
+            <CheckBox
+                android:text="@string/visibility"
+                android:id="@+id/checkBoxJoystickVisibility1"
+                style="@style/SettingsCheckBox"
+                android:checked="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView1_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickShape1"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior1_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior1_1"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior1_2"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior1_2"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/joystick2"
+                android:id="@+id/textViewJoystick2" />
+
+            <CheckBox
+                android:text="@string/visibility"
+                android:id="@+id/checkBoxJoystickVisibility2"
+                style="@style/SettingsCheckBox"
+                android:checked="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView2_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickShape2"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior2_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior2_1"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior2_2"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior2_2"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/joystick3"
+                android:id="@+id/textViewJoystick3" />
+
+            <CheckBox
+                android:text="@string/visibility"
+                android:id="@+id/checkBoxJoystickVisibility3"
+                style="@style/SettingsCheckBox"
+                android:checked="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView3_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickShape3"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior3_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior3_1"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior3_2"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior3_2"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/joystick4"
+                android:id="@+id/textViewJoystick4" />
+
+            <CheckBox
+                android:text="@string/visibility"
+                android:id="@+id/checkBoxJoystickVisibility4"
+                style="@style/SettingsCheckBox"
+                android:checked="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView4_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickShape4"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior4_1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior4_1"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageViewJoystickBehavior4_2"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerJoystickBehavior4_2"
+                android:visibility="visible"
+                android:spinnerMode="dialog"
+                android:focusable="false" />
+
+            <!-- Keyboard -->
+            <TextView
+                android:id="@+id/textViewKeyGroup"
+                style="@style/SettingsSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/keys" />
+            <CheckBox
+                android:text="@string/keygroup_active"
+                android:id="@+id/checkBoxActive"
+                style="@style/SettingsCheckBox"
+                android:checked="false" />
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+            <LinearLayout
+                android:id="@+id/keygroupLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"></LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+
+</LinearLayout>
