@@ -315,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Toast.makeText(this, R.string.error_while_creating_default_ev3_settings_file, Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
-            CustomDriver.createTestSettings(this);
+            //CustomDriver.createTestSettings(this);
 
             /*String base64EncodedPublicKey = "";
             mHelper = new IabHelper(this, base64EncodedPublicKey);

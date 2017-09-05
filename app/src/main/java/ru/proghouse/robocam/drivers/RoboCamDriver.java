@@ -26,6 +26,7 @@ import ru.proghouse.robocam.HttpServer;
 import ru.proghouse.robocam.MainActivity;
 import ru.proghouse.robocam.R;
 import ru.proghouse.robocam.Utils;
+import ru.proghouse.robocam.drivers.Custom.CustomDriver;
 import ru.proghouse.robocam.drivers.EV3.EV3Driver;
 
 /**
@@ -60,6 +61,11 @@ public abstract class RoboCamDriver {
             = new ArrayList<Class<? extends RoboCamDriver>>();
     private volatile static RoboCamDriver currentDriver = new EV3Driver();
     private DriverListener listener = null;
+
+    static {
+        RoboCamDriver.registerDriver(DefaultValue.EV3, EV3Driver.class);
+        RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);
+    };
 
     public abstract String getRobotName();
 

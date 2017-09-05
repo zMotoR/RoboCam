@@ -139,7 +139,7 @@ public class EV3Driver extends RoboCamDriver {
         }
     }
 
-    static {RoboCamDriver.registerDriver(DefaultValue.EV3, EV3Driver.class);};
+    //static {RoboCamDriver.registerDriver(DefaultValue.EV3, EV3Driver.class);};
 
     private Object socketSyncObject = new Object();
     private Object portSyncObject = new Object();

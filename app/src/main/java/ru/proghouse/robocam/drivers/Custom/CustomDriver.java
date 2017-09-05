@@ -50,7 +50,7 @@ public class CustomDriver extends RoboCamDriver {
     private static final int KEY_PRESSED = 255;
     private static final int KEY_RELEASED = 254;
 
-    static {RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);};
+    //static {RoboCamDriver.registerDriver(DefaultValue.Custom, CustomDriver.class);};
 
     private static final int SOCKET_DISCONNECTED = 0;
     private static final int SOCKET_CONNECTING = 1;
@@ -664,10 +664,12 @@ public class CustomDriver extends RoboCamDriver {
                             for (Integer key : keys1) {
                                 StreamHelper.writeUByte(s, KEY_PRESSED);
                                 StreamHelper.writeUByte(s, key);
+                                //Log.d("RoboCam", "Pressed key");
                             }
                             for (Integer key : keys0) {
                                 StreamHelper.writeUByte(s, KEY_RELEASED);
                                 StreamHelper.writeUByte(s, key);
+                                //Log.d("RoboCam", "Released key");
                             }
                         }
                     }
