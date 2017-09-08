@@ -177,7 +177,7 @@
     <string name="keygroup_n_port_n" formatted="false">Key group %d port %s</string>
     <string name="keygroup_ports">Ports of the key group %d</string>
     <string name="keygroup_was_deleted">The key group was deleted</string>
-    <string name="start_user_program">Start a user program</string>
+    <string name="start_user_program">Run the program</string>
     <string name="keyboard_group_axis">Keys</string>
     <string name="keygroup_horizontal">Left/right</string>
     <string name="keygroup_vertical">Up/down</string>

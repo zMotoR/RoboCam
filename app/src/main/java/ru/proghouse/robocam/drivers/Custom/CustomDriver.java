@@ -46,6 +46,7 @@ public class CustomDriver extends RoboCamDriver {
     private static final int CMD_START = 0;
     private static final int CMD_CALLSIGN = 1;
     private static final int CMD_CTRL = 2;
+    private static final int CMD_TEST = 3;
 
     private static final int KEY_PRESSED = 255;
     private static final int KEY_RELEASED = 254;
@@ -317,7 +318,7 @@ public class CustomDriver extends RoboCamDriver {
     public void stop() {
         if (socket != null)
             try {
-                if (socketState == SOCKET_CONNECTED)
+                if (socketState == SOCKET_CONNECTED || socketState == SOCKET_ABORTED)
                     sendCommand(CMD_STOP);
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -327,7 +328,7 @@ public class CustomDriver extends RoboCamDriver {
     private void close() {
         if (socket != null) {
             try {
-                if (socketState == SOCKET_CONNECTED)
+                if (socketState == SOCKET_CONNECTED || socketState == SOCKET_ABORTED)
                     sendCommand(CMD_STOP);
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -340,6 +341,23 @@ public class CustomDriver extends RoboCamDriver {
         }
         socket = null;
         socketState = SOCKET_DISCONNECTED;
+    }
+
+    private boolean checkRobotConnected() {
+        ByteArrayOutputStream s = new ByteArrayOutputStream();
+        try {
+            StreamHelper.writeUByte(s, CMD_TEST);
+            byte[] replyBytes = sendMessageAndReadReply(s, 1000);
+            if (replyBytes == null || replyBytes.length != 1)
+                return false;
+            int replyCode = StreamHelper.getUByteFromByteArray(replyBytes, 0);
+            if (replyCode != 0)
+                return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     private void sendCommand(int cmd) throws IOException {
@@ -470,6 +488,7 @@ public class CustomDriver extends RoboCamDriver {
                         driver.doOnConnected();
                         socketState = SOCKET_CONNECTED;
                         HttpServer.updateJoysticks();
+                        startRobotConnectionTester();
                     } else {
                         socketState = SOCKET_DISCONNECTED;
                         if (arg1 == null)
@@ -556,6 +575,35 @@ public class CustomDriver extends RoboCamDriver {
                 if (!robotResponse.equals(response)) {
                     errorId = R.string.robot_error_wrong_response_on_callsign;
                     return;
+                }
+            }
+        }
+    }
+
+    private void startRobotConnectionTester() {
+        new Thread(new CustomDriver.RobotConnectionTester()).start();
+    }
+
+    private class RobotConnectionTester implements Runnable {
+        @Override
+        public void run() {
+            int ms = 0;
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                    ms += 100;
+                    if (socketState == SOCKET_ABORTED || socket == null)
+                        break;
+                    if (ms >= 1000) {
+                        ms = 0;
+                        if (!checkRobotConnected()) {
+                            disconnect();
+                            break;
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    break;
                 }
             }
         }
@@ -685,6 +733,5 @@ public class CustomDriver extends RoboCamDriver {
             }
         }
     }
-
 
 }
