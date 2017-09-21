@@ -32,24 +32,36 @@ public class ConfirmationDialog extends DialogFragment {
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            Bundle bundle = getArguments();
-                            ActivityCompat.requestPermissions(getActivity(),
-                                    bundle.getStringArray(PERMISSIONS) /*new String[]{Manifest.permission.CAMERA}*/,
-                                    bundle.getInt(REQUEST_CODE) /*MainActivity.REQUEST_CAMERA_PERMISSION*/);
+                            try {
+                                Bundle bundle = getArguments();
+                                ActivityCompat.requestPermissions(getActivity(),
+                                        bundle.getStringArray(PERMISSIONS) /*new String[]{Manifest.permission.CAMERA}*/,
+                                        bundle.getInt(REQUEST_CODE) /*MainActivity.REQUEST_CAMERA_PERMISSION*/);
+                            } catch (Throwable e) {
+                                e.printStackTrace();
+                            }
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Bundle bundle = getArguments();
-                                    if (bundle.getBoolean(FINISH_ACTIVITY)) {
-                                        Activity activity = parent.getActivity();
-                                        if (activity != null) {
-                                            activity.finish();
-                                        }
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            try {
+                                Bundle bundle = getArguments();
+                                if (bundle.getBoolean(FINISH_ACTIVITY)) {
+                                    Activity activity = null;
+                                    if (parent != null)
+                                        activity = parent.getActivity();
+                                    if (activity == null)
+                                        activity = getActivity();
+                                    if (activity != null) {
+                                        activity.finish();
                                     }
                                 }
-                            })
+                            } catch (Throwable e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    })
                     .create();
         }
         return null;
