@@ -11,6 +11,13 @@
     android:id="@+id/parentLayout"
     android:background="#000000">
 
+    <ImageView
+        android:id="@+id/imageViewBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/robocam_background"
+        android:visibility="gone" />
+
     <SurfaceView
         android:id="@+id/surfaceView"
         android:layout_width="match_parent"
@@ -119,6 +126,16 @@
         android:layout_alignTop="@+id/btnRobotBackground"
         android:layout_toLeftOf="@+id/imageView6"
         android:focusable="false" />
+
+    <ImageButton
+        android:id="@+id/btnLocalControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/btnRobotBackground"
+        android:layout_toLeftOf="@+id/imageView6"
+        android:background="@drawable/local_controls_bg"
+        android:onClick="onLocalControlsButtonClick"
+        android:visibility="gone" />
 
     <ImageButton
         android:layout_width="wrap_content"

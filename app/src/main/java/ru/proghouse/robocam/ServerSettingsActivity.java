@@ -17,6 +17,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -55,17 +56,34 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private TextView textViewSpectatorName = null;
     private TextView textViewSpectatorPassword = null;
     private List<String> cameraIds = new ArrayList<String>();
+    private CheckBox checkBoxUseLocalControls = null;
+    private boolean useLocalControls = false;
+    private LinearLayout linearLayoutServer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server_settings);
 
+        SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+
+        //USE LOCAL CONTROLS
+        checkBoxUseLocalControls = (CheckBox)findViewById(R.id.checkBoxUseLocalControls);
+        useLocalControls = settings.getBoolean(ExtraKey.USE_LOCAL_CONTROLS, DefaultValue.USE_LOCAL_CONTROLS);
+        checkBoxUseLocalControls.setChecked(useLocalControls);
+        linearLayoutServer = (LinearLayout)findViewById(R.id.linearLayoutServer);
+        linearLayoutServer.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
+        checkBoxUseLocalControls.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                linearLayoutServer.setVisibility(isChecked ? View.GONE : View.VISIBLE);
+            }
+        });
+
         //CAMERA ID
         List<String> cameras = getCameras();
         spinnerCamera = (Spinner)findViewById(R.id.spinnerCamera);
         SettingsActivityHelper.initSpinner(spinnerCamera, this, cameras, R.string.camera);
-        SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
             camera2Id = settings.getString(ExtraKey.CAMERA2_ID, null);
             if (camera2Id == null || !cameraIds.contains(camera2Id))
@@ -489,6 +507,10 @@ public class ServerSettingsActivity extends AppCompatActivity {
         }
         if (useRenderScript != checkBoxUseRenderScript.isChecked()) {
             getPreferenceEditor().putBoolean(ExtraKey.USER_RENDER_SCRIPT, checkBoxUseRenderScript.isChecked());
+            changed = true;
+        }
+        if (useLocalControls != checkBoxUseLocalControls.isChecked()) {
+            getPreferenceEditor().putBoolean(ExtraKey.USE_LOCAL_CONTROLS, checkBoxUseLocalControls.isChecked());
             changed = true;
         }
         if (changed)

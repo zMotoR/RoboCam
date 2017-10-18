@@ -180,7 +180,7 @@ public class HttpServer extends IntentService {
         }
     }
 
-    public static void updateServerSettings(Context context) {
+    public static void updateServerSettings(Context context, boolean forceDisconnect) {
         synchronized (HttpServer.sync) {
             SharedPreferences settings = context.getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
             String oldAdminName = adminName;
@@ -193,10 +193,11 @@ public class HttpServer extends IntentService {
             spectatorPassword = settings.getString(ExtraKey.SPECTATOR_PASSWORD, DefaultValue.SPECTATOR_PASSWORD);
             boolean oldAllowSpectators = allowSpectators;
             allowSpectators = settings.getBoolean(ExtraKey.ALLOW_SPECTATORS, DefaultValue.ALLOW_SPECTATORS);
+            boolean useLocalControls = settings.getBoolean(ExtraKey.USE_LOCAL_CONTROLS, DefaultValue.USE_LOCAL_CONTROLS);
 
             List<WebSocketConnection> lostConnections = new ArrayList<WebSocketConnection>();
             List<Socket> guestSockets = new ArrayList<Socket>();
-            if ((oldAllowSpectators && !allowSpectators)
+            if (forceDisconnect || useLocalControls || (oldAllowSpectators && !allowSpectators)
                     || oldSpectatorName != spectatorName
                     || oldSpectatorPassword != spectatorPassword) {
                 //Searching for guest connections
@@ -215,7 +216,7 @@ public class HttpServer extends IntentService {
                 //Deleting all guest sessions
                 guestSessions.clear();
             }
-            if (oldAdminName != adminName || oldAdminPassword != adminPassword) {
+            if (forceDisconnect || useLocalControls || oldAdminName != adminName || oldAdminPassword != adminPassword) {
                 //Searching for admin connections
                 for (Enumeration<WebSocketConnection> enumerator = currentConnections.keys(); enumerator.hasMoreElements(); ) {
                     WebSocketConnection connection = enumerator.nextElement();
@@ -236,7 +237,12 @@ public class HttpServer extends IntentService {
             //Closing WebSocket connections
             if (lostConnections.size() > 0)
                 for (WebSocketConnection connection : lostConnections) {
-                    sendLostConnection(connection, context.getString(R.string.error_security_settings_have_been_changed));
+                    if (forceDisconnect)
+                        sendLostConnection(connection, context.getString(R.string.error_server_has_been_turned_off));
+                    else if (useLocalControls)
+                        sendLostConnection(connection, context.getString(R.string.error_local_controls_have_been_activated));
+                    else
+                        sendLostConnection(connection, context.getString(R.string.error_security_settings_have_been_changed));
                     connection.close();
                 }
             //Closing movie socket connections

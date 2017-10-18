@@ -129,6 +129,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private Animation animationConnectRobot = null;
     private ImageButton btnServer = null;
     private ImageButton btnRobot = null;
+    private ImageButton btnLocalControls = null;
     private BroadcastReceiver bluetoothReceiver = null;
     private BroadcastReceiver wifiReceiver = null;
     private ListView robotListView = null;
@@ -138,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private volatile ControlsUpdater controlsUpdater = null;
     private TextView testMessage = null;
     private volatile String testMessageText = null;
+    private ImageView imageViewBackground = null;
     //private IabHelper mHelper;
     //private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
     //private int purchaseState = PURCHASE_STATE_UNKNOWN;
@@ -154,6 +156,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private Thread backgroundThread = null;
     private volatile boolean backgroundThreadTerminated = false;
     private volatile int lastCheckedOrientation = Surface.ROTATION_0;
+
+    private boolean useLocalControls = false;
 
     public static double screenMin = 0;
 
@@ -180,6 +184,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 lastBluetoothDevice = savedInstanceState.getString(ExtraKey.LAST_BLUETOOTH_DEVICE);
             else
                 lastBluetoothDevice = settings.getString(ExtraKey.LAST_BLUETOOTH_DEVICE, null);
+            useLocalControls = settings.getBoolean(ExtraKey.USE_LOCAL_CONTROLS, DefaultValue.USE_LOCAL_CONTROLS);
 
             Display display = getWindowManager().getDefaultDisplay();
             DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -262,10 +267,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 parentLayout.addView(textureView, 0, params);
                 surfaceView.setVisibility(View.GONE);
                 createSurfaceTextureListener();
+                textureView.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
             } else {
                 surfaceView.getHolder().addCallback(this);
                 surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
                 setSurfaceSize();
+                surfaceView.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
                 //if (isScreenOn && cameraManager.getPreviewSize() != null)
                 //    updateCamera();
             }
@@ -303,7 +310,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             animationConnectRobot.setRepeatMode(Animation.REVERSE);
             btnServer = (ImageButton) findViewById(R.id.btnServer);
             btnRobot = (ImageButton) findViewById(R.id.btnRobot);
+            btnLocalControls = (ImageButton) findViewById(R.id.btnLocalControls);
+            imageViewBackground = (ImageView) findViewById(R.id.imageViewBackground);
+            imageViewBackground.setVisibility(useLocalControls ? View.VISIBLE : View.GONE);
             robotListView = (ListView) findViewById(R.id.robotListView);
+            if (useLocalControls) {
+                btnServer.setVisibility(View.GONE);
+                btnLocalControls.setVisibility(View.VISIBLE);
+            }
             createBroadcastReceiver();
             hideServerMessage();
             hideRobotMessage();
@@ -909,6 +923,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 btnServer.startAnimation(animationStartServer);
             }
             else if (HttpServer.getServerState() == HttpServer.SERVER_IS_WORKING){
+                HttpServer.updateServerSettings(this, true);
                 HttpServer.stop(this);
             }
             /*}
@@ -922,6 +937,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         catch(Exception e){
             e.printStackTrace();
         }
+    }
+
+    public void onLocalControlsButtonClick(View v) {
+
     }
 
     public void onSettingsButtonClick(View v){
@@ -1214,7 +1233,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     protected void onResume (){
-        HttpServer.updateServerSettings(this);
+        SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+        useLocalControls = settings.getBoolean(ExtraKey.USE_LOCAL_CONTROLS, DefaultValue.USE_LOCAL_CONTROLS);
+        btnServer.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
+        btnLocalControls.setVisibility(useLocalControls ? View.VISIBLE : View.GONE);
+        imageViewBackground.setVisibility(useLocalControls ? View.VISIBLE : View.GONE);
+        HttpServer.updateServerSettings(this, false);
+        if (useLocalControls && HttpServer.getServerState() != HttpServer.SERVER_IS_OFF)
+            HttpServer.stop(this);
+        if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK) {
+            textureView.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
+        } else {
+            surfaceView.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
+        }
         RoboCamBroker.addRoboCamBrokerListener(this);
         RoboCamDriver.getCurrentDriver().setDriverListener(this);
         updateControls();
@@ -1545,31 +1576,36 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     public void updateControls(){
         try {
-            int serverState = HttpServer.getServerState();
-            switch (serverState) {
-                case HttpServer.SERVER_IS_OFF:
-                    showServerMessage(R.string.server_is_off);
-                    btnServer.clearAnimation();
-                    btnServer.setBackgroundResource(R.drawable.start_server_bg);
-                    break;
-                case HttpServer.SERVER_IS_INITIALIZING:
-                    showServerMessage(R.string.server_is_initializing);
-                    break;
-                case HttpServer.SERVER_IS_WORKING:
-                    String serverAddress = getServerAddress();
-                    if (serverAddress == null) {
-                        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-                        if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED)
-                            new Thread(controlsUpdater).start();//waiting for an ip-address
-                    }
-                    showServerMessage(getString(R.string.server_is_working)
-                            + (serverAddress == null ? "" : (":\r\n" + serverAddress)));
-                    btnServer.clearAnimation();
-                    btnServer.setBackgroundResource(R.drawable.server_started_bg);
-                    break;
-                case HttpServer.SERVER_IS_STOPPING:
-                    showServerMessage(R.string.server_is_stopping);
-                    break;
+            if (useLocalControls) {
+                showServerMessage(R.string.go_to_the_controllers);
+            }
+            else {
+                int serverState = HttpServer.getServerState();
+                switch (serverState) {
+                    case HttpServer.SERVER_IS_OFF:
+                        showServerMessage(R.string.server_is_off);
+                        btnServer.clearAnimation();
+                        btnServer.setBackgroundResource(R.drawable.start_server_bg);
+                        break;
+                    case HttpServer.SERVER_IS_INITIALIZING:
+                        showServerMessage(R.string.server_is_initializing);
+                        break;
+                    case HttpServer.SERVER_IS_WORKING:
+                        String serverAddress = getServerAddress();
+                        if (serverAddress == null) {
+                            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+                            if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED)
+                                new Thread(controlsUpdater).start();//waiting for an ip-address
+                        }
+                        showServerMessage(getString(R.string.server_is_working)
+                                + (serverAddress == null ? "" : (":\r\n" + serverAddress)));
+                        btnServer.clearAnimation();
+                        btnServer.setBackgroundResource(R.drawable.server_started_bg);
+                        break;
+                    case HttpServer.SERVER_IS_STOPPING:
+                        showServerMessage(R.string.server_is_stopping);
+                        break;
+                }
             }
             RoboCamDriver driver = RoboCamDriver.getCurrentDriver();
             //ERROR WHEN DISCONNECTING FROM ROBOT!!!
