@@ -473,7 +473,7 @@ public class CameraManager implements Camera.PreviewCallback {
                         bundle.putInt(ConfirmationDialog.MESSAGE_ID, R.string.request_camera_permission);
                         bundle.putStringArray(ConfirmationDialog.PERMISSIONS, new String[]{Manifest.permission.CAMERA});
                         bundle.putInt(ConfirmationDialog.REQUEST_CODE, MainActivity.REQUEST_CAMERA_PERMISSION);
-                        bundle.putBoolean(ConfirmationDialog.FINISH_ACTIVITY, true);
+                        //bundle.putBoolean(ConfirmationDialog.FINISH_ACTIVITY, true);
                         ConfirmationDialog dialog = new ConfirmationDialog();
                         dialog.setArguments(bundle);
                         dialog.show(activity.getFragmentManager(), DefaultValue.FRAGMENT_DIALOG);

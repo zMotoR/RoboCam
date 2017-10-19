@@ -1,13 +1,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
-    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     tools:context="ru.proghouse.robocam.GlobalSettingsActivity"
-    android:id="@+id/parentLayout"
-    android:orientation="vertical"
-    android:showDividers="middle|end"
-    android:padding="6dp"
-    android:weightSum="1">
+    android:orientation="vertical">
 
     <LinearLayout
         android:orientation="horizontal"
@@ -36,45 +32,59 @@
 
     </LinearLayout>
 
-    <TextView
-        style="@style/SettingsSectionTitle"
-        android:text="@string/app_settings"
-        android:id="@+id/textView4" />
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/pref_item_height"
-        android:text="@string/pref_title_server"
-        android:id="@+id/buttonServer"
-        android:textAllCaps="false"
-        android:gravity="left|center_vertical"
-        android:onClick="onCameraButtonClick"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="6dp">
 
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/imageView1"
-        android:layout_gravity="center_horizontal"
-        android:src="@drawable/spacer_small"/>
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/app_settings"
+                android:id="@+id/textView4" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/pref_item_height"
-        android:text="@string/pref_totle_robot"
-        android:id="@+id/buttonRobot"
-        android:textAllCaps="false"
-        android:gravity="left|center_vertical"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:onClick="onRobotButtonClick" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pref_item_height"
+                android:text="@string/pref_title_server"
+                android:id="@+id/buttonServer"
+                android:textAllCaps="false"
+                android:gravity="left|center_vertical"
+                android:onClick="onCameraButtonClick"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/imageView2"
-        android:layout_gravity="center_horizontal"
-        android:src="@drawable/spacer_small" />
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView1"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small"/>
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pref_item_height"
+                android:text="@string/pref_totle_robot"
+                android:id="@+id/buttonRobot"
+                android:textAllCaps="false"
+                android:gravity="left|center_vertical"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:onClick="onRobotButtonClick" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView2"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/spacer_small" />
+
+        </LinearLayout>
+
+    </ScrollView>
 
 </LinearLayout>
