@@ -231,7 +231,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
             });
 
-            MobileAds.initialize(getApplicationContext(), "ca-app-pub-7800876624909705~9648407673");
+            MobileAds.initialize(getApplicationContext(), "ca-app-pub-7800876624909705~9648407673"); //"ca-app-pub-7800876624909705/2125140872"
             adView = (AdView) findViewById(R.id.adView);
             //AdRequest adRequest = new AdRequest.Builder().build();
             /*mAdView.setAdListener(new AdListener(){
@@ -551,6 +551,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     File adsDir = Utils.getAdsDir(thisActivity);
                     File newVersionFile = new File(adsDir, "nv.xml");
                     DownloadFile(AD_DOWNLOAD_ROOT_PATH + "v.xml", newVersionFile);
+                    //DownloadFile(AD_DOWNLOAD_ROOT_PATH + "v_temp3.xml", newVersionFile);
                     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                     DocumentBuilder db = dbf.newDocumentBuilder();
                     Document newVersion = db.parse(newVersionFile);
@@ -940,7 +941,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     public void onLocalControlsButtonClick(View v) {
-
+        Intent intent = new Intent(this, LocalControllersActivity.class);
+        startActivity(intent);
     }
 
     public void onSettingsButtonClick(View v){

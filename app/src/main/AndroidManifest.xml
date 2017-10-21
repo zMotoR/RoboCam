@@ -67,7 +67,8 @@
         <activity
             android:name=".CustomSettingsActivity"
             android:label="@string/title_activity_custom_settings"
-            android:windowSoftInputMode="stateHidden"/>
+            android:windowSoftInputMode="stateHidden" />
+        <activity android:name=".LocalControllersActivity"></activity>
     </application>
 
 </manifest>
