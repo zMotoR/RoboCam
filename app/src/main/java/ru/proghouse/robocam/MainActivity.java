@@ -174,6 +174,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mainActivity = this;
             thisActivity = this;
 
+            /*double[] coord = new double[] {-200, 100};
+            double a = (Math.atan2(coord[0], coord[1]) - Math.PI / 2.0) * -1;// * (180 / Math.PI);// + 180;
+            double a_gr = a * (180 / Math.PI);
+            coord[0] = Math.cos(a) * 100;
+            coord[1] = Math.sin(a) * 100;*/
+
             /*int test = 64250;
             byte[] bytes = new byte[2];
             StreamHelper.setUShortToByteArray(bytes, 0, test);

@@ -26,12 +26,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.io.File;
+import java.util.Hashtable;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import ru.proghouse.robocam.drivers.RoboCamDriver;
+
 public class LocalControllersActivity extends AppCompatActivity {
 
+    private static LocalControllersActivity localControllersActivity = null;
     private AdView adView = null;
     private WebView banner = null;
     private String bannerUrl = null;
@@ -43,13 +47,15 @@ public class LocalControllersActivity extends AppCompatActivity {
     private ImageView imageViewLeftJoystick = null;
     private ImageView imageViewRightJoystick = null;
     private TextView textViewDebugMessage = null;
+    private RelativeLayout parentLayout = null;
 
     private int[] axisValue = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
     private int[] oldAxisValue = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
     private int touchId1 = -1;
     private int touchId2 = -1;
     private boolean showJoysticks = true;
-    private String joystickShapes = "----";
+    private String axisNames = "xywzabcd";
+    String joystickShapes = "----";
     private String joystickBehaviors = "00000000";
     private int joystickCurrentPanel = 0;
 
@@ -57,6 +63,8 @@ public class LocalControllersActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_local_controllers);
+        localControllersActivity = this;
+        parentLayout = (RelativeLayout)findViewById(R.id.parentLayout);
         getSupportActionBar().hide();
         fullScreen();
 
@@ -99,7 +107,7 @@ public class LocalControllersActivity extends AppCompatActivity {
         imageViewRightJoystick.getLayoutParams().height = (int)(screenMinPixels / 2);
         textViewDebugMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.round(screenMinPixels / 32));
 
-        UpdateControls();
+        updateControls();
 
         adView = (AdView) findViewById(R.id.adView);
 
@@ -268,12 +276,6 @@ public class LocalControllersActivity extends AppCompatActivity {
         }
     }
 
-    private void UpdateControls() {
-
-        imageViewLeftJoystick.setVisibility(View.VISIBLE);
-        imageViewRightJoystick.setVisibility(View.VISIBLE);
-    }
-
     private boolean isTouching(ImageView joystick, int px, int py) {
         return joystick.getLeft() <= px
                 && joystick.getRight() >= px
@@ -291,16 +293,83 @@ public class LocalControllersActivity extends AppCompatActivity {
     }
 
     private String getJoystickShape(int joystickIndex) {
-        joystickShapes = "qqqq";
         return joystickShapes.substring(joystickIndex, joystickIndex + 1);
     }
 
     private void sendJoystickValues() {
-
+        boolean changed = false;
+        for (int i = 0; i < 8; i++)
+            if (axisValue[i] != oldAxisValue[i]) {
+                changed = true;
+                break;
+            }
+        if (changed) {
+            String message = "";
+            Hashtable<String, Integer> parameters = new Hashtable<String, Integer>();
+            for (int i = 0; i < 8; i++)
+                if (axisValue[i] != oldAxisValue[i]) {
+                    parameters.put(axisNames.substring(i, i + 1), axisValue[i]);
+                    message += axisNames.substring(i, i + 1) + "=" + Integer.toString(axisValue[i]) + ";";
+                }
+            textViewDebugMessage.setText(message.length() > 0 ? message.substring(0, message.length() - 1) : message);
+            RoboCamBroker.setJoystickValues(parameters);
+            for (int i = 0; i < 8; i++)
+                oldAxisValue[i] = axisValue[i];
+        }
     }
 
-    private void updateJoysticks() {
+    public static void updateJoysticks() {
+        if (localControllersActivity != null)
+            localControllersActivity.parentLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (localControllersActivity != null)
+                        localControllersActivity._updateJoysticks();
+                }
+            });
+    }
 
+    private void updateJoystickShape(ImageView imageView, int joystickIndex) {
+        String shape = joystickShapes.substring(joystickIndex, joystickIndex + 1);
+        if (shape.equals("v"))
+            imageView.setImageResource(R.drawable.joystick1);
+        else if (shape.equals("c"))
+            imageView.setImageResource(R.drawable.joystick2);
+        else if (shape.equals("q"))
+            imageView.setImageResource(R.drawable.joystick3);
+        else if (shape.equals("a"))
+            imageView.setImageResource(R.drawable.joystick4);
+        else if (shape.equals("h"))
+            imageView.setImageResource(R.drawable.joystick7);
+        else if (shape.equals("t"))
+            imageView.setImageResource(R.drawable.joystick5);
+        else if (shape.equals("l"))
+            imageView.setImageResource(R.drawable.joystick6);
+        if (shape.equals("-"))
+            imageView.setVisibility(View.GONE);
+        else
+            imageView.setVisibility(View.VISIBLE);
+    }
+
+    private void _updateJoysticks() {
+        try {
+            joystickShapes = RoboCamDriver.getCurrentDriver().isConnected()
+                    ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----";
+            if (showJoysticks) {
+                if (joystickCurrentPanel == 0) {
+                    updateJoystickShape(imageViewLeftJoystick, 0);
+                    updateJoystickShape(imageViewRightJoystick, 1);
+                } else {
+                    updateJoystickShape(imageViewLeftJoystick, 2);
+                    updateJoystickShape(imageViewRightJoystick, 3);
+                }
+            } else {
+                imageViewLeftJoystick.setVisibility(View.GONE);
+                imageViewRightJoystick.setVisibility(View.GONE);
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     private void updateControls() {
@@ -328,8 +397,8 @@ public class LocalControllersActivity extends AppCompatActivity {
         } else if (shape.equals("h")) {
             coord[0] = coord[0] < -100 ? -100 : (coord[0] > 100 ? 100 : coord[0]);
             coord[1] = 0;
-        } else if (shape.equals("c") && Math.sqrt(coord[0]*coord[0] + coord[1]*coord[1]) > 100) {
-            double a = Math.atan2(coord[0], coord[1]) + 180;
+        } else if (shape.equals("c") && Math.sqrt(coord[0] * coord[0] + coord[1] * coord[1]) > 100) {
+            double a = (Math.atan2(coord[0], coord[1]) - Math.PI / 2.0) * -1;
             coord[0] = Math.cos(a) * 100;
             coord[1] = Math.sin(a) * 100;
         } else if (shape.equals("q")) {
@@ -377,88 +446,90 @@ public class LocalControllersActivity extends AppCompatActivity {
                     axisValue[7] = 0; //d
             }
         }
-        if (touchId1 < 0 || touchId2 < 0)
-            sendJoystickValues();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                int px = (int)event.getX(event.getActionIndex());
-                int py = (int)event.getY(event.getActionIndex());
-                if (isTouching(imageViewLeftJoystick, px, py)
-                        && touchId1 < 0
-                        && showJoysticks)
-                    touchId1 = event.getPointerId(event.getActionIndex());
-                else if (isTouching(imageViewRightJoystick, px, py)
-                        && touchId2 < 0
-                        && showJoysticks)
-                    touchId2 = event.getPointerId(event.getActionIndex());
-                if (!showJoysticks) {
-                    showJoysticks = true;
-                    updateJoysticks();
-                    updateControls();
+        try {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    int px = (int) event.getX(event.getActionIndex());
+                    int py = (int) event.getY(event.getActionIndex());
+                    if (isTouching(imageViewLeftJoystick, px, py)
+                            && touchId1 < 0
+                            && showJoysticks)
+                        touchId1 = event.getPointerId(event.getActionIndex());
+                    else if (isTouching(imageViewRightJoystick, px, py)
+                            && touchId2 < 0
+                            && showJoysticks)
+                        touchId2 = event.getPointerId(event.getActionIndex());
+                    if (!showJoysticks) {
+                        showJoysticks = true;
+                        updateJoysticks();
+                        updateControls();
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (touchId1 == event.getPointerId(event.getActionIndex()))
+                        releaseTouchId(1);
+                    else if (touchId2 == event.getPointerId(event.getActionIndex()))
+                        releaseTouchId(2);
+                    break;
+            }
+            double[] coord = new double[]{0, 0};
+            for (int i = 0; i < event.getPointerCount(); i++) {
+                if (touchId1 >= 0 && event.getPointerId(i) == touchId1) {
+                    coord[0] = ((getJoystickX(imageViewLeftJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2) * -1;
+                    coord[1] = (getJoystickY(imageViewLeftJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2;
+                    if (joystickCurrentPanel == 0 && !getJoystickShape(0).equals("-")) {
+                        calcJoystickAxis(getJoystickShape(0), coord);
+                        axisValue[0] = (int) coord[0]; //x
+                        axisValue[1] = (int) coord[1]; //y
+                    }
+                    if (joystickCurrentPanel == 1 && !getJoystickShape(2).equals("-")) {
+                        calcJoystickAxis(getJoystickShape(2), coord);
+                        axisValue[4] = (int) coord[0]; //a
+                        axisValue[5] = (int) coord[1]; //b
+                    }
                 }
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_CANCEL:
-                if (touchId1 == event.getPointerId(event.getActionIndex()))
-                    releaseTouchId(1);
-                else if (touchId2 == event.getPointerId(event.getActionIndex()))
-                    releaseTouchId(2);
-                break;
-        }
-        double[] coord = new double[] {0, 0};
-        for (int i = 0; i < event.getPointerCount(); i++) {
-            if (touchId1 >= 0 && event.getPointerId(i) == touchId1) {
-                coord[0] = ((getJoystickX(imageViewLeftJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2) * -1;
-                coord[1] = (getJoystickY(imageViewLeftJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2;
-                if (joystickCurrentPanel == 0 && !getJoystickShape(0).equals("-")) {
-                    calcJoystickAxis(getJoystickShape(0), coord);
-                    axisValue[0] = (int) coord[0]; //x
-                    axisValue[1] = (int) coord[1]; //y
-                }
-                if (joystickCurrentPanel == 1 && !getJoystickShape(2).equals("-")) {
-                    calcJoystickAxis(getJoystickShape(2), coord);
-                    axisValue[4] = (int) coord[0]; //a
-                    axisValue[5] = (int) coord[1]; //b
+                if (touchId2 >= 0 && event.getPointerId(i) == touchId2) {
+                    coord[0] = ((getJoystickX(imageViewRightJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2) * -1;
+                    coord[1] = (getJoystickY(imageViewRightJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2;
+                    if (joystickCurrentPanel == 0 && !getJoystickShape(1).equals("-")) {
+                        calcJoystickAxis(getJoystickShape(1), coord);
+                        axisValue[2] = (int) coord[0]; //w
+                        axisValue[3] = (int) coord[1]; //z
+                    }
+                    if (joystickCurrentPanel == 1 && !getJoystickShape(3).equals("-")) {
+                        calcJoystickAxis(getJoystickShape(3), coord);
+                        axisValue[6] = (int) coord[0]; //c
+                        axisValue[7] = (int) coord[1]; //d
+                    }
                 }
             }
-            if (touchId2 >= 0 && event.getPointerId(i) == touchId2) {
-                coord[0] = ((getJoystickX(imageViewRightJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2) * -1;
-                coord[1] = (getJoystickY(imageViewRightJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2;
-                if (joystickCurrentPanel == 0 && !getJoystickShape(1).equals("-")) {
-                    calcJoystickAxis(getJoystickShape(1), coord);
-                    axisValue[2] = (int) coord[0]; //w
-                    axisValue[3] = (int) coord[1]; //z
-                }
-                if (joystickCurrentPanel == 1 && !getJoystickShape(3).equals("-")) {
-                    calcJoystickAxis(getJoystickShape(3), coord);
-                    axisValue[6] = (int) coord[0]; //c
-                    axisValue[7] = (int) coord[1]; //d
-                }
-            }
-        }
-
-
-        /*int x = (int)event.getX();
-        int y = (int)event.getY();
-        if (touchId1 < 0 && showJoysticks && event.is)
-        boolean up = false;
-        int pc = event.getPointerCount();
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_MOVE:
-                break;
-            case MotionEvent.ACTION_UP:
-                up = true;
-        }*/
-        textViewDebugMessage.setText(Integer.toString(axisValue[0]) + "x" + Integer.toString(axisValue[1])
+            sendJoystickValues();
+        /*textViewDebugMessage.setText(Integer.toString(axisValue[0]) + "x" + Integer.toString(axisValue[1])
                 + " " + Integer.toString(axisValue[2]) + 'x' + Integer.toString(axisValue[3])
-                + " " + Float.toString(event.getX()) + 'x' + Float.toString(event.getY()));
+                + " " + Float.toString(event.getX()) + 'x' + Float.toString(event.getY()));*/
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
         return false;
+    }
+
+    @Override
+    protected void onPause() {
+        localControllersActivity = null;
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        localControllersActivity = this;
+        updateJoysticks();
     }
 }

@@ -67,4 +67,9 @@ public class RoboCamBroker {
         return RoboCamBroker.date;
     }
 
+    public static void updateJoysticks() {
+        HttpServer.updateJoysticks();
+        LocalControllersActivity.updateJoysticks();
+    }
+
 }

@@ -26,6 +26,7 @@ import java.util.UUID;
 import ru.proghouse.robocam.DefaultValue;
 import ru.proghouse.robocam.HttpServer;
 import ru.proghouse.robocam.R;
+import ru.proghouse.robocam.RoboCamBroker;
 import ru.proghouse.robocam.StringHelper;
 import ru.proghouse.robocam.Utils;
 import ru.proghouse.robocam.drivers.RoboCamDriver;
@@ -305,7 +306,7 @@ public class CustomDriver extends RoboCamDriver {
 
     public void disconnect(int resId) {
         socketState = SOCKET_ABORTED;
-        HttpServer.updateJoysticks();
+        RoboCamBroker.updateJoysticks();
         if (socket != null)
             close();
         if (resId == 0)
@@ -487,7 +488,7 @@ public class CustomDriver extends RoboCamDriver {
                         startReadingControllerValues();
                         driver.doOnConnected();
                         socketState = SOCKET_CONNECTED;
-                        HttpServer.updateJoysticks();
+                        RoboCamBroker.updateJoysticks();
                         startRobotConnectionTester();
                     } else {
                         socketState = SOCKET_DISCONNECTED;

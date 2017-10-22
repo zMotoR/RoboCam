@@ -42,8 +42,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:visibility="gone"
-        ads:srcCompat="@drawable/joystick2" />
+        android:src="@drawable/joystick2" />
 
     <ImageView
         android:id="@+id/imageViewRightJoystick"
@@ -52,8 +51,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:visibility="gone"
-        ads:srcCompat="@drawable/joystick2" />
+        android:src="@drawable/joystick2" />
 
     <TextView
         android:id="@+id/textViewDebugMessage"
