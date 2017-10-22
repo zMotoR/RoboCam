@@ -19,4 +19,6 @@ public class ExtraKey {
     public static final String CURRENT_PATH = "current_path";
     public static final String LAST_BLUETOOTH_DEVICE = "last_bluetooth_device";
     public static final String USE_LOCAL_CONTROLS = "use_local_controls";
+    public static final String LOCAL_CONTROL = "local_control";
+    public static final String JOYSTICK_CURRENT_PANEL = "joystick_current_panel";
 }

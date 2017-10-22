@@ -36,7 +36,7 @@
         android:layout_centerHorizontal="true" />
 
     <ImageView
-        android:id="@+id/imageViewLeftJoystick"
+        android:id="@+id/imageViewJoystick2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -45,7 +45,7 @@
         android:src="@drawable/joystick2" />
 
     <ImageView
-        android:id="@+id/imageViewRightJoystick"
+        android:id="@+id/imageViewJoystick1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -71,5 +71,43 @@
         android:layout_centerVertical="true"
         android:text="TextView"
         android:textColor="#ffffffff" />
+
+    <ImageView
+        android:id="@+id/imageViewEmpty1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/imageViewJoystick1"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/empty" />
+
+    <ImageView
+        android:id="@+id/imageViewCurrentJoystick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/imageViewEmpty1"
+        android:layout_toLeftOf="@+id/imageViewEmpty1"
+        android:layout_toStartOf="@+id/imageViewEmpty1"
+        android:onClick="onCurrentJoystickClick"
+        android:src="@drawable/joystick_1_2" />
+
+    <ImageView
+        android:id="@+id/imageViewEmpty2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/empty"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <ImageView
+        android:id="@+id/imageViewHands"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/imageViewEmpty2"
+        android:layout_toLeftOf="@+id/imageViewEmpty2"
+        android:layout_toStartOf="@+id/imageViewEmpty2"
+        android:onClick="onHandsClick"
+        android:src="@drawable/hands_r" />
 
 </RelativeLayout>

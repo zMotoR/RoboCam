@@ -1,7 +1,8 @@
 package ru.proghouse.robocam;
 
-import android.app.ActionBar;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
@@ -44,10 +45,15 @@ public class LocalControllersActivity extends AppCompatActivity {
     private String bannerType = "";
     private boolean bannerShowOffline = false;
     private volatile boolean loadedAds = false;
-    private ImageView imageViewLeftJoystick = null;
-    private ImageView imageViewRightJoystick = null;
+    private ImageView imageViewJoystick2 = null;
+    private ImageView imageViewJoystick1 = null;
+    private ImageView imageViewCurrentJoystick = null;
+    private ImageView imageViewEmpty1 = null;
+    private ImageView imageViewEmpty2 = null;
+    private ImageView imageViewHands = null;
     private TextView textViewDebugMessage = null;
     private RelativeLayout parentLayout = null;
+    private String control = "left-handed";
 
     private int[] axisValue = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
     private int[] oldAxisValue = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
@@ -55,9 +61,10 @@ public class LocalControllersActivity extends AppCompatActivity {
     private int touchId2 = -1;
     private boolean showJoysticks = true;
     private String axisNames = "xywzabcd";
-    String joystickShapes = "----";
+    private String joystickShapes = "----";
     private String joystickBehaviors = "00000000";
     private int joystickCurrentPanel = 0;
+    private double scale = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,9 +75,23 @@ public class LocalControllersActivity extends AppCompatActivity {
         getSupportActionBar().hide();
         fullScreen();
 
-        imageViewLeftJoystick = (ImageView)findViewById(R.id.imageViewLeftJoystick);
-        imageViewRightJoystick = (ImageView)findViewById(R.id.imageViewRightJoystick);
+        SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+        control = settings.getString(ExtraKey.LOCAL_CONTROL, "left-handed");
+        joystickCurrentPanel = settings.getInt(ExtraKey.JOYSTICK_CURRENT_PANEL, 0);
+
+        if (control.equals("left-handed")) {
+            imageViewJoystick1 = (ImageView) findViewById(R.id.imageViewJoystick1);
+            imageViewJoystick2 = (ImageView) findViewById(R.id.imageViewJoystick2);
+        } else {
+            imageViewJoystick1 = (ImageView) findViewById(R.id.imageViewJoystick2);
+            imageViewJoystick2 = (ImageView) findViewById(R.id.imageViewJoystick1);
+        }
         textViewDebugMessage = (TextView) findViewById(R.id.textViewDebugMessage);
+        textViewDebugMessage.setText("");
+        imageViewEmpty1 = (ImageView)findViewById(R.id.imageViewEmpty1);
+        imageViewCurrentJoystick = (ImageView)findViewById(R.id.imageViewCurrentJoystick);
+        imageViewEmpty2 = (ImageView)findViewById(R.id.imageViewEmpty2);
+        imageViewHands = (ImageView)findViewById(R.id.imageViewHands);
 
         Display display = getWindowManager().getDefaultDisplay();
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -97,17 +118,28 @@ public class LocalControllersActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         screenMinPixels = Math.min(width, height);
+        scale = (double)screenMinPixels / 1080.0;
         screenMin = Math.min(
                 (double)width / (double)displayMetrics.density,
                 (double)height / (double)displayMetrics.density);
 
-        imageViewLeftJoystick.getLayoutParams().width = (int)(screenMinPixels / 2);
-        imageViewLeftJoystick.getLayoutParams().height = (int)(screenMinPixels / 2);
-        imageViewRightJoystick.getLayoutParams().width = (int)(screenMinPixels / 2);
-        imageViewRightJoystick.getLayoutParams().height = (int)(screenMinPixels / 2);
+        imageViewJoystick1.setVisibility(View.INVISIBLE);
+        imageViewJoystick2.setVisibility(View.INVISIBLE);
+        imageViewJoystick2.getLayoutParams().width = (int)(screenMinPixels / 2);
+        imageViewJoystick2.getLayoutParams().height = (int)(screenMinPixels / 2);
+        imageViewJoystick1.getLayoutParams().width = (int)(screenMinPixels / 2);
+        imageViewJoystick1.getLayoutParams().height = (int)(screenMinPixels / 2);
+        imageViewEmpty1.getLayoutParams().width = (int)(30.0 * scale);
+        imageViewEmpty1.getLayoutParams().height = (int)(30.0 * scale);
+        imageViewCurrentJoystick.getLayoutParams().width = (int)(120.0 * scale);
+        imageViewCurrentJoystick.getLayoutParams().height = (int)(120.0 * scale);
+        imageViewEmpty2.getLayoutParams().width = (int)(30.0 * scale);
+        imageViewEmpty2.getLayoutParams().height = (int)(30.0 * scale);
+        imageViewHands.getLayoutParams().width = (int)(120.0 * scale);
+        imageViewHands.getLayoutParams().height = (int)(120.0 * scale);
         textViewDebugMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.round(screenMinPixels / 32));
 
-        updateControls();
+        _updateJoysticks();
 
         adView = (AdView) findViewById(R.id.adView);
 
@@ -323,8 +355,9 @@ public class LocalControllersActivity extends AppCompatActivity {
             localControllersActivity.parentLayout.post(new Runnable() {
                 @Override
                 public void run() {
-                    if (localControllersActivity != null)
+                    if (localControllersActivity != null) {
                         localControllersActivity._updateJoysticks();
+                    }
                 }
             });
     }
@@ -346,7 +379,7 @@ public class LocalControllersActivity extends AppCompatActivity {
         else if (shape.equals("l"))
             imageView.setImageResource(R.drawable.joystick6);
         if (shape.equals("-"))
-            imageView.setVisibility(View.GONE);
+            imageView.setVisibility(View.INVISIBLE);
         else
             imageView.setVisibility(View.VISIBLE);
     }
@@ -355,25 +388,50 @@ public class LocalControllersActivity extends AppCompatActivity {
         try {
             joystickShapes = RoboCamDriver.getCurrentDriver().isConnected()
                     ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----";
+            joystickBehaviors = RoboCamDriver.getCurrentDriver().isConnected()
+                    ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000";
             if (showJoysticks) {
-                if (joystickCurrentPanel == 0) {
-                    updateJoystickShape(imageViewLeftJoystick, 0);
-                    updateJoystickShape(imageViewRightJoystick, 1);
+                if (control.equals("left-handed")) {
+                    imageViewJoystick1 = (ImageView)findViewById(R.id.imageViewJoystick1);
+                    imageViewJoystick2 = (ImageView)findViewById(R.id.imageViewJoystick2);
+                    imageViewHands.setImageResource(R.drawable.hands_r);
                 } else {
-                    updateJoystickShape(imageViewLeftJoystick, 2);
-                    updateJoystickShape(imageViewRightJoystick, 3);
+                    imageViewJoystick1 = (ImageView)findViewById(R.id.imageViewJoystick2);
+                    imageViewJoystick2 = (ImageView)findViewById(R.id.imageViewJoystick1);
+                    imageViewHands.setImageResource(R.drawable.hands_l);
                 }
+                if (joystickCurrentPanel == 0 && joystickShapes.substring(0, 2).equals("--"))
+                    joystickCurrentPanel = 1;
+                if (joystickCurrentPanel == 1 && joystickShapes.substring(2, 4).equals("--"))
+                    joystickCurrentPanel = 0;
+                if (joystickCurrentPanel == 0) {
+                    updateJoystickShape(imageViewJoystick1, 0);
+                    updateJoystickShape(imageViewJoystick2, 1);
+                } else {
+                    updateJoystickShape(imageViewJoystick1, 2);
+                    updateJoystickShape(imageViewJoystick2, 3);
+                }
+                if (joystickShapes.substring(0, 2).equals("--") || joystickShapes.substring(2, 4).equals("--"))
+                    imageViewCurrentJoystick.setVisibility(View.INVISIBLE);
+                else
+                    imageViewCurrentJoystick.setVisibility(View.VISIBLE);
+                if (joystickCurrentPanel == 0)
+                    imageViewCurrentJoystick.setImageResource(R.drawable.joystick_1_2);
+                else
+                    imageViewCurrentJoystick.setImageResource(R.drawable.joystick_3_4);
+                if (joystickShapes.equals("----"))
+                    imageViewHands.setVisibility(View.INVISIBLE);
+                else
+                    imageViewHands.setVisibility(View.VISIBLE);
             } else {
-                imageViewLeftJoystick.setVisibility(View.GONE);
-                imageViewRightJoystick.setVisibility(View.GONE);
+                imageViewJoystick1.setVisibility(View.INVISIBLE);
+                imageViewJoystick2.setVisibility(View.INVISIBLE);
+                imageViewCurrentJoystick.setVisibility(View.INVISIBLE);
+                imageViewHands.setVisibility(View.INVISIBLE);
             }
         } catch (Throwable e) {
             e.printStackTrace();
         }
-    }
-
-    private void updateControls() {
-
     }
 
     private double getJoystickX(ImageView imageView) {
@@ -456,18 +514,17 @@ public class LocalControllersActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_POINTER_DOWN:
                     int px = (int) event.getX(event.getActionIndex());
                     int py = (int) event.getY(event.getActionIndex());
-                    if (isTouching(imageViewLeftJoystick, px, py)
+                    if (isTouching(imageViewJoystick1, px, py)
                             && touchId1 < 0
                             && showJoysticks)
                         touchId1 = event.getPointerId(event.getActionIndex());
-                    else if (isTouching(imageViewRightJoystick, px, py)
+                    else if (isTouching(imageViewJoystick2, px, py)
                             && touchId2 < 0
                             && showJoysticks)
                         touchId2 = event.getPointerId(event.getActionIndex());
                     if (!showJoysticks) {
                         showJoysticks = true;
                         updateJoysticks();
-                        updateControls();
                     }
                     break;
                 case MotionEvent.ACTION_UP:
@@ -482,8 +539,8 @@ public class LocalControllersActivity extends AppCompatActivity {
             double[] coord = new double[]{0, 0};
             for (int i = 0; i < event.getPointerCount(); i++) {
                 if (touchId1 >= 0 && event.getPointerId(i) == touchId1) {
-                    coord[0] = ((getJoystickX(imageViewLeftJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2) * -1;
-                    coord[1] = (getJoystickY(imageViewLeftJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewLeftJoystick) * 2;
+                    coord[0] = ((getJoystickX(imageViewJoystick1) - event.getX(i)) * 100 / getJoystickSize(imageViewJoystick1) * 2) * -1;
+                    coord[1] = (getJoystickY(imageViewJoystick1) - event.getY(i)) * 100 / getJoystickSize(imageViewJoystick1) * 2;
                     if (joystickCurrentPanel == 0 && !getJoystickShape(0).equals("-")) {
                         calcJoystickAxis(getJoystickShape(0), coord);
                         axisValue[0] = (int) coord[0]; //x
@@ -496,8 +553,8 @@ public class LocalControllersActivity extends AppCompatActivity {
                     }
                 }
                 if (touchId2 >= 0 && event.getPointerId(i) == touchId2) {
-                    coord[0] = ((getJoystickX(imageViewRightJoystick) - event.getX(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2) * -1;
-                    coord[1] = (getJoystickY(imageViewRightJoystick) - event.getY(i)) * 100 / getJoystickSize(imageViewRightJoystick) * 2;
+                    coord[0] = ((getJoystickX(imageViewJoystick2) - event.getX(i)) * 100 / getJoystickSize(imageViewJoystick2) * 2) * -1;
+                    coord[1] = (getJoystickY(imageViewJoystick2) - event.getY(i)) * 100 / getJoystickSize(imageViewJoystick2) * 2;
                     if (joystickCurrentPanel == 0 && !getJoystickShape(1).equals("-")) {
                         calcJoystickAxis(getJoystickShape(1), coord);
                         axisValue[2] = (int) coord[0]; //w
@@ -531,5 +588,39 @@ public class LocalControllersActivity extends AppCompatActivity {
         super.onResume();
         localControllersActivity = this;
         updateJoysticks();
+    }
+
+    public void onHandsClick(View v) {
+        if (touchId1 < 0 && touchId2 < 0 && imageViewHands.getVisibility() == View.VISIBLE) {
+            if (control.equals("left-handed"))
+                control = "right-handed";
+            else
+                control = "left-handed";
+            _updateJoysticks();
+            SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(ExtraKey.LOCAL_CONTROL, control);
+            if (Build.VERSION.SDK_INT >= 9)
+                editor.apply();
+            else
+                editor.commit();
+        }
+    }
+
+    public void onCurrentJoystickClick(View v) {
+        if (touchId1 < 0 && touchId2 < 0 && imageViewCurrentJoystick.getVisibility() == View.VISIBLE) {
+            if (joystickCurrentPanel == 0)
+                joystickCurrentPanel = 1;
+            else
+                joystickCurrentPanel = 0;
+            _updateJoysticks();
+            SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putInt(ExtraKey.JOYSTICK_CURRENT_PANEL, joystickCurrentPanel);
+            if (Build.VERSION.SDK_INT >= 9)
+                editor.apply();
+            else
+                editor.commit();
+        }
     }
 }
