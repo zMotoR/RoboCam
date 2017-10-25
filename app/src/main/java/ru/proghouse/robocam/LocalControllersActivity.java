@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -27,6 +28,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Hashtable;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -52,6 +54,7 @@ public class LocalControllersActivity extends AppCompatActivity {
     private ImageView imageViewEmpty2 = null;
     private ImageView imageViewHands = null;
     private TextView textViewDebugMessage = null;
+    private TextView textViewText = null;
     private RelativeLayout parentLayout = null;
     private String control = "left-handed";
 
@@ -60,11 +63,15 @@ public class LocalControllersActivity extends AppCompatActivity {
     private int touchId1 = -1;
     private int touchId2 = -1;
     private boolean showJoysticks = true;
+    private boolean hideJoysticks = false;
+    private boolean showDebugInfo = true;
     private String axisNames = "xywzabcd";
     private String joystickShapes = "----";
     private String joystickBehaviors = "00000000";
     private int joystickCurrentPanel = 0;
     private double scale = 1;
+    private HashSet<Integer> usedKeys = new HashSet<Integer>();
+    private HashSet<Integer> keys = new HashSet<Integer>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +95,8 @@ public class LocalControllersActivity extends AppCompatActivity {
         }
         textViewDebugMessage = (TextView) findViewById(R.id.textViewDebugMessage);
         textViewDebugMessage.setText("");
+        textViewText = (TextView)findViewById(R.id.textViewText);
+        textViewText.setText("");
         imageViewEmpty1 = (ImageView)findViewById(R.id.imageViewEmpty1);
         imageViewCurrentJoystick = (ImageView)findViewById(R.id.imageViewCurrentJoystick);
         imageViewEmpty2 = (ImageView)findViewById(R.id.imageViewEmpty2);
@@ -390,6 +399,17 @@ public class LocalControllersActivity extends AppCompatActivity {
                     ? RoboCamDriver.getCurrentDriver().getJoystickShapes() : "----";
             joystickBehaviors = RoboCamDriver.getCurrentDriver().isConnected()
                     ? RoboCamDriver.getCurrentDriver().getJoystickBehaviors() : "00000000";
+            showDebugInfo = RoboCamDriver.getCurrentDriver().isConnected()
+                    ? RoboCamDriver.getCurrentDriver().isShowDebugInfo() : true;
+            textViewDebugMessage.setVisibility(showDebugInfo ? View.VISIBLE : View.INVISIBLE);
+            usedKeys.clear();
+            if (RoboCamDriver.getCurrentDriver().isConnected()) {
+                String s = RoboCamDriver.getCurrentDriver().getUsedKeys();
+                for (int i = 0; i < s.length() / 3; i++)
+                    usedKeys.add(new Integer(s.substring(i * 3, i * 3 + 3)));
+            }
+            hideJoysticks = RoboCamDriver.getCurrentDriver().isConnected()
+                    ? false : RoboCamDriver.getCurrentDriver().isHideJoysticks();
             if (showJoysticks) {
                 if (control.equals("left-handed")) {
                     imageViewJoystick1 = (ImageView)findViewById(R.id.imageViewJoystick1);
@@ -429,6 +449,11 @@ public class LocalControllersActivity extends AppCompatActivity {
                 imageViewCurrentJoystick.setVisibility(View.INVISIBLE);
                 imageViewHands.setVisibility(View.INVISIBLE);
             }
+            if (!RoboCamDriver.getCurrentDriver().isConnected())
+                textViewText.setText(R.string.robot_is_not_connected);
+            else
+                textViewText.setText("");
+
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -622,5 +647,166 @@ public class LocalControllersActivity extends AppCompatActivity {
             else
                 editor.commit();
         }
+    }
+
+    /*private void showKeyCodes(int keyCode, int ascii) {
+        String s0 = "";
+        for (Integer k : usedKeys) {
+            if (!s0.isEmpty())
+                s0 += ", ";
+            s0 += k.toString();
+        }
+        String s = "";
+        for (Integer k : keys) {
+            if (!s.isEmpty())
+                s += ", ";
+            s += k.toString();
+        }
+        textViewDebugMessage.setText(s0 + "---" + s + " keyCode = " + Integer.toString(keyCode)
+                + " ascii = " + Integer.toString(ascii));
+    }*/
+
+    private void sendPressedKeys() {
+        if (hideJoysticks && showJoysticks && keys.size() > 0) {
+            showJoysticks = false;
+            _updateJoysticks();
+        }
+        String s = "";
+        for (Integer k : keys) {
+            if (!s.isEmpty())
+                s += ", ";
+            s += k.toString();
+        }
+        textViewDebugMessage.setText(s);
+        RoboCamBroker.setPressedKeys((HashSet<Integer>)keys.clone());
+    }
+
+    private int AndroidKeyCodeToASCII(int keyCode) {
+        int ascii = 0;
+        if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
+            ascii = keyCode - KeyEvent.KEYCODE_A + 'A';
+        else if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
+            ascii = keyCode - KeyEvent.KEYCODE_0 + '0';
+        else if (keyCode == KeyEvent.KEYCODE_DEL) //Backspace
+            ascii = 8;
+        else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT)
+            ascii = 16;
+        else if (keyCode == KeyEvent.KEYCODE_CTRL_LEFT || keyCode == KeyEvent.KEYCODE_CTRL_RIGHT)
+            ascii = 17;
+        else if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT)
+            ascii = 18;
+        else if (keyCode == KeyEvent.KEYCODE_NUM_LOCK)
+            ascii = 144;
+        else if (keyCode == KeyEvent.KEYCODE_SCROLL_LOCK)
+            ascii = 145;
+        else if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9)
+            ascii = keyCode - KeyEvent.KEYCODE_NUMPAD_0 + 96;
+        else if (keyCode == KeyEvent.KEYCODE_BREAK)
+            ascii = 19;
+        else if (keyCode == KeyEvent.KEYCODE_GRAVE)
+            ascii = 192;
+        else if (keyCode == KeyEvent.KEYCODE_MINUS)
+            ascii = 189;
+        else if (keyCode == KeyEvent.KEYCODE_LEFT_BRACKET)
+            ascii = 219;
+        else if (keyCode == KeyEvent.KEYCODE_RIGHT_BRACKET)
+            ascii = 221;
+        else if (keyCode == KeyEvent.KEYCODE_BACKSLASH)
+            ascii = 220;
+        else if (keyCode == KeyEvent.KEYCODE_SEMICOLON)
+            ascii = 186;
+        else if (keyCode == KeyEvent.KEYCODE_APOSTROPHE)
+            ascii = 222;
+        else if (keyCode == KeyEvent.KEYCODE_COMMA)
+            ascii = 188;
+        else if (keyCode == KeyEvent.KEYCODE_PERIOD)
+            ascii = 190;
+        else if (keyCode == KeyEvent.KEYCODE_SLASH)
+            ascii = 191;
+        else if (keyCode == KeyEvent.KEYCODE_F2)
+            ascii = 113;
+        else if (keyCode == KeyEvent.KEYCODE_F4)
+            ascii = 115;
+        else if (keyCode == KeyEvent.KEYCODE_F7)
+            ascii = 118;
+        else if (keyCode == KeyEvent.KEYCODE_F8)
+            ascii = 119;
+        else if (keyCode == KeyEvent.KEYCODE_F9)
+            ascii = 120;
+        else if (keyCode == KeyEvent.KEYCODE_F10)
+            ascii = 121;
+        else if (keyCode == KeyEvent.KEYCODE_TAB)
+            ascii = 9;
+        else if (keyCode == KeyEvent.KEYCODE_CLEAR)
+            ascii = 12;
+        else if (keyCode == KeyEvent.KEYCODE_ENTER)
+            ascii = 13;
+        else if (keyCode == KeyEvent.KEYCODE_CAPS_LOCK)
+            ascii = 20;
+        else if (keyCode == KeyEvent.KEYCODE_ESCAPE)
+            ascii = 27;
+        else if (keyCode == KeyEvent.KEYCODE_SPACE)
+            ascii = 32;
+        else if (keyCode == KeyEvent.KEYCODE_PAGE_UP)
+            ascii = 33;
+        else if (keyCode == KeyEvent.KEYCODE_PAGE_DOWN)
+            ascii = 34;
+        else if (keyCode == KeyEvent.KEYCODE_MOVE_END)
+            ascii = 35;
+        else if (keyCode == KeyEvent.KEYCODE_MOVE_HOME)
+            ascii = 36;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT)
+            ascii = 37;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_UP)
+            ascii = 38;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+            ascii = 39;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
+            ascii = 40;
+        else if (keyCode == KeyEvent.KEYCODE_INSERT)
+            ascii = 45;
+        else if (keyCode == KeyEvent.KEYCODE_FORWARD_DEL) //Del
+            ascii = 46;
+        else if (keyCode == KeyEvent.KEYCODE_NUMPAD_MULTIPLY)
+            ascii = 106;
+        else if (keyCode == KeyEvent.KEYCODE_NUMPAD_ADD)
+            ascii = 107;
+        else if (keyCode == KeyEvent.KEYCODE_NUMPAD_SUBTRACT)
+            ascii = 109;
+        else if (keyCode == KeyEvent.KEYCODE_NUMPAD_DOT)
+            ascii = 110;
+        return ascii;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        int ascii = AndroidKeyCodeToASCII(keyCode);
+        if (usedKeys.contains(ascii)) {
+            if (!keys.contains(ascii)) {
+                keys.add(ascii);
+                sendPressedKeys();
+            }
+        }
+        //showKeyCodes(keyCode, ascii);
+        //return super.onKeyDown(keyCode, event);
+        if (ascii > 0)
+            return true;
+        else
+            return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        int ascii = AndroidKeyCodeToASCII(keyCode);
+        if (keys.contains(ascii)) {
+            keys.remove(ascii);
+            sendPressedKeys();
+        }
+        //showKeyCodes(keyCode, ascii);
+        //return super.onKeyDown(keyCode, event);
+        if (ascii > 0)
+            return true;
+        else
+            return super.onKeyUp(keyCode, event);
     }
 }

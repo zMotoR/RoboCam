@@ -199,4 +199,5 @@
     <string name="error_local_controls_have_been_activated">Local controls have been activated</string>
     <string name="error_server_has_been_turned_off">The server has been turned off.</string>
     <string name="go_to_the_controllers">Go to the controllers...</string>
+    <string name="robot_is_not_connected">A robot is not connected</string>
 </resources>

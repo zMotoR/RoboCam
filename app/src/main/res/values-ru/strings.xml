@@ -198,4 +198,5 @@
     <string name="error_local_controls_have_been_activated">Включено локальное управление.</string>
     <string name="error_server_has_been_turned_off">Сервер выключен.</string>
     <string name="go_to_the_controllers">Начать управление...</string>
+    <string name="robot_is_not_connected">Робот не подключен</string>
 </resources>

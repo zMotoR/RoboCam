@@ -111,8 +111,7 @@ public class SelectKeyActivity extends AppCompatActivity {
         EV3KeyGroup.fromArray(savedInstanceState.getIntArray(SETTINGS_KEYS), keys);
     }
 
-    @Override
-    public boolean onKeyDown (int keyCode, KeyEvent event) {
+    private int AndroidKeyCodeToASCII(int keyCode) {
         int ascii = 0;
         if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
             ascii = keyCode - KeyEvent.KEYCODE_A + 'A';
@@ -186,6 +185,12 @@ public class SelectKeyActivity extends AppCompatActivity {
             else if (Build.VERSION.SDK_INT >= 11 && event.isCtrlPressed())
                 ascii = 17;
         }*/
+        return ascii;
+    }
+
+    @Override
+    public boolean onKeyDown (int keyCode, KeyEvent event) {
+        int ascii = AndroidKeyCodeToASCII(keyCode);
         //KeyCharacterMap keyCharacterMap = KeyCharacterMap.load(event.getDeviceId());
         //keyCharacterMap.getDisplayLabel(keyCode);
         //Toast.makeText(this, Integer.toString(keyCode), Toast.LENGTH_LONG).show();

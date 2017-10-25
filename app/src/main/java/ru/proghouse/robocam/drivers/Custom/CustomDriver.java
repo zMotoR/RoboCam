@@ -3,6 +3,8 @@ package ru.proghouse.robocam.drivers.Custom;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import org.w3c.dom.Document;
@@ -329,8 +331,13 @@ public class CustomDriver extends RoboCamDriver {
     private void close() {
         if (socket != null) {
             try {
-                if (socketState == SOCKET_CONNECTED || socketState == SOCKET_ABORTED)
-                    sendCommand(CMD_STOP);
+                if (socketState == SOCKET_CONNECTED || socketState == SOCKET_ABORTED) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+                        if (socket.isConnected())
+                            sendCommand(CMD_STOP);
+                    } else
+                        sendCommand(CMD_STOP);
+                }
             } catch (Throwable e) {
                 e.printStackTrace();
             }
@@ -389,7 +396,12 @@ public class CustomDriver extends RoboCamDriver {
             int available = 0;
             int counter = 0;
             while (counter * 20 < timeOut) {
-                available = inputStream.available();
+                available = 0;
+                try {
+                    available = inputStream.available();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
                 if (available > 0)
                     break;
                 try {
