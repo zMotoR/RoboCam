@@ -200,4 +200,5 @@
     <string name="error_server_has_been_turned_off">The server has been turned off.</string>
     <string name="go_to_the_controllers">Go to the controllers...</string>
     <string name="robot_is_not_connected">A robot is not connected</string>
+    <string name="maхimize_joysticks">Maxmize joysticks</string>
 </resources>

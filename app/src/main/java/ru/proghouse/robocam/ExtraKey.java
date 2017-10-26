@@ -21,4 +21,5 @@ public class ExtraKey {
     public static final String USE_LOCAL_CONTROLS = "use_local_controls";
     public static final String LOCAL_CONTROL = "local_control";
     public static final String JOYSTICK_CURRENT_PANEL = "joystick_current_panel";
+    public static final String MAXIMIZE_JOYSTICKS = "maximize_joysticks";
 }

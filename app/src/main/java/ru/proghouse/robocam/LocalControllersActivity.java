@@ -42,8 +42,10 @@ public class LocalControllersActivity extends AppCompatActivity {
     private AdView adView = null;
     private WebView banner = null;
     private String bannerUrl = null;
-    public static double screenMin = 0;
-    public static int screenMinPixels = 0;
+    private double screenMin = 0;
+    private int screenMinPixels = 0;
+    private int screenWidth = 0;
+    private int screenHeight = 0;
     private String bannerType = "";
     private boolean bannerShowOffline = false;
     private volatile boolean loadedAds = false;
@@ -65,6 +67,7 @@ public class LocalControllersActivity extends AppCompatActivity {
     private boolean showJoysticks = true;
     private boolean hideJoysticks = false;
     private boolean showDebugInfo = true;
+    private boolean maximizeJoysticks = false;
     private String axisNames = "xywzabcd";
     private String joystickShapes = "----";
     private String joystickBehaviors = "00000000";
@@ -85,6 +88,7 @@ public class LocalControllersActivity extends AppCompatActivity {
         SharedPreferences settings = getSharedPreferences(ExtraKey.APP_PREFERENCE, Context.MODE_PRIVATE);
         control = settings.getString(ExtraKey.LOCAL_CONTROL, "left-handed");
         joystickCurrentPanel = settings.getInt(ExtraKey.JOYSTICK_CURRENT_PANEL, 0);
+        maximizeJoysticks = settings.getBoolean(ExtraKey.MAXIMIZE_JOYSTICKS, DefaultValue.MAXIMIZE_JOYSTICKS);
 
         if (control.equals("left-handed")) {
             imageViewJoystick1 = (ImageView) findViewById(R.id.imageViewJoystick1);
@@ -126,6 +130,8 @@ public class LocalControllersActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        screenWidth = width;
+        screenHeight = height;
         screenMinPixels = Math.min(width, height);
         scale = (double)screenMinPixels / 1080.0;
         screenMin = Math.min(
@@ -134,19 +140,40 @@ public class LocalControllersActivity extends AppCompatActivity {
 
         imageViewJoystick1.setVisibility(View.INVISIBLE);
         imageViewJoystick2.setVisibility(View.INVISIBLE);
-        imageViewJoystick2.getLayoutParams().width = (int)(screenMinPixels / 2);
-        imageViewJoystick2.getLayoutParams().height = (int)(screenMinPixels / 2);
-        imageViewJoystick1.getLayoutParams().width = (int)(screenMinPixels / 2);
-        imageViewJoystick1.getLayoutParams().height = (int)(screenMinPixels / 2);
-        imageViewEmpty1.getLayoutParams().width = (int)(30.0 * scale);
-        imageViewEmpty1.getLayoutParams().height = (int)(30.0 * scale);
-        imageViewCurrentJoystick.getLayoutParams().width = (int)(120.0 * scale);
-        imageViewCurrentJoystick.getLayoutParams().height = (int)(120.0 * scale);
-        imageViewEmpty2.getLayoutParams().width = (int)(30.0 * scale);
-        imageViewEmpty2.getLayoutParams().height = (int)(30.0 * scale);
-        imageViewHands.getLayoutParams().width = (int)(120.0 * scale);
-        imageViewHands.getLayoutParams().height = (int)(120.0 * scale);
+        int joystickSize = (int) (screenMinPixels / 2);
+        if (maximizeJoysticks && width > height)
+            joystickSize = (int)Math.min((double)height - 120.0 * scale - 30.0 * scale, (double)width / 2.0);
+        int buttonSize = (int)(120.0 * scale);
+        int offset = (int)(30.0 * scale);
+        imageViewJoystick2.getLayoutParams().width = joystickSize;
+        imageViewJoystick2.getLayoutParams().height = joystickSize;
+        imageViewJoystick1.getLayoutParams().width = joystickSize;
+        imageViewJoystick1.getLayoutParams().height = joystickSize;
+        imageViewEmpty1.getLayoutParams().width = offset;
+        imageViewEmpty1.getLayoutParams().height = offset;
+        imageViewCurrentJoystick.getLayoutParams().width = buttonSize;
+        imageViewCurrentJoystick.getLayoutParams().height = buttonSize;
+        imageViewEmpty2.getLayoutParams().width = offset;
+        imageViewEmpty2.getLayoutParams().height = offset;
+        imageViewHands.getLayoutParams().width = buttonSize;
+        imageViewHands.getLayoutParams().height = buttonSize;
         textViewDebugMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.round(screenMinPixels / 32));
+        textViewText.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.round(screenMinPixels / 32));
+
+        if (maximizeJoysticks && width > height) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(buttonSize, buttonSize);
+            params.addRule(RelativeLayout.BELOW, R.id.imageViewEmpty2);
+            params.addRule(RelativeLayout.LEFT_OF, R.id.imageViewEmpty2);
+            imageViewCurrentJoystick.setLayoutParams(params);
+            params = new RelativeLayout.LayoutParams(offset, offset);
+            params.addRule(RelativeLayout.BELOW, R.id.imageViewEmpty2);
+            params.addRule(RelativeLayout.LEFT_OF, R.id.imageViewCurrentJoystick);
+            imageViewEmpty1.setLayoutParams(params);
+            params = new RelativeLayout.LayoutParams(buttonSize, buttonSize);
+            params.addRule(RelativeLayout.BELOW, R.id.imageViewEmpty2);
+            params.addRule(RelativeLayout.LEFT_OF, R.id.imageViewEmpty1);
+            imageViewHands.setLayoutParams(params);
+        }
 
         _updateJoysticks();
 
@@ -176,9 +203,22 @@ public class LocalControllersActivity extends AppCompatActivity {
     }
 
     private void fullScreen() {
+        //getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+        //        WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        /*if (Build.VERSION.SDK_INT >= 19) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        } else {
+            if (Build.VERSION.SDK_INT > 10) {
+                findViewById(android.R.id.content).setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+            }
+        }*/
         // If the Android version is lower than Jellybean, use this call to hide
         // the status bar.
-        if (Build.VERSION.SDK_INT < 16) {
+        if (Build.VERSION.SDK_INT <= 17) {
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     WindowManager.LayoutParams.FLAG_FULLSCREEN);
         } else {
@@ -190,6 +230,8 @@ public class LocalControllersActivity extends AppCompatActivity {
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
             decorView.setSystemUiVisibility(uiOptions);
         }
+        //if (Build.VERSION.SDK_INT > 10 && Build.VERSION.SDK_INT < 19)
+        //    findViewById(android.R.id.content).setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
     }
 
     private void loadAds() {

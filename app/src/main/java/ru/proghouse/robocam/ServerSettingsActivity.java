@@ -57,8 +57,11 @@ public class ServerSettingsActivity extends AppCompatActivity {
     private TextView textViewSpectatorPassword = null;
     private List<String> cameraIds = new ArrayList<String>();
     private CheckBox checkBoxUseLocalControls = null;
+    private CheckBox checkBoxMaximizeJoysticks = null;
     private boolean useLocalControls = false;
+    private boolean maximizeJoysticks = false;
     private LinearLayout linearLayoutServer = null;
+    private LinearLayout linearLayoutLocal = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,12 +76,20 @@ public class ServerSettingsActivity extends AppCompatActivity {
         checkBoxUseLocalControls.setChecked(useLocalControls);
         linearLayoutServer = (LinearLayout)findViewById(R.id.linearLayoutServer);
         linearLayoutServer.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
+        linearLayoutLocal = (LinearLayout)findViewById(R.id.linearLayoutLocal);
+        linearLayoutLocal.setVisibility(useLocalControls ? View.VISIBLE : View.GONE);
         checkBoxUseLocalControls.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 linearLayoutServer.setVisibility(isChecked ? View.GONE : View.VISIBLE);
+                linearLayoutLocal.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
         });
+
+        //MAXIMIZE JOYSTICKS
+        checkBoxMaximizeJoysticks = (CheckBox)findViewById(R.id.checkBoxMaximizeJoysticks);
+        maximizeJoysticks = settings.getBoolean(ExtraKey.MAXIMIZE_JOYSTICKS, DefaultValue.MAXIMIZE_JOYSTICKS);
+        checkBoxMaximizeJoysticks.setChecked(maximizeJoysticks);
 
         //CAMERA ID
         List<String> cameras = getCameras();
@@ -511,6 +522,10 @@ public class ServerSettingsActivity extends AppCompatActivity {
         }
         if (useLocalControls != checkBoxUseLocalControls.isChecked()) {
             getPreferenceEditor().putBoolean(ExtraKey.USE_LOCAL_CONTROLS, checkBoxUseLocalControls.isChecked());
+            changed = true;
+        }
+        if (maximizeJoysticks != checkBoxMaximizeJoysticks.isChecked()) {
+            getPreferenceEditor().putBoolean(ExtraKey.MAXIMIZE_JOYSTICKS, checkBoxMaximizeJoysticks.isChecked());
             changed = true;
         }
         if (changed)

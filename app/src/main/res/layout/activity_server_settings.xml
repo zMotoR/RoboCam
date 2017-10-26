@@ -92,6 +92,22 @@
                 android:textAppearance="?android:attr/textAppearanceLarge" />
 
             <LinearLayout
+                android:id="@+id/linearLayoutLocal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="0dp">
+
+                <CheckBox
+                    style="@style/SettingsCheckBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/pref_item_height"
+                    android:text="@string/maхimize_joysticks"
+                    android:id="@+id/checkBoxMaximizeJoysticks"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
+
+            </LinearLayout>
+            <LinearLayout
                 android:id="@+id/linearLayoutServer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -18,4 +18,5 @@ public class DefaultValue {
     public static final String FRAGMENT_DIALOG = "dialog";
     public static final String Custom = "Custom";
     public static final boolean USE_LOCAL_CONTROLS = false;
+    public static final boolean MAXIMIZE_JOYSTICKS = false;
 }
