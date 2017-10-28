@@ -452,7 +452,7 @@ public class LocalControllersActivity extends AppCompatActivity {
                     usedKeys.add(new Integer(s.substring(i * 3, i * 3 + 3)));
             }
             hideJoysticks = RoboCamDriver.getCurrentDriver().isConnected()
-                    ? false : RoboCamDriver.getCurrentDriver().isHideJoysticks();
+                    ? RoboCamDriver.getCurrentDriver().isHideJoysticks() : false;
             if (showJoysticks) {
                 if (control.equals("left-handed")) {
                     imageViewJoystick1 = (ImageView)findViewById(R.id.imageViewJoystick1);
@@ -656,6 +656,7 @@ public class LocalControllersActivity extends AppCompatActivity {
         super.onResume();
         localControllersActivity = this;
         updateJoysticks();
+        fullScreen();
     }
 
     public void onHandsClick(View v) {
@@ -829,6 +830,7 @@ public class LocalControllersActivity extends AppCompatActivity {
             if (!keys.contains(ascii)) {
                 keys.add(ascii);
                 sendPressedKeys();
+
             }
         }
         //showKeyCodes(keyCode, ascii);
