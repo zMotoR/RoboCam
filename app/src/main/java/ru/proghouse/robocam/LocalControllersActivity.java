@@ -9,6 +9,7 @@ import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyEvent;
@@ -823,6 +824,7 @@ public class LocalControllersActivity extends AppCompatActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         int ascii = AndroidKeyCodeToASCII(keyCode);
+        //Log.d("RoboCam", "+ " + Integer.toString(ascii));
         if (usedKeys.contains(ascii)) {
             if (!keys.contains(ascii)) {
                 keys.add(ascii);
@@ -839,16 +841,24 @@ public class LocalControllersActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        int ascii = AndroidKeyCodeToASCII(keyCode);
-        if (keys.contains(ascii)) {
-            keys.remove(ascii);
-            sendPressedKeys();
-        }
-        //showKeyCodes(keyCode, ascii);
-        //return super.onKeyDown(keyCode, event);
-        if (ascii > 0)
-            return true;
-        else
+        //Sometimes onKeyUp occurs immediately after onKeyDown.
+        //We will ignore that events.
+        if (event.getDownTime() != event.getEventTime()) {
+            int ascii = AndroidKeyCodeToASCII(keyCode);
+            //Log.d("RoboCam", "- " + Integer.toString(ascii));
+            if (keys.contains(ascii)) {
+                keys.remove(ascii);
+                sendPressedKeys();
+            }
+            //Log.d("RoboCam", "- " + Integer.toString(ascii) + " " + Long.toString(event.getDownTime()) + " " + Long.toString(event.getEventTime()));
+            //showKeyCodes(keyCode, ascii);
+            //return super.onKeyDown(keyCode, event);
+            if (ascii > 0)
+                return true;
+            else
+                return super.onKeyUp(keyCode, event);
+        } else
             return super.onKeyUp(keyCode, event);
     }
+
 }
