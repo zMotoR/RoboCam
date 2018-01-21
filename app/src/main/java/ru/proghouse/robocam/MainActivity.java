@@ -157,6 +157,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private volatile boolean backgroundThreadTerminated = false;
     private volatile int lastCheckedOrientation = Surface.ROTATION_0;
 
+    private volatile int surfaceTextureWidth = 0;
+    private volatile int surfaceTextureHeight = 0;
+
     private boolean useLocalControls = false;
 
     public static double screenMin = 0;
@@ -420,8 +423,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         cameraManager.changeSurfaceTexture(thisActivity, surfaceTexture);
                     else
                         cameraManager.initCamera(thisActivity, surfaceTexture);
-                    cameraManager.configureTransform(thisActivity, textureView, width, height);
-                    updateCamera();
+                    //cameraManager.configureTransform(thisActivity, textureView, width, height);
+                    surfaceTextureWidth = width;
+                    surfaceTextureHeight = height;
+                    parentLayout.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            cameraManager.configureTransform(thisActivity, textureView,
+                                    surfaceTextureWidth, surfaceTextureHeight);
+                            updateCamera();
+                        }
+                    });
                 }
 
                 @Override
