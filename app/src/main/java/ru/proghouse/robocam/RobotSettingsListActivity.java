@@ -427,14 +427,17 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 /*PopupMenu popup = new PopupMenu(getApplicationContext(), v);
                 popup.getMenuInflater().inflate(R.menu.menu_robot_settings_list, popup.getMenu());
                 popup.show();*/
+                break;
             }
             case R.id.buttonDelete: {
                 v.showContextMenu();
+                break;
             }
             case R.id.buttonOverflow: {
                 //OpenFileDialog fileDialog = new OpenFileDialog(this);
                 //fileDialog.show();
                 v.showContextMenu();
+                break;
             }
         }
     }
