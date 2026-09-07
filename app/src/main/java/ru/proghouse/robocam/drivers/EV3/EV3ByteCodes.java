@@ -275,7 +275,7 @@ public class EV3ByteCodes {
         opcode(0x02);
     }
 
-    public void opPROGRAM_START() throws IOException {
+    public void opProgram_Start() throws IOException {
         opcode(0x03);
     }
 

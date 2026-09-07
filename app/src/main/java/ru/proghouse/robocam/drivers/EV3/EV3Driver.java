@@ -537,7 +537,7 @@ public class EV3Driver extends RoboCamDriver {
         //clearJoysticks();
         RoboCamBroker.updateJoysticks();
         if (socket != null) {
-            stop();
+            stop(false);
             close();
         }
         if (resId == 0)
@@ -554,7 +554,7 @@ public class EV3Driver extends RoboCamDriver {
         c.LCS(getUserProgram());//"../prjs/RoboCamMailboxTest/RoboCamMailboxTest.rbf");
         c.LV0(0);
         c.LV0(4);
-        c.opPROGRAM_START();
+        c.opProgram_Start();
         c.LC2(EV3ByteCodes.USER_SLOT);
         c.LV0(0);
         c.LV0(4);
@@ -563,6 +563,10 @@ public class EV3Driver extends RoboCamDriver {
 
     @Override
     public void stop() {
+        stop(true);
+    }
+
+    public void stop(boolean restartUserProgram) {
         if (socket != null) {
             if (outputPorts.size() > 0) {
                 EV3ByteCodes c = new EV3ByteCodes();
@@ -643,8 +647,12 @@ public class EV3Driver extends RoboCamDriver {
                     //c.LC0(EV3ByteCodes.LED_GREEN);
                     //Stopping output program
                     c.opOutput_Prg_Stop();
+                    //c.opProgram_Stop();
+                    c.LC2(EV3ByteCodes.USER_SLOT);
+                    //c.opTimer_Wait();
                     //writeOutputPrgStop(byteArrayOutputStream);
-                    writeStartUserProgram(c);
+                    if (restartUserProgram)
+                        writeStartUserProgram(c);
                     //Turns the light to the red pulse
                     c.opUI_WRITE(LED);
                     c.LC0(EV3ByteCodes.LED_RED_PULSE);
