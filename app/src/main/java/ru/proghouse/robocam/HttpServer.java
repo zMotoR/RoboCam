@@ -953,7 +953,10 @@ public class HttpServer extends IntentService {
                     }
                 }
                 method[1] = correctSeparators(method[1]);
-                if (method[1].substring(0, 1).compareTo(separatorChar) != 0){
+                //Path comes raw from the request line; any parent reference turns the file
+                //serving below into a read of arbitrary files available to the app user id.
+                if (method[1].contains("..")
+                        || method[1].substring(0, 1).compareTo(separatorChar) != 0){
                     writeResponse(HttpURLConnection.HTTP_NOT_FOUND, "path not found", null, true, true);
                     return;
                 }

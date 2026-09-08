@@ -61,6 +61,7 @@ import com.google.android.gms.ads.MobileAds;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 
 import java.io.DataInputStream;
@@ -573,6 +574,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                     DocumentBuilder db = dbf.newDocumentBuilder();
                     Document newVersion = db.parse(newVersionFile);
+                    //v.xml comes over plain HTTP and its attribute values are joined
+                    //into local file paths, so a parent reference must abort the update.
+                    if (containsParentSegment(newVersion.getDocumentElement()))
+                        throw new Exception("unsafe ads version file");
                     File versionFile = new File(adsDir, "v.xml");
                     boolean haveToDownload = false;
                     Document version = null;
@@ -654,6 +659,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 e.printStackTrace();
             }
         }
+    }
+
+    private static boolean containsParentSegment(Element element) {
+        NamedNodeMap attributes = element.getAttributes();
+        for (int i = 0; attributes != null && i < attributes.getLength(); i++) {
+            String value = attributes.item(i).getNodeValue();
+            if (value != null && value.contains(".."))
+                return true;
+        }
+        NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            if (children.item(i) instanceof Element
+                    && containsParentSegment((Element) children.item(i)))
+                return true;
+        }
+        return false;
     }
 
     public static boolean findCondition(Document version, List<Locale> locales,
