@@ -1,41 +1,37 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '26.0.0'
+    namespace 'ru.proghouse.robocam'
+    compileSdk 36
+
     defaultConfig {
         applicationId "ru.proghouse.robocam"
-        minSdkVersion 9
-        targetSdkVersion 25
-        versionCode 35
-        versionName '1.4.5'
+        minSdk 9
+        targetSdk 36
+        versionCode 41
+        versionName '1.5'
     }
+
     buildTypes {
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    productFlavors {
-        withoutRenderScript {
-        }
-        withRenderScript {
-            versionCode 36
-            renderscriptTargetApi 11
-            renderscriptSupportModeEnabled true
-        }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
-    sourceSets {
-        withRenderScript.renderscript.srcDirs = ['src/main/rs2']
-        withRenderScript.java.srcDirs = ['src/main/java', 'src/main/rs2']
+
+    buildFeatures {
+        aidl true
     }
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'org.webbitserver:webbit:0.4.15'
-    compile 'com.google.android.gms:play-services-ads:10.0.0'
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'junit:junit:4.12'
+    implementation 'org.webbitserver:webbit:0.4.15'
+    implementation 'com.google.android.gms:play-services-ads:10.0.0'
+    implementation 'com.android.support:appcompat-v7:25.0.1'
+    testImplementation 'junit:junit:4.12'
 }

@@ -420,25 +420,18 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
 
     @Override
     public void onClick(View v) {
-        final int id = v.getId();
-        switch(id){
-            case R.id.buttonAdd: {
-                v.showContextMenu();
-                /*PopupMenu popup = new PopupMenu(getApplicationContext(), v);
-                popup.getMenuInflater().inflate(R.menu.menu_robot_settings_list, popup.getMenu());
-                popup.show();*/
-                break;
-            }
-            case R.id.buttonDelete: {
-                v.showContextMenu();
-                break;
-            }
-            case R.id.buttonOverflow: {
-                //OpenFileDialog fileDialog = new OpenFileDialog(this);
-                //fileDialog.show();
-                v.showContextMenu();
-                break;
-            }
+        int id = v.getId();
+        if (id == R.id.buttonAdd) {
+            v.showContextMenu();
+            /*PopupMenu popup = new PopupMenu(getApplicationContext(), v);
+            popup.getMenuInflater().inflate(R.menu.menu_robot_settings_list, popup.getMenu());
+            popup.show();*/
+        } else if (id == R.id.buttonDelete) {
+            v.showContextMenu();
+        } else if (id == R.id.buttonOverflow) {
+            //OpenFileDialog fileDialog = new OpenFileDialog(this);
+            //fileDialog.show();
+            v.showContextMenu();
         }
     }
 

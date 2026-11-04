@@ -275,6 +275,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 params.addRule(RelativeLayout.CENTER_HORIZONTAL);
                 params.addRule(RelativeLayout.CENTER_VERTICAL);
                 parentLayout.addView(textureView, 0, params);
+                textureView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                    @Override
+                    public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                        int width = right - left;
+                        int height = bottom - top;
+                        if (width > 0 && height > 0
+                                && (width != oldRight - oldLeft || height != oldBottom - oldTop))
+                            cameraManager.configureTransform(thisActivity, textureView, width, height);
+                    }
+                });
                 surfaceView.setVisibility(View.GONE);
                 createSurfaceTextureListener();
                 textureView.setVisibility(useLocalControls ? View.GONE : View.VISIBLE);
@@ -1334,7 +1345,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void setSurfaceSize() {
-        PreviewSize previewSize = cameraManager.getPreviewSize();
+        PreviewSize previewSize = Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK
+                ? cameraManager.getSurfacePreviewSize() : cameraManager.getPreviewSize();
         if (previewSize != null) {
             ViewGroup.LayoutParams layoutParams;
             if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
@@ -1381,7 +1393,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         orientationIsUpdated = cameraManager.updateOrientation(thisActivity);
                     parametersIsUpdated = cameraManager.updateParameters();
                     setSurfaceSize();
-                    if (Build.VERSION.SDK_INT < CameraManager.CAMERA2_SDK)
+                    if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)
+                        cameraManager.configureTransform(this, textureView,
+                                textureView.getWidth(), textureView.getHeight());
+                    else
                         cameraManager.startPreview();
                     /*ViewGroup.LayoutParams layoutParams;
                     if (Build.VERSION.SDK_INT >= CameraManager.CAMERA2_SDK)

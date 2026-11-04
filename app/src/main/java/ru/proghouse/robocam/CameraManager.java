@@ -83,6 +83,8 @@ public class CameraManager implements Camera.PreviewCallback {
     private int facing = 0;
     private PreviewSize[] surfacePreviewSizes = null;
     private List<PreviewSize> previewSizes = new ArrayList<PreviewSize>();
+    // Size the on-screen SurfaceTexture is rendered at, it may differ from previewSize (YUV reader size).
+    private PreviewSize surfacePreviewSize = null;
     private CameraDevice.StateCallback stateCallback = null;
     private CameraDevice cameraDevice = null;
     private CameraCaptureSession previewSession = null;
@@ -126,6 +128,12 @@ public class CameraManager implements Camera.PreviewCallback {
     public PreviewSize getPreviewSize(){
         synchronized(HttpServer.sync) {
             return previewSize;
+        }
+    }
+
+    public PreviewSize getSurfacePreviewSize() {
+        synchronized(HttpServer.sync) {
+            return surfacePreviewSize != null ? surfacePreviewSize : previewSize;
         }
     }
 
@@ -304,6 +312,7 @@ public class CameraManager implements Camera.PreviewCallback {
             if (Build.VERSION.SDK_INT >= CAMERA2_SDK && cameraDevice != null
                     && previewSession == null && !previewing) {
                 PreviewSize optimalSize = chooseOptimalSize();
+                surfacePreviewSize = optimalSize;
                 texture.setDefaultBufferSize(optimalSize.width, optimalSize.height);
                 Surface surface = new Surface(texture);
                 Surface streamSurface = imageReader.getSurface();
@@ -786,6 +795,9 @@ public class CameraManager implements Camera.PreviewCallback {
                                    int viewWidth, int viewHeight) {
         if (Build.VERSION.SDK_INT >= CAMERA2_SDK) {
             TextureView textureView = (TextureView)_textureView;
+            PreviewSize bufferSize = getSurfacePreviewSize();
+            if (bufferSize == null || viewWidth <= 0 || viewHeight <= 0)
+                return;
             int orientation = calculateOrientation(activity);
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
@@ -793,12 +805,12 @@ public class CameraManager implements Camera.PreviewCallback {
             float centerY = viewRect.centerY();
 
             if (orientation == 90 || orientation == 270) {
-                RectF bufferRect = new RectF(0, 0, previewSize.height, previewSize.width);
+                RectF bufferRect = new RectF(0, 0, bufferSize.height, bufferSize.width);
                 bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
                 matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                 float scale = Math.max(
-                        (float) viewHeight / previewSize.height,
-                        (float) viewWidth / previewSize.width);
+                        (float) viewHeight / bufferSize.height,
+                        (float) viewWidth / bufferSize.width);
                 matrix.postScale(scale, scale, centerX, centerY);
                 matrix.postRotate(orientation, centerX, centerY);
             }

@@ -20,6 +20,10 @@
 #-keep class ru.proghouse.robocam.ScriptC_yuv420888
 -keep class android.support.v8.renderscript.** { *; }
 
+# AGP 9 requires proguard-android-optimize.txt; keep prior release semantics
+# (historical releases were built with proguard-android.txt = no optimization)
+-dontoptimize
+
 -dontwarn javax.servlet.**
 -dontwarn org.osgi.framework.**
 -dontwarn org.jboss.marshalling.**
