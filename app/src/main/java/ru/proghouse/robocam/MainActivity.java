@@ -28,8 +28,8 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.LocaleList;
 import android.os.PowerManager;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -57,6 +57,7 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 
 import org.w3c.dom.Document;
@@ -241,7 +242,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
             });
 
-            MobileAds.initialize(getApplicationContext(), "ca-app-pub-7800876624909705~9648407673"); //"ca-app-pub-7800876624909705/2125140872"
+            // App ID is declared in AndroidManifest.xml (com.google.android.gms.ads.APPLICATION_ID)
+            MobileAds.initialize(getApplicationContext()); //ad unit "ca-app-pub-7800876624909705/2125140872"
             adView = (AdView) findViewById(R.id.adView);
             //AdRequest adRequest = new AdRequest.Builder().build();
             /*mAdView.setAdListener(new AdListener(){
@@ -817,7 +819,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 AdRequest adRequest = new AdRequest.Builder().build();
                 adView.setAdListener(new AdListener() {
                     @Override
-                    public void onAdFailedToLoad(int var1) {
+                    public void onAdFailedToLoad(LoadAdError var1) {
                         try {
                             if (bannerType.equals("offline")) {
                                 bannerShowOffline = true;

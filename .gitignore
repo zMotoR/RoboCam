@@ -6,6 +6,7 @@
 /captures
 .idea
 *.apk
+*.err
 /logErrors.txt
 /myLogs.txt
 /projectFilesBackup/

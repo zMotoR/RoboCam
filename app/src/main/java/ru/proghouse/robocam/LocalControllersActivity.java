@@ -6,7 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -24,6 +24,7 @@ import android.widget.TextView;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.LoadAdError;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -318,7 +319,7 @@ public class LocalControllersActivity extends AppCompatActivity {
                 AdRequest adRequest = new AdRequest.Builder().build();
                 adView.setAdListener(new AdListener() {
                     @Override
-                    public void onAdFailedToLoad(int var1) {
+                    public void onAdFailedToLoad(LoadAdError var1) {
                         try {
                             if (bannerType.equals("offline")) {
                                 bannerShowOffline = true;

@@ -7,7 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
+import androidx.core.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
