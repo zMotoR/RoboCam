@@ -14,6 +14,9 @@ public class DefaultValue {
     public static final String ROBOT_SETTINGS_DIRECTORY = "robot";
     public static final String ADS_DIRECTORY = "ads";
     public static final String TEMP_DIRECTORY = "temp";
+    public static final String IMPORT_DIRECTORY = "import";
+    public static final String IMPORTED_FILE_NAME = "imported.xml";
+    public static final String SHARE_DIRECTORY = "share";
     public static final String EV3 = "EV3";
     public static final String FRAGMENT_DIALOG = "dialog";
     public static final String Custom = "Custom";

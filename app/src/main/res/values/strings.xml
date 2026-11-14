@@ -135,6 +135,7 @@
     <string name="use_render_script">Use RenderScript to process images</string>
     <string name="title_activity_import">Import of robot settings</string>
     <string name="action_import_robot_settings_from_file">Import from a file</string>
+    <string name="action_send_robot_settings">Send to</string>
     <string name="action_export_robot_settings_to_file">Export to a file</string>
     <string name="settings_ware_exported_successfully">Settings ware exported successfully into the file %s</string>
     <string name="error_while_exporting_settings_xml">Error while exporting settings. %s</string>
@@ -142,7 +143,6 @@
     <string name="error_while_copying_settings_xml">Error while copying the settings. %s</string>
     <string name="settings_ware_copied_successfully">Settings ware copied successfully.</string>
     <string name="settings_ware_imported_successfully">Settings were imported successfully.</string>
-    <string name="action_send_robot_settings">Send to</string>
     <string name="request_write_external_storage_permission">RoboCam needs external storage permission.</string>
     <string name="invalid_mailbox_name">Invalid mailbox name. The name must not be \"x\", \"y\", \"w\", \"z\", \"a\", \"b\", \"c\" and \"d\".</string>
     <string name="show_debug_info">Show debug info</string>

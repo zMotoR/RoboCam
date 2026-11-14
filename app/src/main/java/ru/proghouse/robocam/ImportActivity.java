@@ -15,23 +15,12 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import org.w3c.dom.Document;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import ru.proghouse.robocam.drivers.RoboCamDriver;
 
 public class ImportActivity extends AppCompatActivity {
 
@@ -126,39 +115,10 @@ public class ImportActivity extends AppCompatActivity {
     }
 
     private void importSettings(File file) {
-        try {
-            getPreferenceEditor().putString(ExtraKey.CURRENT_PATH, currentPath);
-            apply();
-            //Loading xml.
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            Document xml = db.parse(file);
-            xml.getDocumentElement().normalize();
-            //Testing of the file.
-            String driverName = xml.getDocumentElement().getNodeName();
-            RoboCamDriver driver = RoboCamDriver.createDriver(this, driverName);
-            driver.loadSettingsFromXml(this, file, xml);
-            //Searching for names of existing settings.
-            String name = Utils.createNewSettingsName(this, driver.getSettingsName(), driver.getName());
-            //Changing the settings name.
-            xml.getDocumentElement().setAttribute("Name", name);
-            //Getting the file name.
-            SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmsszzz", Locale.ENGLISH);
-            String newFileName = driverName + "_" + format.format(new Date()) + ".xml";
-            //Saving the file.
-            //Utils.copy(file, new File(ev3Dir, newFileName));
-            Utils.saveXml(new File(Utils.getRobotDir(this), newFileName), xml);
-            RoboCamBroker.setLastSettingsModified(new Date());
-            Toast.makeText(this, getString(R.string.settings_ware_imported_successfully),
-                    Toast.LENGTH_LONG).show();
+        getPreferenceEditor().putString(ExtraKey.CURRENT_PATH, currentPath);
+        apply();
+        if (SettingsImporter.importSettings(this, file, true))
             finish();
-            //Utils.showError(this, getString(R.string.settings_ware_imported_successfully), true);
-        } catch (Throwable e) {
-            Utils.showError(this, getString(R.string.error_while_opening_settings_file,
-                    file.getName(), e.getMessage()), true);
-            //Toast.makeText(this, getString(R.string.error_while_opening_settings_file,
-            //        file.getName(), e.getMessage()), Toast.LENGTH_LONG).show();
-        }
     }
 
     private List<File> getFiles(String directoryPath) {

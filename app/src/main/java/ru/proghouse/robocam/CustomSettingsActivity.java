@@ -2,12 +2,10 @@ package ru.proghouse.robocam;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -29,8 +27,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
@@ -43,7 +42,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -60,8 +58,7 @@ public class CustomSettingsActivity extends AppCompatActivity implements View.On
     private static final int MI_COPY_SETTINGS = -4;
     private static final int KEY_CODE_REQUEST = 1;
 
-    private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT = 1;
-    private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_COPY = 2;
+    private static final int REQUEST_CREATE_SETTINGS_FILE = 2;
 
     private int CHECKBOX_PADDING = 0;
     private String settingsFileName;
@@ -370,6 +367,9 @@ public class CustomSettingsActivity extends AppCompatActivity implements View.On
                 case KEY_CODE_REQUEST:
                     keysControl.setKeys(this, data.getIntArrayExtra(Intent.EXTRA_STREAM));
                     break;
+                case REQUEST_CREATE_SETTINGS_FILE:
+                    writeSettingsToUri(data.getData());
+                    break;
             }
         }
     }
@@ -534,32 +534,60 @@ public class CustomSettingsActivity extends AppCompatActivity implements View.On
         }
     }
 
-    private void exportSettings() {
-        if (Utils.requestExternalStoragePermission(this,
-                REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT)) {
-            try {
-                String fileName = saveSettingsForExport(false, false);
-                Utils.showError(this, getString(R.string.settings_ware_exported_successfully, fileName), false);
-            } catch (Exception e) {
-                Toast.makeText(this, getString(R.string.error_while_exporting_settings_xml,
-                        e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
-            }
+    private void sendSettings() {
+        try {
+            File dir = new File(getCacheDir(), DefaultValue.SHARE_DIRECTORY);
+            dir.mkdirs();
+            File file = new File(dir, createExportFileName());
+            Utils.saveXml(file, createCurrentSettingsXml());
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/xml");
+            intent.putExtra(Intent.EXTRA_STREAM,
+                    FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, getString(R.string.action_send_robot_settings)));
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_while_exporting_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
-    private void sendSettings() {
-        if (Utils.requestExternalStoragePermission(this,
-                REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_COPY)) {
-            try {
-                String fileName = saveSettingsForExport(true, true);
-                Intent intent = new Intent();
-                intent.setAction(Intent.ACTION_SEND);
-                intent.setType("text/xml");
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(fileName)));
-                startActivity(intent);
-            } catch (Exception e) {
-                Toast.makeText(this, getString(R.string.error_while_exporting_settings_xml,
-                        e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+    private void exportSettings() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/xml");
+        intent.putExtra(Intent.EXTRA_TITLE, createExportFileName());
+        startActivityForResult(intent, REQUEST_CREATE_SETTINGS_FILE);
+    }
+
+    private String createExportFileName() {
+        String fileName = "RoboCam_";
+        String settingsName = editTextBotName.getText().toString();
+        if (settingsName != null && (!settingsName.isEmpty()))
+            fileName += settingsName.replace("\\", "_").replace("/", "_").replace(":", "_").replace(" ", "_") + "_";
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        return fileName + format.format(new Date()) + ".xml";
+    }
+
+    private void writeSettingsToUri(Uri uri) {
+        OutputStream stream = null;
+        try {
+            Document xml = createCurrentSettingsXml();
+            stream = getContentResolver().openOutputStream(uri);
+            if (stream == null)
+                throw new IOException(uri.toString());
+            Utils.saveXml(stream, xml);
+            Utils.showError(this, getString(R.string.settings_ware_exported_successfully,
+                    Utils.getDisplayName(this, uri)), false);
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_while_exporting_settings_xml,
+                    e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                }
             }
         }
     }
@@ -584,48 +612,6 @@ public class CustomSettingsActivity extends AppCompatActivity implements View.On
             Toast.makeText(this, getString(R.string.error_while_copying_settings_xml,
                     e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT
-                || requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_COPY) {
-            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED)
-                Utils.showError(this, R.string.request_write_external_storage_permission, false);
-            else {
-                //Trying one more time.
-                if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_EXPORT)
-                    exportSettings();
-                else if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_COPY)
-                    copySettings();
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
-
-    private String saveSettingsForExport(boolean tempFolder, boolean rewrite) throws ParserConfigurationException, FileNotFoundException, TransformerException {
-        //Creating the file name.
-        File path = tempFolder ? new File(Environment.getExternalStorageDirectory(), ".robocam") : Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        path.mkdirs();
-        String fileName = "RoboCam_";
-        String settingsName = editTextBotName.getText().toString();
-        if (settingsName != null && (!settingsName.isEmpty()))
-            fileName += settingsName.replace("\\", "_").replace("/", "_").replace(":", "_").replace(" ", "_") + "_";
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
-        fileName += format.format(new Date());
-        if ((!rewrite) && new File(path.getPath() + "/" + fileName + ".xml").exists()) {
-            int n = 2;
-            while (new File(path.getPath() + "/" + fileName + "_" + Integer.toString(n) + ".xml").exists())
-                n++;
-            fileName += "_" + Integer.toString(n);
-        }
-        fileName = path.getPath() + "/" + fileName + ".xml";
-        //Saving a copy.
-        Document xml = createCurrentSettingsXml();
-        Utils.saveXml(fileName, xml);
-        return fileName;
     }
 
     public void onCancelButtonClick(View v){

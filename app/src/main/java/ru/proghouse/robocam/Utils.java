@@ -4,9 +4,12 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import androidx.core.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -21,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashSet;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -190,6 +194,31 @@ public class Utils {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(source, result);
+    }
+
+    public static void saveXml(OutputStream stream, Document xml) throws TransformerException {
+        DOMSource source = new DOMSource(xml);
+        StreamResult result = new StreamResult(stream);
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.transform(source, result);
+    }
+
+    public static String getDisplayName(Context context, Uri uri) {
+        String name = null;
+        Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null) {
+            try {
+                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (index >= 0 && cursor.moveToFirst())
+                    name = cursor.getString(index);
+            } finally {
+                cursor.close();
+            }
+        }
+        if (name == null)
+            name = uri.getLastPathSegment();
+        return name != null ? name : uri.toString();
     }
 
     public static boolean requestExternalStoragePermission(Activity activity, int requestCode) {

@@ -1,5 +1,6 @@
 package ru.proghouse.robocam;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -58,6 +59,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
     private LinearLayout linearLayoutSubsWarning = null;
     private static final String WARNING_HIDED = "WarningHided";
     private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT = 1;
+    private static final int REQUEST_OPEN_SETTINGS_FILE = 2;
     //private IabHelper mHelper;
     //private IabHelper.QueryInventoryFinishedListener mGotInventoryListener;
     //private boolean isPremium = false;
@@ -370,17 +372,44 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
             else {
                 //Trying one more time.
                 if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT)
-                    importSettings();
+                    importSettingsFromStorage();
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
-    private void importSettings() {
+    private void importSettingsFromFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        //The picker filters by MIME type only, so both xml types are requested.
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/xml", "application/xml"});
+        try {
+            startActivityForResult(intent, REQUEST_OPEN_SETTINGS_FILE);
+        } catch (ActivityNotFoundException e) {
+            //No system file picker on the device, so fall back to the built-in browser.
+            importSettingsFromStorage();
+        }
+    }
+
+    //Only a fallback for devices without a system file picker, never offered in the menu.
+    private void importSettingsFromStorage() {
         if (Utils.requestExternalStoragePermission(this,
                 REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_FOR_IMPORT))
             startActivity(new Intent(this, ImportActivity.class));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_OPEN_SETTINGS_FILE && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            if (SettingsImporter.importSettings(this, data.getData(), false)) {
+                fillSettinsList();
+                fillCurSettings();
+            }
+        }
     }
 
     @Override
@@ -393,7 +422,7 @@ public class RobotSettingsListActivity extends AppCompatActivity implements View
                 startActivity(new Intent(this, CustomSettingsActivity.class));
                 break;
             case MI_IMPORT_SETTINGS:
-                importSettings();
+                importSettingsFromFile();
                 break;
             default:
                 if (item.getItemId() > 0 && item.getItemId() <= settingsListView.getAdapter().getCount()) {
